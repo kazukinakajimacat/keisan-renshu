@@ -88,6 +88,15 @@ body{
 .choice.wrong{background:var(--ng-soft);border-color:var(--ng);color:var(--ng)}
 .choice.dim{opacity:.45}
 
+/* まちがえた ときの ポップアップ（したから でる） */
+.miss-pop{position:fixed;left:0;right:0;bottom:0;z-index:9;display:flex;justify-content:center;padding:12px 12px calc(env(safe-area-inset-bottom,0px) + 14px);background:linear-gradient(to top,color-mix(in srgb,var(--bg) 85%,transparent),transparent);pointer-events:none}
+.miss-pop[hidden]{display:none}
+.miss-card{pointer-events:auto;width:100%;max-width:520px;background:var(--surface);border:3px solid var(--ng);border-radius:22px;padding:14px 16px 16px;display:flex;flex-direction:column;align-items:center;gap:10px;box-shadow:0 -6px 24px rgba(0,0,0,.25);animation:missUp .25s ease-out;max-height:70vh;overflow-y:auto}
+.miss-card .msg{font-size:26px;font-weight:900}
+.miss-card .msg.ng{color:var(--ng)}
+.miss-card .explain{border:none;padding:0;background:none}
+@keyframes missUp{from{transform:translateY(40px);opacity:0}to{transform:none;opacity:1}}
+@media (prefers-reduced-motion:reduce){.miss-card{animation:none}}
 /* feedback */
 .fb{min-height:64px;display:flex;flex-direction:column;align-items:center;gap:12px;text-align:center}
 .fb .msg{font-size:28px;font-weight:900}
@@ -505,6 +514,7 @@ details.hist summary{cursor:pointer;font-weight:700;color:var(--muted);font-size
   <div class="choices" id="choices"></div>
 
   <div class="fb" id="fb" aria-live="polite"></div>
+  <div class="miss-pop" id="missPop" hidden></div>
   </div>
 
   <div id="gridMain" class="stack" hidden>
@@ -1325,12 +1335,17 @@ details.hist summary{cursor:pointer;font-weight:700;color:var(--muted);font-size
       setTimeout(afterAnswer, nm ? 1600 : 900);
     }else{
       streak = 0;
-      fbEl.innerHTML = `<div class="msg ng pop">${timeout ? "じかんぎれ！" : "おしい！"}</div>`;
-      const ex=document.createElement("div"); ex.className="explain pop";
-      ex.innerHTML = `<div class="say">${p.explain}</div>` + (p.f.x ? (p.frame||"") : (p.frame||frameHTML(p.f.a,p.f.op,p.f.b)));
+      fbEl.innerHTML = "";
+      // こたえと「つぎへ」は したから でる ポップアップで みせる（スクロール しなくて いい ように）
+      const pop=$("missPop");
+      pop.innerHTML = `<div class="miss-card" role="dialog" aria-modal="true" aria-labelledby="missTitle">
+          <div class="msg ng" id="missTitle">${timeout ? "じかんぎれ！" : "おしい！"}</div>
+          <div class="explain"><div class="say">${p.explain}</div>${p.f.x ? (p.frame||"") : (p.frame||frameHTML(p.f.a,p.f.op,p.f.b))}</div>
+        </div>`;
       const nb=document.createElement("button"); nb.className="next"; nb.textContent="つぎへ"; nb.id="nextBtn";
-      nb.addEventListener("click", afterAnswer);
-      fbEl.appendChild(ex); fbEl.appendChild(nb);
+      nb.addEventListener("click", ()=>{ pop.hidden=true; pop.innerHTML=""; afterAnswer(); });
+      pop.firstElementChild.appendChild(nb);
+      pop.hidden=false;
       renderTrack();
       const w = pick(["cat","dog"]);
       setPets(w==="cat" ? null : "sad", w==="dog" ? null : "sad");
