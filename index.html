@@ -1499,9 +1499,14 @@ details.hist summary{cursor:pointer;font-weight:700;color:var(--muted);font-size
       if(!armed){ armed=true; cb.classList.add("arm"); cb.textContent="もう一度押すと消えます"; return; }
       history=[]; stats={facts:{}, types:{}};
       stats.album={}; stats.days={};
-      try{ localStorage.removeItem(STORE); localStorage.removeItem(STATS); }catch(e){}
+      gbest={};   // ます けいさんの さいこう タイムも けす
+      try{ localStorage.removeItem(STORE); localStorage.removeItem(STATS); localStorage.removeItem(GBEST_KEY); }catch(e){}
       markDirty();
       renderHistory();
+      // がめんの うえの「きょうの めあて」「きょうの シール」なども すぐ もとに もどす
+      renderGoal(); renderStickerRow();
+      $("gbest").textContent = "-";
+      if(mode==="zukan") renderZukan();
     });
   }
 
