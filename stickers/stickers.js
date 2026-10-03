@@ -8,25 +8,26 @@
   ※ id は 一度 きめたら かえない（もらった シールの きろくに つかう ため）
   ※ 行の 順番も かえない・けさない（いちばん さいごに たすだけ）
   ※ まるい シール（背景つきの まる）は round: true を つけると、まる いっぱいに 大きく 表示される
+  ※ もう ださない シールは 行を けさずに retired: true を つける（もらった シールは そのまま のこる）
 */
 window.STICKERS = [
-  { id: "nikukyu",    name: "にくきゅう",   file: "nikukyu.png" },
-  { id: "hoshi2",     name: "きらきらぼし", file: "hoshi2.png" },
-  { id: "onpu",       name: "おんぷ",       file: "onpu.png" },
-  { id: "heart2",     name: "ハート",       file: "heart2.png" },
-  { id: "mii",        name: "みー",         file: "mii.png" },
-  { id: "koro",       name: "ころ",         file: "koro.png" },
-  { id: "enpitsu",    name: "えんぴつ",     file: "enpitsu.png" },
-  { id: "hon",        name: "ほん",         file: "hon.png" },
-  { id: "medal",      name: "メダル",       file: "medal.png" },
-  { id: "niji",       name: "にじ",         file: "niji.png" },
-  { id: "taiyou2",    name: "おひさま",     file: "taiyou2.png" },
-  { id: "ouchi",      name: "おうち",       file: "ouchi.png" },
-  { id: "yokudekita", name: "よくできたね", file: "yokudekita.png" },
-  { id: "nikoboshi",  name: "にこにこぼし", file: "nikoboshi.png" },
-  { id: "ashiato",    name: "あしあと",     file: "ashiato.png" },
-  { id: "oukan",      name: "おうかん",     file: "oukan.png" },
-  { id: "futaba",     name: "ふたば",       file: "futaba.png" },
+  { id: "nikukyu",    name: "にくきゅう",   file: "nikukyu.png", round: true, retired: true },
+  { id: "hoshi2",     name: "きらきらぼし", file: "hoshi2.png", round: true, retired: true },
+  { id: "onpu",       name: "おんぷ",       file: "onpu.png", round: true },
+  { id: "heart2",     name: "ハート",       file: "heart2.png", round: true, retired: true },
+  { id: "mii",        name: "みー",         file: "mii.png", round: true },
+  { id: "koro",       name: "ころ",         file: "koro.png", round: true },
+  { id: "enpitsu",    name: "えんぴつ",     file: "enpitsu.png", round: true, retired: true },
+  { id: "hon",        name: "ほん",         file: "hon.png", round: true, retired: true },
+  { id: "medal",      name: "メダル",       file: "medal.png", round: true, retired: true },
+  { id: "niji",       name: "にじ",         file: "niji.png", round: true, retired: true },
+  { id: "taiyou2",    name: "おひさま",     file: "taiyou2.png", round: true, retired: true },
+  { id: "ouchi",      name: "おうち",       file: "ouchi.png", round: true },
+  { id: "yokudekita", name: "よくできたね", file: "yokudekita.png", round: true },
+  { id: "nikoboshi",  name: "にこにこぼし", file: "nikoboshi.png", round: true },
+  { id: "ashiato",    name: "あしあと",     file: "ashiato.png", round: true },
+  { id: "oukan",      name: "おうかん",     file: "oukan.png", round: true, retired: true },
+  { id: "futaba",     name: "ふたば",       file: "futaba.png", round: true },
   // ---- 2026-10-03 追加：まるい シール 30まい ----
   { id: "mii_yatta", name: "みー やったー", file: "mii_yatta.png", round: true },
   { id: "koro_nikkori", name: "ころ にっこり", file: "koro_nikkori.png", round: true },

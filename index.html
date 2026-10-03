@@ -1422,12 +1422,13 @@ details.hist summary{cursor:pointer;font-weight:700;color:var(--muted);font-size
   function hashStr(s){ let h=2166136261; for(const c of s){ h^=c.charCodeAt(0); h=Math.imul(h,16777619); } return h>>>0; }
   // シールの えがら：もとから ある えがら ＋ stickers/stickers.js の 画像シール
   MOTIFS.forEach(m=>{ m.id = "b:"+m.name; });
-  const POOL = MOTIFS.concat((window.STICKERS||[]).map(x=>({id:x.id, name:x.name, img:"stickers/"+x.file, round:!!x.round})));
+  const POOL = MOTIFS.concat((window.STICKERS||[]).map(x=>({id:x.id, name:x.name, img:"stickers/"+x.file, round:!!x.round, retired:!!x.retired})));
+  const PICK = POOL.filter(m=>!m.retired);   // あたらしい 日に でる えがら
   function motifFor(dk){
     const a = stats.album && stats.album[dk], h = hashStr("stk"+dk);
     if(a && a.mid){ const m = POOL.find(x=>x.id===a.mid); if(m) return m; }
     if(a) return MOTIFS[h%MOTIFS.length];   // まえに もらった シールは もとの えがら のまま
-    return POOL[h%POOL.length];
+    return PICK[h%PICK.length];
   }
   function motifArt(mo){ return !mo.img ? mo.svg : mo.round ? `<image href="${mo.img}" x="9" y="9" width="82" height="82"/>` : `<image href="${mo.img}" x="19" y="19" width="62" height="62"/>`; }
   function designFor(dk){ const h=hashStr("stk"+dk); return {mo:motifFor(dk), p:(h>>>8)%PALS.length}; }
