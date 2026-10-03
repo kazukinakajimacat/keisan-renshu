@@ -1422,14 +1422,14 @@ details.hist summary{cursor:pointer;font-weight:700;color:var(--muted);font-size
   function hashStr(s){ let h=2166136261; for(const c of s){ h^=c.charCodeAt(0); h=Math.imul(h,16777619); } return h>>>0; }
   // シールの えがら：もとから ある えがら ＋ stickers/stickers.js の 画像シール
   MOTIFS.forEach(m=>{ m.id = "b:"+m.name; });
-  const POOL = MOTIFS.concat((window.STICKERS||[]).map(x=>({id:x.id, name:x.name, img:"stickers/"+x.file})));
+  const POOL = MOTIFS.concat((window.STICKERS||[]).map(x=>({id:x.id, name:x.name, img:"stickers/"+x.file, round:!!x.round})));
   function motifFor(dk){
     const a = stats.album && stats.album[dk], h = hashStr("stk"+dk);
     if(a && a.mid){ const m = POOL.find(x=>x.id===a.mid); if(m) return m; }
     if(a) return MOTIFS[h%MOTIFS.length];   // まえに もらった シールは もとの えがら のまま
     return POOL[h%POOL.length];
   }
-  function motifArt(mo){ return mo.img ? `<image href="${mo.img}" x="19" y="19" width="62" height="62"/>` : mo.svg; }
+  function motifArt(mo){ return !mo.img ? mo.svg : mo.round ? `<image href="${mo.img}" x="9" y="9" width="82" height="82"/>` : `<image href="${mo.img}" x="19" y="19" width="62" height="62"/>`; }
   function designFor(dk){ const h=hashStr("stk"+dk); return {mo:motifFor(dk), p:(h>>>8)%PALS.length}; }
 
   function stickerSVG(dk, tier, size){
@@ -1450,7 +1450,7 @@ details.hist summary{cursor:pointer;font-weight:700;color:var(--muted);font-size
       <g class="kiran"><path d="M78 20 L80.5 27.5 L88 30 L80.5 32.5 L78 40 L75.5 32.5 L68 30 L75.5 27.5 Z" fill="#fff" stroke="#F5C518" stroke-width="1.2" stroke-linejoin="round"/></g>` : "";
     const spark = tier==="super"||tier==="ultra" ? `<g class="${tier==="ultra"?"twinkle":""}" fill="#fff" stroke="${K}" stroke-width=".8"><path d="M10 52 l2 5 5 2 -5 2 -2 5 -2 -5 -5 -2 5 -2z"/><path d="M88 60 l1.6 4 4 1.6 -4 1.6 -1.6 4 -1.6 -4 -4 -1.6 4 -1.6z"/></g>` : "";
     return `<svg class="stk" viewBox="0 0 100 100" width="${size}" height="${size}" role="img" aria-label="${mo.name}の シール ${tierByKey(tier).label}">${ring}
-      <circle cx="50" cy="50" r="38" fill="${bg}" stroke="${K}" stroke-width="2"/>${motifArt(mo)}${stars.map(([x,y])=>star(x,y)).join("")}${spark}${shine}</svg>`;
+      ${mo.round ? "" : `<circle cx="50" cy="50" r="38" fill="${bg}" stroke="${K}" stroke-width="2"/>`}${motifArt(mo)}${stars.map(([x,y])=>star(x,y)).join("")}${spark}${shine}</svg>`;
   }
   function stickerPreview(dk, size){
     const mo = motifFor(dk);
