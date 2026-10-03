@@ -377,16 +377,17 @@ details.hist summary{cursor:pointer;font-weight:700;color:var(--muted);font-size
 /* characters */
 .buddies{display:flex;align-items:flex-end;justify-content:space-between;gap:8px}
 .pet{width:88px;flex:0 0 88px;display:flex;flex-direction:column;align-items:center;gap:0}
-.pet svg{width:88px;height:88px;display:block;overflow:visible}
+.pet .pet-face{width:88px;height:88px;position:relative}
+.pet .pet-face img{position:absolute;inset:0;width:100%;height:100%;user-select:none;-webkit-user-select:none;-webkit-touch-callout:none}
 .pet .name{font-size:13px;font-weight:700;color:var(--muted);margin-top:-2px}
 .pet .f-h,.pet .f-s,.pet .f-b{display:none}
 .pet.happy .f-n,.pet.sad .f-n,.pet.wow .f-n{display:none}
-.pet.wow .f-b{display:inline}
-.pet.happy .f-h{display:inline}
-.pet.sad .f-s{display:inline}
-.pet.happy svg{animation:hop .45s ease-out 2}
-.pet.wow svg{animation:hop .35s ease-out 3}
-.pet.sad svg{animation:tilt .7s ease-in-out 1}
+.pet.wow .f-b{display:block}
+.pet.happy .f-h{display:block}
+.pet.sad .f-s{display:block}
+.pet.happy .pet-face{animation:hop .45s ease-out 2}
+.pet.wow .pet-face{animation:hop .35s ease-out 3}
+.pet.sad .pet-face{animation:tilt .7s ease-in-out 1}
 @keyframes hop{0%,100%{transform:translateY(0)}40%{transform:translateY(-12px)}}
 @keyframes tilt{0%,100%{transform:rotate(0)}35%{transform:rotate(-7deg)}70%{transform:rotate(5deg)}}
 .bubble{
@@ -402,7 +403,7 @@ details.hist summary{cursor:pointer;font-weight:700;color:var(--muted);font-size
 .bubble.from-dog::after{right:-9px;border-bottom:0;border-left:0}
 .sum-pets{display:flex;justify-content:center;gap:12px}
 .sum-pets .pet{width:72px;flex-basis:72px}
-.sum-pets .pet svg{width:72px;height:72px}
+.sum-pets .pet .pet-face{width:72px;height:72px}
 
 @media (prefers-reduced-motion: reduce){*{transition:none!important;animation:none!important}}
 @keyframes pop{0%{transform:scale(.7);opacity:0}100%{transform:scale(1);opacity:1}}
@@ -602,60 +603,11 @@ details.hist summary{cursor:pointer;font-weight:700;color:var(--muted);font-size
   const opText = op => op === "+" ? "+" : "−";
 
   /* ---------- キャラクター（ねこの みー と いぬの ころ） ---------- */
-  const INK="#3B2A24";
-  const shine=(x,y)=>`<circle cx="${x+2}" cy="${y-2.6}" r="2.3" fill="#fff"/><circle cx="${x-1.8}" cy="${y+2.4}" r="1.1" fill="#fff"/>`;
-  const eyeOpen=(x,y)=>`<ellipse cx="${x}" cy="${y}" rx="5.6" ry="6.6" fill="${INK}"/>${shine(x,y)}`;
-  const eyeArc=(x,y)=>`<path d="M${x-5.5} ${y+1.5} Q${x} ${y-5.5} ${x+5.5} ${y+1.5}" fill="none" stroke="${INK}" stroke-width="3" stroke-linecap="round"/>`;
-  const eyeSad=(x,y,d)=>`<ellipse cx="${x}" cy="${y+1}" rx="4.6" ry="5.2" fill="${INK}"/><circle cx="${x+1.6}" cy="${y-1}" r="1.7" fill="#fff"/>
-    <path d="M${x-6*d} ${y-7} L${x+5*d} ${y-10.5}" stroke="${INK}" stroke-width="2.4" stroke-linecap="round"/>`;
-  const tear=(x,y)=>`<path d="M${x} ${y} Q${x-3.2} ${y+5} ${x} ${y+6.6} Q${x+3.2} ${y+5} ${x} ${y} Z" fill="#8CC8F2" stroke="#4E9BD6" stroke-width="1"/>`;
-  const openMouth=(cx,y,w,h)=>`<path d="M${cx-w} ${y} Q${cx} ${y+h} ${cx+w} ${y} Q${cx} ${y+2.5} ${cx-w} ${y} Z" fill="#E86F7B" stroke="${INK}" stroke-width="2.2" stroke-linejoin="round"/>
-    <path d="M${cx-w*.55} ${y+h*.62} Q${cx} ${y+h*.34} ${cx+w*.55} ${y+h*.62} Q${cx} ${y+h*.86} ${cx-w*.55} ${y+h*.62} Z" fill="#F7A5AC"/>`;
-  const eyeWow=(x,y)=>`<circle cx="${x}" cy="${y}" r="7" fill="#fff" stroke="${INK}" stroke-width="2.2"/><circle cx="${x}" cy="${y+.5}" r="3.6" fill="${INK}"/><circle cx="${x+1.3}" cy="${y-1}" r="1.2" fill="#fff"/>`;
-  const ohMouth=(cx,y)=>`<ellipse cx="${cx}" cy="${y}" rx="3.6" ry="4.6" fill="#E86F7B" stroke="${INK}" stroke-width="2.2"/>`;
-  const bang=`<path d="M41 4 L44 13 M59 4 L56 13" stroke="#F06A4A" stroke-width="3" stroke-linecap="round"/>`;
-  const blush=(y)=>`<ellipse cx="25" cy="${y}" rx="6" ry="3.6" fill="#F59A9A" opacity=".5"/><ellipse cx="75" cy="${y}" rx="6" ry="3.6" fill="#F59A9A" opacity=".5"/>`;
-  const paw=(x,fill)=>`<path d="M${x-10} 99 Q${x-11} 86 ${x} 85 Q${x+11} 86 ${x+10} 99 Z" fill="${fill}" stroke="${INK}" stroke-width="2.6" stroke-linejoin="round"/>
-    <path d="M${x-3.5} 91 L${x-3.5} 96 M${x+3.5} 91 L${x+3.5} 96" stroke="${INK}" stroke-width="1.8" stroke-linecap="round"/>`;
-
-  const CAT_SVG=`<svg viewBox="0 0 100 100" aria-hidden="true">
-    <path d="M15 46 C12 32 14 18 20 7 C29 11 38 18 45 27 Z" fill="#A8A4A3" stroke="${INK}" stroke-width="3" stroke-linejoin="round"/>
-    <path d="M85 46 C88 32 86 18 80 7 C71 11 62 18 55 27 Z" fill="#A8A4A3" stroke="${INK}" stroke-width="3" stroke-linejoin="round"/>
-    <path d="M21 35 C20 27 21 19 23.5 13 C29 16 34 21 38 27 Z" fill="#F6BDB4"/>
-    <path d="M79 35 C80 27 79 19 76.5 13 C71 16 66 21 62 27 Z" fill="#F6BDB4"/>
-    <path d="M10 59 C10 36 28 24 50 24 C72 24 90 36 90 59 C90 79 72 90 50 90 C28 90 10 79 10 59 Z" fill="#A8A4A3"/>
-    <path d="M50 38 C44 38 41 47 34 53 C28 58 25 66 28 74 C32 83 41 88.5 50 88.5 C59 88.5 68 83 72 74 C75 66 72 58 66 53 C59 47 56 38 50 38 Z" fill="#FFFFFF"/>
-    <path d="M42 27 Q44.5 33 43 39 M50 25.5 L50 36 M58 27 Q55.5 33 57 39" stroke="#7C7675" stroke-width="3.4" stroke-linecap="round" fill="none"/>
-    <path d="M11.5 53 L20 54.5 M11 61 L19 60.5 M88.5 53 L80 54.5 M89 61 L81 60.5" stroke="#7C7675" stroke-width="3" stroke-linecap="round"/>
-    <path d="M10 59 C10 36 28 24 50 24 C72 24 90 36 90 59 C90 79 72 90 50 90 C28 90 10 79 10 59 Z" fill="none" stroke="${INK}" stroke-width="3"/>
-    ${blush(70)}
-    <path d="M47 65 L53 65 Q53 67 50 68.6 Q47 67 47 65 Z" fill="#E98A8A" stroke="${INK}" stroke-width="1.4" stroke-linejoin="round"/>
-    <g class="f-n">${eyeOpen(36,58)}${eyeOpen(64,58)}${openMouth(50,70.5,5.5,8)}</g>
-    <g class="f-h">${eyeOpen(36,58)}${eyeArc(64,59)}${openMouth(50,70,8.5,14)}</g>
-    <g class="f-s">${eyeSad(36,58,1)}${eyeSad(64,58,-1)}
-      <path d="M45 75 Q50 71 55 75" fill="none" stroke="${INK}" stroke-width="2.4" stroke-linecap="round"/></g>
-    <g class="f-b">${eyeWow(36,57)}${eyeWow(64,57)}${ohMouth(50,74)}${bang}</g>
-    <path d="M3 64 L19 66 M3 72 L19 70 M97 64 L81 66 M97 72 L81 70" stroke="${INK}" stroke-width="1.6" stroke-linecap="round"/>
-    ${paw(30,"#FFFFFF")}${paw(70,"#FFFFFF")}
-  </svg><div class="name">みー</div>`;
-
-  const DOG_SVG=`<svg viewBox="0 0 100 100" aria-hidden="true">
-    <path d="M16 57 C16 36 31 23 50 23 C69 23 84 36 84 57 C84 78 69 90 50 90 C31 90 16 78 16 57 Z" fill="#EDB672" stroke="${INK}" stroke-width="3"/>
-    <path d="M45 24.5 Q48 17 53 19 Q50 21 55 24" fill="#EDB672" stroke="${INK}" stroke-width="2.6" stroke-linejoin="round" stroke-linecap="round"/>
-    <path d="M33 27 C19 22 7 34 7 53 C7 67 13 74 19 72 C24 70 24 61 24 54 C24 44 27 36 35 31 Z" fill="#D69A55" stroke="${INK}" stroke-width="3" stroke-linejoin="round"/>
-    <path d="M67 27 C81 22 93 34 93 53 C93 67 87 74 81 72 C76 70 76 61 76 54 C76 44 73 36 65 31 Z" fill="#D69A55" stroke="${INK}" stroke-width="3" stroke-linejoin="round"/>
-    <ellipse cx="50" cy="71" rx="17" ry="13" fill="#FBE3BE"/>
-    <path d="M35 44 Q39 41.5 43 44 M57 44 Q61 41.5 65 44" fill="none" stroke="#B87E3E" stroke-width="2.4" stroke-linecap="round"/>
-    <ellipse cx="31" cy="71" rx="5.5" ry="3.4" fill="#F59A9A" opacity=".55"/><ellipse cx="69" cy="71" rx="5.5" ry="3.4" fill="#F59A9A" opacity=".55"/>
-    <ellipse cx="50" cy="64" rx="6.2" ry="4.6" fill="${INK}"/><ellipse cx="48.2" cy="62.5" rx="2" ry="1.2" fill="#fff" opacity=".85"/>
-    <path d="M50 68.5 L50 71" stroke="${INK}" stroke-width="2.2" stroke-linecap="round"/>
-    <g class="f-n">${eyeOpen(38,55)}${eyeOpen(62,55)}${openMouth(50,71,5.5,8)}</g>
-    <g class="f-h">${eyeOpen(38,55)}${eyeArc(62,56)}${openMouth(50,71,8.5,14)}</g>
-    <g class="f-b">${eyeWow(38,54)}${eyeWow(62,54)}${ohMouth(50,75)}${bang}</g>
-    <g class="f-s">${eyeSad(38,55,1)}${eyeSad(62,55,-1)}
-      <path d="M45 76 Q50 72 55 76" fill="none" stroke="${INK}" stroke-width="2.4" stroke-linecap="round"/></g>
-    ${paw(31,"#EDB672")}${paw(69,"#EDB672")}
-  </svg><div class="name">ころ</div>`;
+  // みー と ころ：ひょうじょうごとの え（にっこり・ウインク・びっくり・しょんぼり）
+  const petHTML = (who, name) => `<div class="pet-face" aria-hidden="true">${[["n","normal"],["h","happy"],["b","wow"],["s","sad"]]
+    .map(([c,f])=>`<img class="f-${c}" src="chars/${who}_${f}.webp" alt="" draggable="false">`).join("")}</div><div class="name">${name}</div>`;
+  const CAT_SVG = petHTML("mii", "みー");
+  const DOG_SVG = petHTML("koro", "ころ");
 
   const catEl=$("cat"), dogEl=$("dog"), bubbleEl=$("bubble");
   catEl.innerHTML=CAT_SVG; dogEl.innerHTML=DOG_SVG;
