@@ -1739,7 +1739,8 @@ details.hist summary{cursor:pointer;font-weight:700;color:var(--muted);font-size
   const PALS = ["#FFE6EE","#E3F2FF","#E6F7EC","#FFF4D6","#EEE8FF","#FFEBDD","#E0F7F6","#F4F0E6"];
   function hashStr(s){ let h=2166136261; for(const c of s){ h^=c.charCodeAt(0); h=Math.imul(h,16777619); } return h>>>0; }
   // シールの えがら：もとから ある えがら ＋ stickers/stickers.js の 画像シール
-  MOTIFS.forEach(m=>{ m.id = "b:"+m.name; });
+  // もとから ある 14しゅるいは えがらを そろえる ため、あたらしい 日には ださない（もらった シールは そのまま のこる）
+  MOTIFS.forEach(m=>{ m.id = "b:"+m.name; m.retired = true; });
   const POOL = MOTIFS.concat((window.STICKERS||[]).map(x=>({id:x.id, name:x.name, img:"stickers/"+x.file, round:!!x.round, retired:!!x.retired})));
   const PICK = POOL.filter(m=>!m.retired);   // あたらしい 日に でる えがら
   function motifFor(dk){
