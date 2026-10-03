@@ -1,5 +1,9 @@
 <!doctype html><html><head><meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1,viewport-fit=cover"><style>:root{color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}html{scroll-padding-top:env(safe-area-inset-top,0px)}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#faf9f5;color:#141413}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}</style></head><body>
 <title>けいさん れんしゅう</title>
+<link rel="icon" type="image/png" href="favicon.png">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<link rel="manifest" href="manifest.json">
+<meta name="apple-mobile-web-app-title" content="けいさん">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Zen+Maru+Gothic:wght@500;700;900&display=swap">
@@ -318,14 +322,15 @@ details.hist summary{cursor:pointer;font-weight:700;color:var(--muted);font-size
 /* characters */
 .buddies{display:flex;align-items:flex-end;justify-content:space-between;gap:8px}
 .pet{width:88px;flex:0 0 88px;display:flex;flex-direction:column;align-items:center;gap:0}
-.pet svg{width:88px;height:88px;display:block;overflow:visible}
+.pet svg,.pet .pet-img{width:88px;height:88px;display:block;overflow:visible}
+.pet .pet-img{border-radius:50%;box-shadow:0 2px 0 var(--btn-shadow);user-select:none;-webkit-user-select:none}
 .pet .name{font-size:13px;font-weight:700;color:var(--muted);margin-top:-2px}
 .pet .f-h,.pet .f-s{display:none}
 .pet.happy .f-n,.pet.sad .f-n{display:none}
 .pet.happy .f-h{display:inline}
 .pet.sad .f-s{display:inline}
-.pet.happy svg{animation:hop .45s ease-out 2}
-.pet.sad svg{animation:tilt .7s ease-in-out 1}
+.pet.happy svg,.pet.happy .pet-img{animation:hop .45s ease-out 2}
+.pet.sad svg,.pet.sad .pet-img{animation:tilt .7s ease-in-out 1}
 @keyframes hop{0%,100%{transform:translateY(0)}40%{transform:translateY(-12px)}}
 @keyframes tilt{0%,100%{transform:rotate(0)}35%{transform:rotate(-7deg)}70%{transform:rotate(5deg)}}
 .bubble{
@@ -341,7 +346,7 @@ details.hist summary{cursor:pointer;font-weight:700;color:var(--muted);font-size
 .bubble.from-dog::after{right:-9px;border-bottom:0;border-left:0}
 .sum-pets{display:flex;justify-content:center;gap:12px}
 .sum-pets .pet{width:72px;flex-basis:72px}
-.sum-pets .pet svg{width:72px;height:72px}
+.sum-pets .pet svg,.sum-pets .pet .pet-img{width:72px;height:72px}
 
 @media (prefers-reduced-motion: reduce){*{transition:none!important;animation:none!important}}
 @keyframes pop{0%{transform:scale(.7);opacity:0}100%{transform:scale(1);opacity:1}}
@@ -539,47 +544,8 @@ details.hist summary{cursor:pointer;font-weight:700;color:var(--muted);font-size
   const opText = op => op === "+" ? "+" : "−";
 
   /* ---------- キャラクター（ねこの みー と いぬの ころ） ---------- */
-  const INK="#3B2F2A";
-  const eyes = (lx,rx,y) => `
-    <g class="f-n"><circle cx="${lx}" cy="${y}" r="4.6" fill="${INK}"/><circle cx="${rx}" cy="${y}" r="4.6" fill="${INK}"/>
-      <circle cx="${lx+1.6}" cy="${y-1.8}" r="1.5" fill="#fff"/><circle cx="${rx+1.6}" cy="${y-1.8}" r="1.5" fill="#fff"/></g>
-    <g class="f-h" fill="none" stroke="${INK}" stroke-width="3.2" stroke-linecap="round">
-      <path d="M${lx-5} ${y+2} Q${lx} ${y-5} ${lx+5} ${y+2}"/><path d="M${rx-5} ${y+2} Q${rx} ${y-5} ${rx+5} ${y+2}"/></g>
-    <g class="f-s"><circle cx="${lx}" cy="${y+1}" r="3.8" fill="${INK}"/><circle cx="${rx}" cy="${y+1}" r="3.8" fill="${INK}"/>
-      <path d="M${lx-6} ${y-5} L${lx+4} ${y-9}" stroke="${INK}" stroke-width="2.6" stroke-linecap="round"/>
-      <path d="M${rx+6} ${y-5} L${rx-4} ${y-9}" stroke="${INK}" stroke-width="2.6" stroke-linecap="round"/></g>`;
-
-  const CAT_SVG = `<svg viewBox="0 0 100 100" aria-hidden="true">
-    <path d="M16 44 L20 8 L46 28 Z" fill="#F2A65A" stroke="${INK}" stroke-width="3" stroke-linejoin="round"/>
-    <path d="M84 44 L80 8 L54 28 Z" fill="#F2A65A" stroke="${INK}" stroke-width="3" stroke-linejoin="round"/>
-    <path d="M22 34 L24 16 L37 27 Z" fill="#F7C6C0"/><path d="M78 34 L76 16 L63 27 Z" fill="#F7C6C0"/>
-    <ellipse cx="50" cy="57" rx="38" ry="33" fill="#F2A65A" stroke="${INK}" stroke-width="3"/>
-    <path d="M44 26 Q46 33 44 38 M50 25 L50 37 M56 26 Q54 33 56 38" stroke="#D07A34" stroke-width="3.2" stroke-linecap="round" fill="none"/>
-    <ellipse cx="50" cy="70" rx="15" ry="11" fill="#FFF3E6"/>
-    <ellipse cx="27" cy="66" rx="6" ry="4" fill="#F28B82" opacity=".55"/><ellipse cx="73" cy="66" rx="6" ry="4" fill="#F28B82" opacity=".55"/>
-    ${eyes(36,64,54)}
-    <path d="M46 63 L54 63 L50 67.5 Z" fill="#E9727C" stroke="${INK}" stroke-width="1.6" stroke-linejoin="round"/>
-    <g class="f-n f-s-mouth"><path d="M43 70 Q46.5 74 50 70 Q53.5 74 57 70" fill="none" stroke="${INK}" stroke-width="2.4" stroke-linecap="round"/></g>
-    <g class="f-h"><path d="M43 69 Q50 80 57 69 Z" fill="#E9727C" stroke="${INK}" stroke-width="2.2" stroke-linejoin="round"/></g>
-    <g class="f-s"><path d="M45 73 Q50 69 55 73" fill="none" stroke="${INK}" stroke-width="2.4" stroke-linecap="round"/></g>
-    <path d="M14 60 L28 62 M14 69 L28 67 M86 60 L72 62 M86 69 L72 67" stroke="${INK}" stroke-width="1.8" stroke-linecap="round"/>
-  </svg><div class="name">みー</div>`;
-
-  const DOG_SVG = `<svg viewBox="0 0 100 100" aria-hidden="true">
-    <ellipse cx="50" cy="56" rx="36" ry="34" fill="#F6E4C6" stroke="${INK}" stroke-width="3"/>
-    <ellipse cx="63" cy="50" rx="12" ry="11" fill="#C9955F" opacity=".75"/>
-    <ellipse cx="17" cy="46" rx="11" ry="23" transform="rotate(18 17 46)" fill="#9C6A43" stroke="${INK}" stroke-width="3"/>
-    <ellipse cx="83" cy="46" rx="11" ry="23" transform="rotate(-18 83 46)" fill="#9C6A43" stroke="${INK}" stroke-width="3"/>
-    <ellipse cx="50" cy="70" rx="17" ry="13" fill="#FFFBF3"/>
-    <ellipse cx="28" cy="66" rx="5.5" ry="3.8" fill="#F28B82" opacity=".5"/><ellipse cx="72" cy="66" rx="5.5" ry="3.8" fill="#F28B82" opacity=".5"/>
-    ${eyes(37,63,50)}
-    <ellipse cx="50" cy="63" rx="6.5" ry="4.8" fill="${INK}"/><ellipse cx="48" cy="61.5" rx="2" ry="1.2" fill="#fff" opacity=".8"/>
-    <path d="M50 67.5 L50 71" stroke="${INK}" stroke-width="2.2" stroke-linecap="round"/>
-    <g class="f-n"><path d="M42 71 Q46 75 50 71 Q54 75 58 71" fill="none" stroke="${INK}" stroke-width="2.4" stroke-linecap="round"/></g>
-    <g class="f-h"><path d="M42 71 Q46 75 50 71 Q54 75 58 71" fill="none" stroke="${INK}" stroke-width="2.4" stroke-linecap="round"/>
-      <path d="M46 73.5 Q46 83 50 83 Q54 83 54 73.5 Z" fill="#F07C86" stroke="${INK}" stroke-width="2" stroke-linejoin="round"/></g>
-    <g class="f-s"><path d="M44 75 Q50 71 56 75" fill="none" stroke="${INK}" stroke-width="2.4" stroke-linecap="round"/></g>
-  </svg><div class="name">ころ</div>`;
+  const CAT_SVG = `<img class="pet-img" src="mii.png" alt="" draggable="false"><div class="name">みー</div>`;
+  const DOG_SVG = `<img class="pet-img" src="koro.png" alt="" draggable="false"><div class="name">ころ</div>`;
 
   const catEl=$("cat"), dogEl=$("dog"), bubbleEl=$("bubble");
   catEl.innerHTML=CAT_SVG; dogEl.innerHTML=DOG_SVG;
