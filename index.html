@@ -427,6 +427,9 @@ details.hist summary{cursor:pointer;font-weight:700;color:var(--muted);font-size
 .bubble.from-cat::after{left:-9px;border-top:0;border-right:0}
 .bubble.from-dog::after{right:-9px;border-bottom:0;border-left:0}
 .sum-pets{display:flex;justify-content:center;gap:12px}
+.sum-cheer{width:min(260px,72%);aspect-ratio:4/3;height:auto;display:block;user-select:none;-webkit-user-select:none;animation:cheerIn .5s ease-out}
+@keyframes cheerIn{0%{transform:scale(.6) translateY(10px);opacity:0}70%{transform:scale(1.05)}100%{transform:scale(1);opacity:1}}
+@media (prefers-reduced-motion:reduce){.sum-cheer{animation:none}}
 .sum-pets .pet{width:72px;flex-basis:72px}
 .sum-pets .pet .pet-face{width:72px;height:72px}
 
@@ -636,7 +639,15 @@ details.hist summary{cursor:pointer;font-weight:700;color:var(--muted);font-size
 
   const catEl=$("cat"), dogEl=$("dog"), bubbleEl=$("bubble");
   catEl.innerHTML=CAT_SVG; dogEl.innerHTML=DOG_SVG;
-  $("sumPets").innerHTML = `<div class="pet happy">${CAT_SVG}</div><div class="pet happy">${DOG_SVG}</div>`;
+  // 20もん おわった ときの え（まいかい ランダム。つづけて おなじ えは ださない）
+  const CHEER = Array.from({length:11}, (_,i)=>`chars/cheer/cheer${String(i+1).padStart(2,"0")}.webp`);
+  const CHEER_KEY = "sansu-drill-cheer-v1";
+  function pickCheer(){
+    let last = -1; try{ last = +(localStorage.getItem(CHEER_KEY) ?? -1); }catch(e){}
+    let i; do{ i = Math.floor(Math.random()*CHEER.length); }while(CHEER.length>1 && i===last);
+    try{ localStorage.setItem(CHEER_KEY, String(i)); }catch(e){}
+    return CHEER[i];
+  }
 
   const pick = a => a[Math.floor(Math.random()*a.length)];
   const LINES = {
@@ -1429,6 +1440,7 @@ details.hist summary{cursor:pointer;font-weight:700;color:var(--muted);font-size
     $("sumScore").textContent = s.ok;
     $("sumTitle").textContent = (s.ok===ROUND ? "ぜんもん せいかい！すごい！" : "20もん おわったよ！");
     $("sumLevel").textContent = LEVELS[level].label;
+    $("sumPets").innerHTML = `<img class="sum-cheer" src="${pickCheer()}" alt="みー と ころ が よろこんで いるよ" draggable="false">`;
     if(pendingSticker){
       const ps = pendingSticker; pendingSticker = null;
       $("sumStk").innerHTML = `<div class="sum-stk-img">${stickerSVG(ps.dk, ps.tier, 120)}</div><div class="sum-stk-t">${stickerMessage(ps)}</div>`;
