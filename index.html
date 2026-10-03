@@ -1747,7 +1747,24 @@ details.hist summary{cursor:pointer;font-weight:700;color:var(--muted);font-size
     const a = stats.album && stats.album[dk], h = hashStr("stk"+dk);
     if(a && a.mid){ const m = POOL.find(x=>x.id===a.mid); if(m) return m; }
     if(a) return MOTIFS[h%MOTIFS.length];   // まえに もらった シールは もとの えがら のまま
-    return PICK[h%PICK.length];
+    // もらった かずが いちばん すくない えがらから えらぶ
+    //（さいしょは まだ もって いない もの → ぜんぶ そろったら 2しゅうめ も おなじ じゅんばんの きまりで）
+    // もちものは たんまつごとに ちがうので、おなじ 日でも たんまつごとに ちがう シールに なる
+    const cnt = ownedCounts(dk);
+    let min = Infinity; for(const m of PICK) min = Math.min(min, cnt.get(m.id)||0);
+    const pool = PICK.filter(m=>(cnt.get(m.id)||0)===min);
+    return pool[h%pool.length];
+  }
+  // dk いがいの 日に もらった えがらの かず（その日の シールは 1日じゅう かわらない）
+  function ownedCounts(except){
+    const c = new Map();
+    for(const k in (stats.album||{})) if(k!==except){ const id = motifFor(k).id; c.set(id, (c.get(id)||0)+1); }
+    return c;
+  }
+  // その えがらを dk までに なんまい もらったか（2まいめ いじょうは 2しゅうめ）
+  function copyNo(dk){
+    const id = motifFor(dk).id;
+    return Object.keys(stats.album).filter(k=>k<=dk && motifFor(k).id===id).length;
   }
   function motifArt(mo){ return !mo.img ? mo.svg : mo.round ? `<image href="${mo.img}" x="9" y="9" width="82" height="82"/>` : `<image href="${mo.img}" x="19" y="19" width="62" height="62"/>`; }
   function designFor(dk){ const h=hashStr("stk"+dk); return {mo:motifFor(dk), p:(h>>>8)%PALS.length}; }
@@ -1810,8 +1827,8 @@ details.hist summary{cursor:pointer;font-weight:700;color:var(--muted);font-size
     $("stkPips").innerHTML = STK_TIERS.map(x=>`<i class="${dn>=x.n?"on":""}" title="${x.label}"></i>`).join("");
   }
   function stickerMessage(ps){
-    const mo = motifFor(ps.dk), tl = tierByKey(ps.tier).label;
-    return ps.first ? `${mo.name}の シール ゲット！` : `${mo.name}の シールが ${tl}に しんか した！`;
+    const mo = motifFor(ps.dk), tl = tierByKey(ps.tier).label, no = copyNo(ps.dk);
+    return ps.first ? `${mo.name}の シール ゲット！${no>=2 ? `（${no}まいめ）` : ""}` : `${mo.name}の シールが ${tl}に しんか した！`;
   }
   function showStickerBanner(){
     const ps = pendingSticker; if(!ps) return; pendingSticker = null;
@@ -1858,10 +1875,14 @@ details.hist summary{cursor:pointer;font-weight:700;color:var(--muted);font-size
 
   function renderAlbum(){
     const keys = Object.keys(stats.album).sort().reverse();
-    $("albCount").textContent = `${keys.length}まい`;
+    const idOf = {}, nth = {}, seen = new Map();
+    for(const k of [...keys].reverse()){ const id = motifFor(k).id; idOf[k] = id; seen.set(id, (seen.get(id)||0)+1); nth[k] = seen.get(id); }
+    const kinds = PICK.filter(m=>seen.has(m.id)).length;
+    $("albCount").textContent = `${keys.length}まい・えがら ${kinds} / ${PICK.length}`;
     $("album").innerHTML = keys.length ? keys.map(k=>{
       const a = stats.album[k], [y,m,d] = k.split("-").map(Number);
-      return `<button class="alb" data-k="${k}">${stickerSVG(k, a.tier, 64)}<span class="num">${m}/${d}</span><small>${tierByKey(a.tier).label}</small></button>`;
+      const no = nth[k];
+      return `<button class="alb" data-k="${k}">${stickerSVG(k, a.tier, 64)}<span class="num">${m}/${d}</span><small>${tierByKey(a.tier).label}${no>=2 ? `・${no}まいめ` : ""}</small></button>`;
     }).join("") : `<div class="empty">いろいろ もんだいや ます けいさんで 30もん とくと、さいしょの シールが もらえるよ</div>`;
     document.querySelectorAll(".alb").forEach(b=>b.addEventListener("click",()=>{
       const k=b.dataset.k, a=stats.album[k], [y,m,d]=k.split("-").map(Number);
