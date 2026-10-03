@@ -322,15 +322,14 @@ details.hist summary{cursor:pointer;font-weight:700;color:var(--muted);font-size
 /* characters */
 .buddies{display:flex;align-items:flex-end;justify-content:space-between;gap:8px}
 .pet{width:88px;flex:0 0 88px;display:flex;flex-direction:column;align-items:center;gap:0}
-.pet svg,.pet .pet-img{width:88px;height:88px;display:block;overflow:visible}
-.pet .pet-img{border-radius:50%;box-shadow:0 2px 0 var(--btn-shadow);user-select:none;-webkit-user-select:none}
+.pet svg{width:88px;height:88px;display:block;overflow:visible}
 .pet .name{font-size:13px;font-weight:700;color:var(--muted);margin-top:-2px}
 .pet .f-h,.pet .f-s{display:none}
 .pet.happy .f-n,.pet.sad .f-n{display:none}
 .pet.happy .f-h{display:inline}
 .pet.sad .f-s{display:inline}
-.pet.happy svg,.pet.happy .pet-img{animation:hop .45s ease-out 2}
-.pet.sad svg,.pet.sad .pet-img{animation:tilt .7s ease-in-out 1}
+.pet.happy svg{animation:hop .45s ease-out 2}
+.pet.sad svg{animation:tilt .7s ease-in-out 1}
 @keyframes hop{0%,100%{transform:translateY(0)}40%{transform:translateY(-12px)}}
 @keyframes tilt{0%,100%{transform:rotate(0)}35%{transform:rotate(-7deg)}70%{transform:rotate(5deg)}}
 .bubble{
@@ -346,7 +345,7 @@ details.hist summary{cursor:pointer;font-weight:700;color:var(--muted);font-size
 .bubble.from-dog::after{right:-9px;border-bottom:0;border-left:0}
 .sum-pets{display:flex;justify-content:center;gap:12px}
 .sum-pets .pet{width:72px;flex-basis:72px}
-.sum-pets .pet svg,.sum-pets .pet .pet-img{width:72px;height:72px}
+.sum-pets .pet svg{width:72px;height:72px}
 
 @media (prefers-reduced-motion: reduce){*{transition:none!important;animation:none!important}}
 @keyframes pop{0%{transform:scale(.7);opacity:0}100%{transform:scale(1);opacity:1}}
@@ -544,8 +543,57 @@ details.hist summary{cursor:pointer;font-weight:700;color:var(--muted);font-size
   const opText = op => op === "+" ? "+" : "−";
 
   /* ---------- キャラクター（ねこの みー と いぬの ころ） ---------- */
-  const CAT_SVG = `<img class="pet-img" src="mii.png" alt="" draggable="false"><div class="name">みー</div>`;
-  const DOG_SVG = `<img class="pet-img" src="koro.png" alt="" draggable="false"><div class="name">ころ</div>`;
+  const INK="#3B2A24";
+  const shine=(x,y)=>`<circle cx="${x+2}" cy="${y-2.6}" r="2.3" fill="#fff"/><circle cx="${x-1.8}" cy="${y+2.4}" r="1.1" fill="#fff"/>`;
+  const eyeOpen=(x,y)=>`<ellipse cx="${x}" cy="${y}" rx="5.6" ry="6.6" fill="${INK}"/>${shine(x,y)}`;
+  const eyeArc=(x,y)=>`<path d="M${x-5.5} ${y+1.5} Q${x} ${y-5.5} ${x+5.5} ${y+1.5}" fill="none" stroke="${INK}" stroke-width="3" stroke-linecap="round"/>`;
+  const eyeSad=(x,y,d)=>`<ellipse cx="${x}" cy="${y+1}" rx="4.6" ry="5.2" fill="${INK}"/><circle cx="${x+1.6}" cy="${y-1}" r="1.7" fill="#fff"/>
+    <path d="M${x-6*d} ${y-7} L${x+5*d} ${y-10.5}" stroke="${INK}" stroke-width="2.4" stroke-linecap="round"/>`;
+  const tear=(x,y)=>`<path d="M${x} ${y} Q${x-3.2} ${y+5} ${x} ${y+6.6} Q${x+3.2} ${y+5} ${x} ${y} Z" fill="#8CC8F2" stroke="#4E9BD6" stroke-width="1"/>`;
+  const openMouth=(cx,y,w,h)=>`<path d="M${cx-w} ${y} Q${cx} ${y+h} ${cx+w} ${y} Q${cx} ${y+2.5} ${cx-w} ${y} Z" fill="#E86F7B" stroke="${INK}" stroke-width="2.2" stroke-linejoin="round"/>
+    <path d="M${cx-w*.55} ${y+h*.62} Q${cx} ${y+h*.34} ${cx+w*.55} ${y+h*.62} Q${cx} ${y+h*.86} ${cx-w*.55} ${y+h*.62} Z" fill="#F7A5AC"/>`;
+  const blush=(y)=>`<ellipse cx="25" cy="${y}" rx="6" ry="3.6" fill="#F59A9A" opacity=".5"/><ellipse cx="75" cy="${y}" rx="6" ry="3.6" fill="#F59A9A" opacity=".5"/>`;
+  const paw=(x,fill)=>`<path d="M${x-10} 99 Q${x-11} 86 ${x} 85 Q${x+11} 86 ${x+10} 99 Z" fill="${fill}" stroke="${INK}" stroke-width="2.6" stroke-linejoin="round"/>
+    <path d="M${x-3.5} 91 L${x-3.5} 96 M${x+3.5} 91 L${x+3.5} 96" stroke="${INK}" stroke-width="1.8" stroke-linecap="round"/>`;
+
+  const CAT_SVG=`<svg viewBox="0 0 100 100" aria-hidden="true">
+    <path d="M15 46 C12 32 14 18 20 7 C29 11 38 18 45 27 Z" fill="#A8A4A3" stroke="${INK}" stroke-width="3" stroke-linejoin="round"/>
+    <path d="M85 46 C88 32 86 18 80 7 C71 11 62 18 55 27 Z" fill="#A8A4A3" stroke="${INK}" stroke-width="3" stroke-linejoin="round"/>
+    <path d="M21 35 C20 27 21 19 23.5 13 C29 16 34 21 38 27 Z" fill="#F6BDB4"/>
+    <path d="M79 35 C80 27 79 19 76.5 13 C71 16 66 21 62 27 Z" fill="#F6BDB4"/>
+    <path d="M10 59 C10 36 28 24 50 24 C72 24 90 36 90 59 C90 79 72 90 50 90 C28 90 10 79 10 59 Z" fill="#A8A4A3"/>
+    <path d="M50 38 C44 38 41 47 34 53 C28 58 25 66 28 74 C32 83 41 88.5 50 88.5 C59 88.5 68 83 72 74 C75 66 72 58 66 53 C59 47 56 38 50 38 Z" fill="#FFFFFF"/>
+    <path d="M42 27 Q44.5 33 43 39 M50 25.5 L50 36 M58 27 Q55.5 33 57 39" stroke="#7C7675" stroke-width="3.4" stroke-linecap="round" fill="none"/>
+    <path d="M11.5 53 L20 54.5 M11 61 L19 60.5 M88.5 53 L80 54.5 M89 61 L81 60.5" stroke="#7C7675" stroke-width="3" stroke-linecap="round"/>
+    <path d="M10 59 C10 36 28 24 50 24 C72 24 90 36 90 59 C90 79 72 90 50 90 C28 90 10 79 10 59 Z" fill="none" stroke="${INK}" stroke-width="3"/>
+    ${blush(70)}
+    <path d="M47 65 L53 65 Q53 67 50 68.6 Q47 67 47 65 Z" fill="#E98A8A" stroke="${INK}" stroke-width="1.4" stroke-linejoin="round"/>
+    <g class="f-n">${eyeOpen(36,58)}${eyeOpen(64,58)}
+      <path d="M43 70.5 Q46.5 75 50 70.5 Q53.5 75 57 70.5" fill="none" stroke="${INK}" stroke-width="2.4" stroke-linecap="round"/></g>
+    <g class="f-h">${eyeOpen(36,58)}${eyeArc(64,59)}${openMouth(50,70,8.5,14)}</g>
+    <g class="f-s">${eyeSad(36,58,1)}${eyeSad(64,58,-1)}${tear(28,64)}
+      <path d="M45 75 Q50 71 55 75" fill="none" stroke="${INK}" stroke-width="2.4" stroke-linecap="round"/></g>
+    <path d="M3 64 L19 66 M3 72 L19 70 M97 64 L81 66 M97 72 L81 70" stroke="${INK}" stroke-width="1.6" stroke-linecap="round"/>
+    ${paw(30,"#FFFFFF")}${paw(70,"#FFFFFF")}
+  </svg><div class="name">みー</div>`;
+
+  const DOG_SVG=`<svg viewBox="0 0 100 100" aria-hidden="true">
+    <path d="M16 57 C16 36 31 23 50 23 C69 23 84 36 84 57 C84 78 69 90 50 90 C31 90 16 78 16 57 Z" fill="#EDB672" stroke="${INK}" stroke-width="3"/>
+    <path d="M45 24.5 Q48 17 53 19 Q50 21 55 24" fill="#EDB672" stroke="${INK}" stroke-width="2.6" stroke-linejoin="round" stroke-linecap="round"/>
+    <path d="M33 27 C19 22 7 34 7 53 C7 67 13 74 19 72 C24 70 24 61 24 54 C24 44 27 36 35 31 Z" fill="#D69A55" stroke="${INK}" stroke-width="3" stroke-linejoin="round"/>
+    <path d="M67 27 C81 22 93 34 93 53 C93 67 87 74 81 72 C76 70 76 61 76 54 C76 44 73 36 65 31 Z" fill="#D69A55" stroke="${INK}" stroke-width="3" stroke-linejoin="round"/>
+    <ellipse cx="50" cy="71" rx="17" ry="13" fill="#FBE3BE"/>
+    <path d="M35 44 Q39 41.5 43 44 M57 44 Q61 41.5 65 44" fill="none" stroke="#B87E3E" stroke-width="2.4" stroke-linecap="round"/>
+    <ellipse cx="31" cy="71" rx="5.5" ry="3.4" fill="#F59A9A" opacity=".55"/><ellipse cx="69" cy="71" rx="5.5" ry="3.4" fill="#F59A9A" opacity=".55"/>
+    <ellipse cx="50" cy="64" rx="6.2" ry="4.6" fill="${INK}"/><ellipse cx="48.2" cy="62.5" rx="2" ry="1.2" fill="#fff" opacity=".85"/>
+    <path d="M50 68.5 L50 71" stroke="${INK}" stroke-width="2.2" stroke-linecap="round"/>
+    <g class="f-n">${eyeOpen(38,55)}${eyeOpen(62,55)}
+      <path d="M42.5 71 Q46.2 75.5 50 71 Q53.8 75.5 57.5 71" fill="none" stroke="${INK}" stroke-width="2.4" stroke-linecap="round"/></g>
+    <g class="f-h">${eyeArc(38,56)}${eyeArc(62,56)}${openMouth(50,71,8.5,14)}</g>
+    <g class="f-s">${eyeSad(38,55,1)}${eyeSad(62,55,-1)}${tear(71,61)}
+      <path d="M45 76 Q50 72 55 76" fill="none" stroke="${INK}" stroke-width="2.4" stroke-linecap="round"/></g>
+    ${paw(31,"#EDB672")}${paw(69,"#EDB672")}
+  </svg><div class="name">ころ</div>`;
 
   const catEl=$("cat"), dogEl=$("dog"), bubbleEl=$("bubble");
   catEl.innerHTML=CAT_SVG; dogEl.innerHTML=DOG_SVG;
@@ -1346,8 +1394,8 @@ details.hist summary{cursor:pointer;font-weight:700;color:var(--muted);font-size
   const tierByKey = k => STK_TIERS.find(t=>t.key===k);
   const K = "#3B2F2A";
   const MOTIFS = [
-    {name:"ねこ", svg:`<path d="M31 42 L34 24 L45 35 Z M69 42 L66 24 L55 35 Z" fill="#F2A65A" stroke="${K}" stroke-width="2.5" stroke-linejoin="round"/><circle cx="50" cy="52" r="20" fill="#F2A65A" stroke="${K}" stroke-width="2.5"/><circle cx="43" cy="50" r="2.6" fill="${K}"/><circle cx="57" cy="50" r="2.6" fill="${K}"/><path d="M47 57 L53 57 L50 60 Z" fill="#E9727C"/><path d="M33 56 L41 57 M33 61 L41 60 M67 56 L59 57 M67 61 L59 60" stroke="${K}" stroke-width="1.5"/>`},
-    {name:"いぬ", svg:`<circle cx="50" cy="52" r="19" fill="#F6E4C6" stroke="${K}" stroke-width="2.5"/><ellipse cx="32" cy="48" rx="6.5" ry="13" transform="rotate(18 32 48)" fill="#9C6A43" stroke="${K}" stroke-width="2.5"/><ellipse cx="68" cy="48" rx="6.5" ry="13" transform="rotate(-18 68 48)" fill="#9C6A43" stroke="${K}" stroke-width="2.5"/><circle cx="44" cy="49" r="2.6" fill="${K}"/><circle cx="56" cy="49" r="2.6" fill="${K}"/><ellipse cx="50" cy="57" rx="4" ry="3" fill="${K}"/>`},
+    {name:"ねこ", svg:`<path d="M31 42 L34 24 L45 35 Z M69 42 L66 24 L55 35 Z" fill="#A8A4A3" stroke="${K}" stroke-width="2.5" stroke-linejoin="round"/><circle cx="50" cy="52" r="20" fill="#A8A4A3" stroke="${K}" stroke-width="2.5"/><circle cx="43" cy="50" r="2.6" fill="${K}"/><circle cx="57" cy="50" r="2.6" fill="${K}"/><path d="M47 57 L53 57 L50 60 Z" fill="#E9727C"/><path d="M33 56 L41 57 M33 61 L41 60 M67 56 L59 57 M67 61 L59 60" stroke="${K}" stroke-width="1.5"/>`},
+    {name:"いぬ", svg:`<circle cx="50" cy="52" r="19" fill="#EDB672" stroke="${K}" stroke-width="2.5"/><ellipse cx="32" cy="48" rx="6.5" ry="13" transform="rotate(18 32 48)" fill="#9C6A43" stroke="${K}" stroke-width="2.5"/><ellipse cx="68" cy="48" rx="6.5" ry="13" transform="rotate(-18 68 48)" fill="#9C6A43" stroke="${K}" stroke-width="2.5"/><circle cx="44" cy="49" r="2.6" fill="${K}"/><circle cx="56" cy="49" r="2.6" fill="${K}"/><ellipse cx="50" cy="57" rx="4" ry="3" fill="${K}"/>`},
     {name:"さかな", svg:`<path d="M66 50 L80 39 L80 61 Z" fill="#5FA2E8" stroke="${K}" stroke-width="2.5" stroke-linejoin="round"/><ellipse cx="48" cy="50" rx="21" ry="13" fill="#5FA2E8" stroke="${K}" stroke-width="2.5"/><circle cx="37" cy="47" r="2.8" fill="${K}"/><path d="M50 40 Q55 50 50 60" fill="none" stroke="${K}" stroke-width="2"/>`},
     {name:"ほし", svg:`<path d="M50 26 L56.5 42 L73 43 L60 53.5 L64.5 70 L50 60.5 L35.5 70 L40 53.5 L27 43 L43.5 42 Z" fill="#F5C518" stroke="${K}" stroke-width="2.5" stroke-linejoin="round"/><circle cx="45" cy="50" r="2" fill="${K}"/><circle cx="55" cy="50" r="2" fill="${K}"/>`},
     {name:"はーと", svg:`<path d="M50 70 C28 55 28 34 40 32 C46 31 50 36 50 40 C50 36 54 31 60 32 C72 34 72 55 50 70 Z" fill="#F0776B" stroke="${K}" stroke-width="2.5" stroke-linejoin="round"/>`},
