@@ -226,6 +226,8 @@ details.hist summary{cursor:pointer;font-weight:700;color:var(--muted);font-size
 .gstart{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;background:color-mix(in srgb,var(--surface) 55%,transparent);border-radius:18px}
 .gresult{background:var(--surface);border:2px solid var(--line);border-radius:22px;padding:20px;display:flex;flex-direction:column;gap:16px}
 .gresult .next{align-self:center}
+.gr-stk{font-weight:700;color:var(--blue);font-size:15px}
+.gr-stk:empty{display:none}
 .gr-rec{align-self:center;background:var(--yellow);color:#2A2112;font-weight:900;border-radius:999px;padding:2px 16px}
 #gpad .choice{padding:10px 0}
 
@@ -477,6 +479,7 @@ details.hist summary{cursor:pointer;font-weight:700;color:var(--muted);font-size
         <div class="score"><b class="num" id="grScore">0</b> / 25 もん せいかい</div>
         <div class="score">じかん <b class="num gr-time" id="grTime">0:00</b></div>
         <div class="gr-rec" id="grRec" hidden>しんきろく！</div>
+        <div class="gr-stk" id="grStk"></div>
       </div>
       <div class="parent" id="grParent">
         <h3>おうちの方へ</h3>
@@ -1619,12 +1622,16 @@ details.hist summary{cursor:pointer;font-weight:700;color:var(--muted);font-size
     const miss = G.cells.filter(c=>!c.ok);
     // 記録はぜんもん正解のときだけ
     const isRec = okN===G.cells.length && (!gbest[gkind] || total<gbest[gkind]);
-    if(isRec){ gbest[gkind]=total; try{ lsSet(GBEST_KEY, JSON.stringify(gbest)); }catch(e){} }
+    if(isRec){ gbest[gkind]=total; try{ lsSet(GBEST_KEY, JSON.stringify(gbest)); }catch(e){} $("gbest").textContent = fmtT(total); }
     $("grScore").textContent=okN; $("grTime").textContent=fmtT(total);
     $("grRec").hidden=!isRec;
     $("grTitle").textContent = okN===G.cells.length ? "ぜんぶ せいかい！" : "さいごまで できたね！";
+    // シール：せいかいした ますの かず ＋ じこベスト こうしんで 5もん ボーナス
+    const gain = okN + (isRec ? 5 : 0);
+    if(gain) stickerAdd(gain);
+    $("grStk").textContent = gain ? `シールが ${gain}もんぶん すすんだよ${isRec ? "（しんきろく ボーナス +5）" : ""}` : "";
     setPets("happy","happy");
-    say(pick(["cat","dog"]), isRec ? "しんきろく だよ！すごい！" : "おつかれさま！");
+    say(pick(["cat","dog"]), isRec ? "しんきろく だよ！ボーナス 5もん！" : "おつかれさま！");
 
     const f=[];
     const avg = total/G.cells.length;
@@ -1647,7 +1654,8 @@ details.hist summary{cursor:pointer;font-weight:700;color:var(--muted);font-size
     try{ lsSet(STORE, JSON.stringify(history)); }catch(e){}
     renderHistory();
     $("gresult").scrollIntoView({behavior:"smooth", block:"start"});
-    if(pendingEvent) setTimeout(showGoalBanner, 700);
+    if(pendingSticker) setTimeout(showStickerBanner, 700);
+    else if(pendingEvent) setTimeout(showGoalBanner, 700);
   }
 
   // すうじパッド
@@ -1692,12 +1700,12 @@ details.hist summary{cursor:pointer;font-weight:700;color:var(--muted);font-size
     $("goalStreak").textContent = s>0 ? `つづけて ${s}にち` : "";
     $("goalStreak").hidden = s===0;
   }
-  /* ---------- きょうの シール（まいにち かわる・20もんごとに しんか） ---------- */
+  /* ---------- きょうの シール（まいにち かわる・とけた かずで しんか） ---------- */
   const STK_TIERS = [
-    {n:20, key:"normal", label:"ノーマル"},
-    {n:40, key:"rare",   label:"レア"},
-    {n:60, key:"super",  label:"スーパーレア"},
-    {n:80, key:"ultra",  label:"ウルトラレア"}
+    {n:30,  key:"normal", label:"ノーマル"},
+    {n:60,  key:"rare",   label:"レア"},
+    {n:100, key:"super",  label:"スーパーレア"},
+    {n:200, key:"ultra",  label:"ウルトラレア"}
   ];
   const tierByKey = k => STK_TIERS.find(t=>t.key===k);
   const K = "#3B2F2A";
@@ -1760,14 +1768,19 @@ details.hist summary{cursor:pointer;font-weight:700;color:var(--muted);font-size
   if(!stats.album) stats.album = {};
   let pendingSticker = null;
   // いろいろ もんだいを といた かず（きょうの ぶん）で シールが しんか
-  function stickerStep(){
+  // いろいろ もんだいは 1もんずつ、ます けいさんは 1まい おわったら まとめて たす
+  function stickerStep(){ return stickerAdd(1); }
+  function stickerAdd(n){
     const k = todayKey();
     const t = stats.days[k] || (stats.days[k] = {n:0, done:false});
-    t.dn = (t.dn||0) + 1;
-    const hit = STK_TIERS.find(x=>x.n===t.dn);
+    t.dn = (t.dn||0) + n;
+    const got = stats.album[k], curIdx = got ? STK_TIERS.findIndex(x=>x.key===got.tier) : -1;
+    const top = STK_TIERS.filter(x=>t.dn>=x.n).pop();
+    // いっきに ふたつ こえた ときは いちばん うえの ランクに する。ランクは さがらない
+    const hit = top && STK_TIERS.indexOf(top) > curIdx ? top : null;
     if(hit){
       stats.album[k] = {tier:hit.key, at:Date.now(), mid:motifFor(k).id};
-      pendingSticker = {dk:k, tier:hit.key, first:hit.key==="normal"};
+      pendingSticker = {dk:k, tier:hit.key, first:!got};
     }
     saveStats();
     renderStickerRow();
@@ -1794,8 +1807,8 @@ details.hist summary{cursor:pointer;font-weight:700;color:var(--muted);font-size
     bn.classList.add("evo");
     $("gbIcon").innerHTML = stickerSVG(ps.dk, ps.tier, 110);
     $("gbTitle").textContent = ps.first ? "シール ゲット！" : "シールが しんか した！";
-    const nx = STK_TIERS.find(x=>x.key!==ps.tier && x.n>tierByKey(ps.tier).n);
-    $("gbSub").textContent = `${stickerMessage(ps)}${nx ? `　あと 20もんで ${nx.label}` : "　きょうは さいこう ランク！"}`;
+    const nx = STK_TIERS.find(x=>x.n>tierByKey(ps.tier).n), dn = (stats.days[ps.dk]||{}).dn||0;
+    $("gbSub").textContent = `${stickerMessage(ps)}${nx ? `　あと ${Math.max(1,nx.n-dn)}もんで ${nx.label}` : "　きょうは さいこう ランク！"}`;
     bn.hidden=false;
     setPets("wow","wow");
     say(pick(["cat","dog"]), stickerMessage(ps));
@@ -1837,7 +1850,7 @@ details.hist summary{cursor:pointer;font-weight:700;color:var(--muted);font-size
     $("album").innerHTML = keys.length ? keys.map(k=>{
       const a = stats.album[k], [y,m,d] = k.split("-").map(Number);
       return `<button class="alb" data-k="${k}">${stickerSVG(k, a.tier, 64)}<span class="num">${m}/${d}</span><small>${tierByKey(a.tier).label}</small></button>`;
-    }).join("") : `<div class="empty">いろいろ もんだいを 20もん とくと、さいしょの シールが もらえるよ</div>`;
+    }).join("") : `<div class="empty">いろいろ もんだいや ます けいさんで 30もん とくと、さいしょの シールが もらえるよ</div>`;
     document.querySelectorAll(".alb").forEach(b=>b.addEventListener("click",()=>{
       const k=b.dataset.k, a=stats.album[k], [y,m,d]=k.split("-").map(Number);
       say(pick(["cat","dog"]), `${m}がつ ${d}にちの ${motifFor(k).name}の シール（${tierByKey(a.tier).label}）だよ`);
