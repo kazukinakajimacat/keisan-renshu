@@ -158,6 +158,45 @@ details.hist summary{cursor:pointer;font-weight:700;color:var(--muted);font-size
 .q.pic .tenframe{grid-template-columns:repeat(5,46px);grid-template-rows:repeat(2,46px)}
 .q.pic .tenframe span::after{width:32px;height:32px}
 .q.pic .ask{margin-top:0}
+/* かずの いみを かんがえる もんだい */
+.q.mid{font-size:clamp(34px,10.5vw,58px)}
+.q.small .ask,.q.mid .ask{font-size:20px;letter-spacing:.03em;white-space:normal}
+.q .xrow{display:flex;align-items:center;justify-content:center;gap:2px;flex-wrap:nowrap}
+.q .xrow.wrap,.explain .xrow{flex-wrap:wrap}
+.q .xcol,.explain .xcol{display:flex;flex-direction:column;gap:8px;align-items:flex-start}
+.xe{font-size:clamp(26px,8vw,36px);line-height:1.15;display:inline-flex;flex-direction:column;align-items:center;font-family:"Apple Color Emoji","Segoe UI Emoji","Noto Color Emoji",sans-serif}
+.xe small{font-size:13px;font-weight:900;color:var(--muted);font-family:inherit}
+.xrow.many .xe{font-size:clamp(20px,6.4vw,32px)}
+.xe.dim{opacity:.35}
+.xe.on{background:var(--ok-soft);border-radius:10px}
+.explain .say b.xe{font-size:34px}
+.xend{font-size:13px;font-weight:900;color:var(--muted);writing-mode:vertical-rl;letter-spacing:.1em;padding:0 2px}
+.xbig{font-size:clamp(48px,15vw,76px);font-weight:900;line-height:1}
+.xbig small{font-size:.4em;color:var(--muted);margin-left:.1em}
+.xnums{display:flex;gap:.55em;justify-content:center}
+.xseq{display:inline-flex;gap:.35em;align-items:center}
+.xseq .box{display:inline-block;min-width:1em;border:4px dashed var(--yellow);border-radius:12px;color:var(--muted);line-height:1.1;padding:0 .08em}
+.q.story .hints{list-style:none;margin:8px 0 0;padding:0;display:flex;flex-direction:column;gap:6px}
+.q.story .hints li{background:var(--frame);border-radius:12px;padding:6px 12px}
+.q.story .hints b{color:var(--blue);margin-right:.4em}
+.numline{display:grid;grid-template-columns:repeat(10,1fr);gap:3px;width:100%;max-width:360px}
+.numline span{font-weight:900;font-size:18px;border-radius:8px;padding:4px 0;background:var(--frame);text-align:center}
+.numline span.on{background:var(--ok);color:#fff}
+.numline span.soft{background:var(--ok-soft)}
+.numline span.dim{opacity:.3;text-decoration:line-through}
+.choice.emoji{font-size:clamp(30px,9vw,42px);padding:8px 0;font-family:"Apple Color Emoji","Segoe UI Emoji","Noto Color Emoji",sans-serif}
+.choices.order{display:flex;flex-direction:column;align-items:stretch;gap:14px}
+.oslots{display:flex;align-items:center;justify-content:center;gap:4px;flex-wrap:nowrap}
+.oslot{width:clamp(44px,13vw,58px);height:clamp(48px,14vw,62px);border:3px dashed var(--line);border-radius:14px;display:grid;place-items:center;font-size:clamp(24px,7vw,32px);font-weight:900}
+.oslot.fill{border-style:solid;border-color:var(--blue);background:var(--surface)}
+.oslot.right{border-color:var(--ok);background:var(--ok-soft);color:var(--ok)}
+.oslot.wrong{border-color:var(--ng);background:var(--ng-soft);color:var(--ng)}
+.oarrow{font-style:normal;color:var(--muted);font-weight:900}
+.otiles{display:flex;gap:10px;justify-content:center}
+.otiles .choice{flex:1;max-width:90px}
+.otiles .choice:disabled{opacity:.3}
+.oundo{align-self:center;font:inherit;font-weight:700;font-size:15px;color:var(--muted);background:none;border:2px solid var(--line);border-radius:999px;padding:6px 16px;cursor:pointer}
+.oundo:disabled{opacity:.4;cursor:default}
 .type-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(140px,1fr));gap:6px}
 .type-grid div{background:var(--frame);border-radius:10px;padding:6px 10px;font-size:13px;font-weight:700;display:flex;justify-content:space-between;gap:8px}
 .type-grid div.bad{background:var(--ng-soft)}
@@ -388,7 +427,7 @@ details.hist summary{cursor:pointer;font-weight:700;color:var(--muted);font-size
     <button class="lv" data-lv="hard" id="lv-hard">むずかしい</button>
     <button class="lv" data-lv="super" id="lv-super">ちょう むずかしい</button>
   </div>
-  <div class="super-note" id="superNote" hidden>まちがえた ことの ある もんだい だけ。1もん 10びょう！</div>
+  <div class="super-note" id="superNote" hidden>むずかしい もんだい ばかり。1もん 10びょう！</div>
   <div class="stkrow">
     <div class="stk-icon" id="stkIcon"></div>
     <div class="stk-txt"><div id="stkText"></div><div class="stk-next"><span id="stkNext"></span><span class="stk-pips" id="stkPips" aria-hidden="true"></span></div></div>
@@ -636,21 +675,36 @@ details.hist summary{cursor:pointer;font-weight:700;color:var(--muted);font-size
     pic:    {label:"え を みて",       name:"絵を見て",       base:12, slowBase:6000},
     word:   {label:"おはなし もんだい", name:"文章題",         base:18, slowBase:12000},
     three:  {label:"みっつの かず",    name:"3つの数",        base:12, slowBase:9000},
+    nth:    {label:"なんばんめ？",      name:"なんばんめ",     base:0, slowBase:7000},
+    more:   {label:"どちらが なんこ おおい？", name:"いくつ多い（比べる）", base:0, slowBase:9000},
+    atoiku: {label:"あと いくつ？",     name:"あといくつ",     base:0, slowBase:8000},
+    ten:    {label:"10に なるのは？",   name:"10になる数",     base:0, slowBase:6000},
+    sort:   {label:"ならべかえ",        name:"ならべかえ",     base:0, slowBase:10000},
+    next:   {label:"つぎの かず",       name:"つぎの数",       base:0, slowBase:5000},
+    prevnext:{label:"まえの かず・うしろの かず", name:"前の数・後の数", base:0, slowBase:5000},
+    guess:  {label:"かずを あてよう",   name:"かずをあてよう（ヒント）", base:0, slowBase:14000},
+    seq:    {label:"かずの れつ",       name:"数の列",         base:0, slowBase:6000},
+    bigger: {label:"どちらが おおきい？", name:"大きさくらべ",  base:0, slowBase:4000},
     grid:   {label:"ます けいさん",    name:"ます計算",       base:0,  slowBase:5000}
   };
   const TYPE_KEYS = Object.keys(TYPES);
 
   /* ---------- むずかしさ ---------- */
+  // 「見てわかる」→「考えてわかる」→「計算してわかる」の じゅんに、レベルで おもみを かえる
   const LEVELS = {
-    easy:  {label:"かんたん",  types:{plain:36, pic:18, decomp:14, word:16},
+    easy:  {label:"かんたん",  types:{plain:36, pic:18, decomp:14, word:16,
+                                     nth:7, bigger:7, next:7, seq:6, prevnext:6, ten:6, sort:5, atoiku:5, more:4, guess:3},
             words:["add","left"], three:null},
-    normal:{label:"ふつう",    types:{plain:22, missing:24, pic:8, decomp:10, word:20, three:12},
+    normal:{label:"ふつう",    types:{plain:22, missing:24, pic:8, decomp:10, word:20, three:12,
+                                     nth:5, more:6, atoiku:6, ten:6, sort:5, next:3, prevnext:4, guess:6, seq:4, bigger:3},
             words:["add","left","diff"], three:"same"},
-    hard:  {label:"むずかしい", types:{plain:12, missing:18, decomp:6, pic:4, word:20, three:34},
+    hard:  {label:"むずかしい", types:{plain:12, missing:18, decomp:6, pic:4, word:20, three:34,
+                                     nth:5, more:6, atoiku:5, ten:5, sort:6, next:2, prevnext:3, guess:8, seq:4, bigger:2},
             words:["add","left","diff"], three:"mixed"},
-    // ちょう むずかしい：まちがえた ことの ある もんだい だけ・1もん 10びょう
-    super: {label:"ちょう むずかしい", types:{plain:30, missing:26, decomp:10, pic:6, three:24},
-            words:["add","left","diff"], three:"mixed", timed:10000, missedOnly:true}
+    // ちょう むずかしい：おおきい かずや +と−まぜの もんだいを おおめに・1もん 10びょう
+    super: {label:"ちょう むずかしい", types:{plain:14, missing:22, decomp:6, pic:2, word:14, three:30,
+                                     nth:5, more:6, atoiku:5, ten:5, sort:7, next:2, prevnext:2, guess:9, seq:5, bigger:2},
+            words:["add","left","diff"], three:"mixed", timed:10000, hardFacts:true}
   };
   const LV_KEY = "sansu-drill-level-v1";
   let level = "easy";
@@ -675,7 +729,7 @@ details.hist summary{cursor:pointer;font-weight:700;color:var(--muted);font-size
   }
 
   /* ---------- かず（ファクト）の生成 ---------- */
-  const fKey = f => f.three ? `${f.a}${f.o1}${f.b}${f.o2}${f.c}` : `${f.a}${f.op}${f.b}`;
+  const fKey = f => f.x ? f.key : f.three ? `${f.a}${f.o1}${f.b}${f.o2}${f.c}` : `${f.a}${f.op}${f.b}`;
   const calc = (x,o,y) => o==="+" ? x+y : x-y;
 
   // ありうる計算をぜんぶ並べて、その中から均等にえらぶ（小さい数ばかりに偏らないように）
@@ -687,13 +741,15 @@ details.hist summary{cursor:pointer;font-weight:700;color:var(--muted);font-size
       const f = {...pick(Math.random()<0.5 ? ALL_ADD : ALL_SUB)};
       if((f.a===0||f.b===0) && Math.random()<0.8) continue;
       if(recent.includes(fKey(f))) continue;
+      // ちょう むずかしい：0や 小さい かずだけの けいさんは さける
+      if(LEVELS[level].hardFacts && t<50 && (f.a<2 || f.b<2 || (f.op==="+" ? f.ans<7 : f.a<7))) continue;
       return f;
     }
     return {...pick(ALL_ADD)};
   }
   function randomThree(){
     // むずかしい：8割は +と−をまぜる（3 − 1 + 4 など）。ふつう：同じ記号だけ
-    const mixed = LEVELS[level].three==="mixed" && Math.random()<0.8;
+    const mixed = LEVELS[level].three==="mixed" && (LEVELS[level].hardFacts || Math.random()<0.8);
     for(let t=0;t<200;t++){
       const o1=Math.random()<0.5?"+":"-";
       const o2= mixed ? (o1==="+"?"-":"+") : o1;
@@ -729,6 +785,7 @@ details.hist summary{cursor:pointer;font-weight:700;color:var(--muted);font-size
 
   /* パターンごとに、問題・答え・解説をつくる。つくれない組み合わせは null */
   function build(type, f){
+    if(XGEN[type]) return XGEN[type]();
     const {a,b} = f;
     if(type==="three"){
       if(!f.three) return null;
@@ -815,8 +872,203 @@ details.hist summary{cursor:pointer;font-weight:700;color:var(--muted);font-size
     return null;
   }
 
+  /* ---------- かずの いみを かんがえる もんだい（10しゅるい） ----------
+     かえす かたちは build() と おなじ。ちがうのは つぎの 3つ だけ：
+       f.x / f.key … けいさんの きろく（すらすら ずかん）には いれない
+       choices     … 1〜10 の ボタンの かわりに だす せんたくし [{v, label}]
+       order       … ならべかえ（すうじを じゅんばんに タップ） */
+  const ARITH = new Set(["plain","missing","decomp","pic","word","three"]);
+  const lvRank = () => ({easy:0, normal:1, hard:2, super:3})[level];
+  const xf = key => ({x:true, key});
+  const ANIMALS = [["🐱","ねこ"],["🐶","いぬ"],["🐰","うさぎ"],["🐻","くま"],["🐼","パンダ"],["🐸","かえる"],["🐷","ぶた"],["🐵","さる"],["🐧","ペンギン"],["🦁","ライオン"]];
+  const FRUITS  = [["🍎","りんご"],["🍊","みかん"],["🍓","いちご"],["🍌","バナナ"],["🍇","ぶどう"],["🍑","もも"],["🍒","さくらんぼ"]];
+  const RIDES   = [["🚗","くるま"],["🚌","バス"],["🚃","でんしゃ"],["✈️","ひこうき"],["🚲","じてんしゃ"],["🚀","ロケット"],["🚒","しょうぼうしゃ"]];
+  const emo = (e, n, cls="") => `<span class="xe ${cls}">${e}</span>`.repeat(n);
+  const choiceNums = arr => arr.map(v=>({v, label:String(v)}));
+  // すうじの せん（こたえの せつめい よう）
+  function numLine(mark, opt={}){
+    let h='<div class="numline" aria-hidden="true">';
+    for(let i=1;i<=10;i++){
+      const c = i===mark ? "on" : (opt.dim && opt.dim(i)) ? "dim" : (opt.soft && opt.soft(i)) ? "soft" : "";
+      h+=`<span class="${c}">${i}</span>`;
+    }
+    return h+'</div>';
+  }
+
+  const XGEN = {
+    // ① なんばんめ？
+    nth(){
+      const r=lvRank(), set=pick([ANIMALS,FRUITS,RIDES]);
+      const n = Math.min(set.length, rnd([3,4,5,6][r], [5,6,7,7][r]));
+      const row = shuffle(set).slice(0,n);
+      const back = r>0 && Math.random()<0.5;
+      const k = rnd(r===0 ? 2 : 1, n);
+      const idx = back ? n-k : k-1, item=row[idx];
+      const mirror = row[back ? k-1 : n-k];
+      const where = back ? "うしろから" : "まえから";
+      return { type:"nth", f:xf(`nth:${row.map(x=>x[0]).join("")}:${where}${k}`), ans:item[0], cls:"pic",
+        html:`<div class="xrow"><span class="xend">まえ</span>${row.map(x=>`<span class="xe">${x[0]}</span>`).join("")}<span class="xend">うしろ</span></div>
+              <span class="ask">${where} ${k}ばんめは どれ？</span>`,
+        parent:`${row.map(x=>x[0]).join("")} ${where}${k}ばんめ`, confuse:[mirror[0], (row[idx+1]||row[idx-1])[0]],
+        explain:`${where} ${k}ばんめは <b class="xe">${item[0]}</b>（${item[1]}）`,
+        frame:`<div class="xrow">${row.map((x,i)=>`<span class="xe ${i===idx?"on":"dim"}"><small>${back ? n-i : i+1}</small>${x[0]}</span>`).join("")}</div>`,
+        choices: shuffle(row).map(x=>({v:x[0], label:x[0], emoji:true})) };
+    },
+
+    // ② どちらが なんこ おおい？
+    more(){
+      const r=lvRank(), [A,B]=shuffle(FRUITS).slice(0,2);
+      const a = rnd(2, [6,8,10,10][r]), b = rnd(1, a-1);
+      const top = Math.random()<0.5;   // おおい ほうを うえに だすか
+      const rc = a>8 ? "xrow many" : "xrow";
+      const rowA=`<div class="${rc}">${emo(A[0],a)}</div>`, rowB=`<div class="${rc}">${emo(B[0],b)}</div>`;
+      return { type:"more", f:xf(`more:${A[0]}${a}${B[0]}${b}`), ans:a-b, cls:"pic",
+        html:`<div class="xcol">${top ? rowA+rowB : rowB+rowA}</div><span class="ask">${A[1]}は ${B[1]}より なんこ おおい？</span>`,
+        parent:`${A[1]}${a} と ${B[1]}${b} の ちがい`, confuse:[a, b, a+b],
+        explain:`${a}こ と ${b}こ の ちがいは <b class="num">${a-b}</b>こ`,
+        frame:`<div class="xcol"><div class="${rc}">${emo(A[0],b,"dim")}${emo(A[0],a-b,"on")}</div><div class="${rc}">${emo(B[0],b,"dim")}</div></div>` };
+    },
+
+    // ③ あと いくつ？（めあての かずまで）
+    atoiku(){
+      const r=lvRank();
+      const T = rnd([5,5,6,6][r], [7,10,10,10][r]);
+      const c = rnd(Math.max(1, T-([4,6,8,8][r])), T-1);
+      const asText = r>0 && Math.random()<0.4;
+      const [e,name] = pick([...ANIMALS.slice(0,5), ...FRUITS.slice(0,4)]);
+      const unit = ANIMALS.some(x=>x[0]===e) ? "ひき" : "こ";
+      if(!asText && T===10) return XGEN.atoiku();   // 10の ときは「10に なるのは？」と かぶるので ことばで だす
+      const verb = unit==="ひき" ? "います" : "あります";
+      const html = asText
+        ? `<div class="xbig">${c}<small>${unit}</small></div><span class="ask">${name}が ${c}${unit} ${verb}。<br>あと いくつで ${T}${unit}？</span>`
+        : `<div class="xrow wrap">${emo(e,c)}</div><span class="ask">あと いくつで ${T}${unit}？</span>`;
+      return { type:"atoiku", f:xf(`atoiku:${c}/${T}`), ans:T-c, cls:"pic",
+        html,
+        parent:`${c} → ${T}（あといくつ）`, confuse:[T, c, T+c],
+        explain:`${c} と <b class="num">${T-c}</b> で ${T}`, frame:frameHTML(c,"+",T-c) };
+    },
+
+    // ④ 10に なるのは？
+    ten(){
+      const r=lvRank(), n=rnd(1,9);
+      const pic = Math.random() < [0.7,0.5,0.35,0.25][r];
+      return { type:"ten", f:xf(`ten:${n}:${pic?"p":"t"}`), ans:10-n, cls: pic ? "pic" : "small",
+        html: pic
+          ? frameHTML(n,"+",0) + `<span class="ask">あと いくつ あかを ふやすと 10に なる？</span>`
+          : `${n}${HA("と")}${BL}${HA("で")}10<span class="ask">${n}と あわせて 10に なる かずは？</span>`,
+        parent:`${n} と ? で 10`, confuse:[n, 10],
+        explain:`${n} と <b class="num">${10-n}</b> で 10`, frame:frameHTML(n,"+",10-n) };
+    },
+
+    // ⑤ ならべかえ（すうじを じゅんばんに タップ）
+    sort(){
+      const r=lvRank();
+      const k = [3,4,rnd(4,5),5][r];
+      const nums = shuffle([1,2,3,4,5,6,7,8,9,10]).slice(0,k);
+      const desc = r>0 && Math.random()<0.5;
+      const ok = [...nums].sort((x,y)=> desc ? y-x : x-y);
+      return { type:"sort", f:xf(`sort:${nums.join(",")}:${desc?"d":"a"}`), ans:ok.join(" → "), cls:"pic",
+        html:`<div class="xbig xnums">${nums.map(v=>`<span>${v}</span>`).join("")}</div><span class="ask">${desc ? "おおきい" : "ちいさい"} じゅんに ならべよう</span>`,
+        parent:`${nums.join(" ")} を${desc ? "おおきい" : "ちいさい"}じゅんに`, confuse:[],
+        explain:`${desc ? "おおきい" : "ちいさい"} じゅんは <b class="num">${ok.join(" → ")}</b>`,
+        frame:numLine(0, {soft:i=>nums.includes(i)}),
+        order:{nums, k}, time: 6000 + k*2500 };
+    },
+
+    // ⑥ つぎの かず
+    next(){
+      const r=lvRank();
+      const step = r>=2 && Math.random()<0.3 ? 2 : 1;
+      const shown = 3;
+      const s0 = rnd(1, 10 - step*shown);
+      const seq = Array.from({length:shown}, (_,i)=>s0+i*step), ans = s0+shown*step;
+      return { type:"next", f:xf(`next:${s0}+${step}`), ans, cls:"mid",
+        html:`${seq.join(`<span class="op">→</span>`)}<span class="op">→</span>${BL}`,
+        parent:`${seq.join("→")}→?`, confuse:[seq[shown-1], ans+1, ans-1],
+        explain: step===1 ? `${seq[shown-1]} の つぎは <b class="num">${ans}</b>` : `${step}ずつ ふえて いるので <b class="num">${ans}</b>`,
+        frame:numLine(ans, {soft:i=>seq.includes(i)}) };
+    },
+
+    // ⑦ まえの かず・うしろの かず
+    prevnext(){
+      const n=rnd(2,9), before=Math.random()<0.5, ans = before ? n-1 : n+1;
+      return { type:"prevnext", f:xf(`pn:${n}${before?"-":"+"}`), ans, cls:"pic",
+        html:`<div class="xbig">${n}</div><span class="ask">${n}の ひとつ ${before ? "まえ" : "あと"}の かずは？</span>`,
+        parent:`${n}の ひとつ${before ? "まえ" : "あと"}`, confuse:[n, before ? n+1 : n-1],
+        explain:`${n}の ひとつ ${before ? "まえ" : "あと"}は <b class="num">${ans}</b>`,
+        frame:numLine(ans, {soft:i=>i===n}) };
+    },
+
+    // ⑧ かずを あてよう（ヒントで ひとつに しぼる）
+    guess(){
+      const r=lvRank();
+      for(let t=0;t<200;t++){
+        const x = rnd(1,10);
+        let hints=[];
+        const three = r>0 && Math.random() < [0,0.4,0.6,0.75][r];
+        if(x===1 || x===10){
+          if(r===0) continue;
+          hints = x===10 ? [["gt",8],["ne",9]] : [["lt",3],["ne",2]];
+        }else if(three){
+          // 2つの なかから「では ないよ」で 1つに
+          const other = x + (Math.random()<0.5 ? -1 : 1);
+          if(other<1 || other>10) continue;
+          const lo=Math.min(x,other)-1, hi=Math.max(x,other)+1;
+          if(lo<1 || hi>10) continue;
+          hints = [["gt",lo],["lt",hi],["ne",other]];
+        }else{
+          hints = [["gt",x-1],["lt",x+1]];
+          if(x-1<1 || x+1>10) continue;
+        }
+        const okFn = v => hints.every(([k,m]) => k==="gt" ? v>m : k==="lt" ? v<m : v!==m);
+        const cand = [1,2,3,4,5,6,7,8,9,10].filter(okFn);
+        if(cand.length!==1 || cand[0]!==x) continue;      // こたえが ひとつに きまらない もんだいは ださない
+        hints = shuffle(hints);
+        const txt = ([k,m]) => k==="gt" ? `${m}より おおきいよ` : k==="lt" ? `${m}より ちいさいよ` : `${m}では ないよ`;
+        const marks = ["①","②","③"];
+        const key = `guess:${x}:${hints.map(h=>h.join("")).join(",")}`;
+        if(recent.includes(key) && t<150) continue;
+        return { type:"guess", f:xf(key), ans:x, cls:"story",
+          html:`ひみつの かずを あてよう！（1から 10）<ul class="hints">${hints.map((h,i)=>`<li><b>ヒント${marks[i]}</b> ${txt(h)}</li>`).join("")}</ul><span class="ask">なんの かずかな？</span>`,
+          parent:`ヒント：${hints.map(txt).join("・")}`, confuse:hints.map(h=>h[1]),
+          explain:`ヒントに ぜんぶ あうのは <b class="num">${x}</b> だけ`,
+          frame:numLine(x, {dim:i=>!okFn(i)}), time:16000 };
+      }
+      return XGEN.prevnext();
+    },
+
+    // ⑨ かずの れつ（とちゅうの □ を うめる）
+    seq(){
+      const r=lvRank();
+      const step = r>=2 && Math.random()<0.35 ? 2 : 1;
+      const len = 5, s0 = rnd(1, 10-step*(len-1));
+      const row = Array.from({length:len}, (_,i)=>s0+i*step);
+      const bi = rnd(1, len-2);   // さいしょと さいごは あけない
+      return { type:"seq", f:xf(`seq:${s0}+${step}@${bi}`), ans:row[bi], cls:"mid",
+        html:`<span class="xseq">${row.map((v,i)=> i===bi ? `<b class="box">□</b>` : `<span>${v}</span>`).join("")}</span><span class="ask">□ に はいる かずは？</span>`,
+        parent:`${row.map((v,i)=>i===bi?"□":v).join(" ")}`, confuse:[row[bi-1], row[bi+1]],
+        explain: step===1 ? `${row[bi-1]} と ${row[bi+1]} の あいだは <b class="num">${row[bi]}</b>` : `2ずつ ふえて いるので <b class="num">${row[bi]}</b>`,
+        frame:numLine(row[bi], {soft:i=>row.includes(i) && i!==row[bi]}) };
+    },
+
+    // ⑩ どちらが おおきい？
+    bigger(){
+      const r=lvRank();
+      let a=rnd(1,10), b;
+      do{ b = r>=2 ? a + pick([-2,-1,1,2]) : rnd(1,10); }while(b===a || b<1 || b>10);
+      const big = Math.random()<0.5, ans = big ? Math.max(a,b) : Math.min(a,b);
+      return { type:"bigger", f:xf(`big:${a},${b}:${big?"b":"s"}`), ans, cls:"mid",
+        html:`${a}${HA("と")}${b}<span class="ask">${big ? "おおきい" : "ちいさい"}のは どっち？</span>`,
+        parent:`${a} と ${b}（${big ? "おおきい" : "ちいさい"}ほう）`, confuse:[a===ans ? b : a],
+        explain:`${big ? "おおきい" : "ちいさい"}のは <b class="num">${ans}</b>`,
+        frame:numLine(ans, {soft:i=>i===a||i===b}),
+        choices: choiceNums([a,b]) };
+    }
+  };
+
   function factTags(f){
     const t=[];
+    if(f.x) return t;
     if(f.three){
       if([f.a,f.b,f.c,f.r1].includes(0)) t.push("zero");
       if(f.r1===10 || f.ans===10 || f.a===10) t.push("ten");
@@ -847,34 +1099,10 @@ details.hist summary{cursor:pointer;font-weight:700;color:var(--muted);font-size
     return Object.entries(stats.facts).filter(([k,v])=>v.score>=1 && v.f).map(([k,v])=>({k, ...v}));
   }
 
-  // ちょう むずかしい：まちがえた ことの ある けいさん から えらぶ
-  function makeMissed(){
-    const L = LEVELS[level];
-    const all = Object.entries(stats.facts).filter(([k,v])=>v && v.f && (v.miss||0)>0).map(([k,v])=>({k, ...v}));
-    if(!all.length) return null;
-    // たりない ときは むずかしい もんだいも まぜる
-    if(all.length<5 && Math.random() < (5-all.length)/5) return null;
-    const win = Math.min(RECENT_N, Math.max(0, all.length-3));
-    const rec = win ? recent.slice(-win) : [];
-    let pool = all.filter(w=>!rec.includes(w.k));
-    if(!pool.length) pool = all.filter(w=>w.k!==lastKey);
-    if(!pool.length) pool = all;
-    const types = Object.keys(L.types).filter(t=>t!=="three");
-    for(let t=0;t<30;t++){
-      const w = weightedPick(pool, x=>1 + (x.score||0)*2 + Math.min(x.miss||0, 5));
-      const f = w.f;
-      const p = f.three ? build("three", f) : build(weightedPick(types, x=>L.types[x]), f);
-      if(p){ p.focus = true; return p; }
-    }
-    const f = pick(pool).f;
-    return f.three ? build("three", f) : build("plain", f);
-  }
-
   function makeProblem(){
-    if(LEVELS[level].missedOnly){ const mp = makeMissed(); if(mp) return mp; }
     const lt = levelTypes();
     const weak = weakFacts().filter(w=>!recent.includes(w.k) && (w.f.three ? threeAllowed(w.f) : true));
-    const tu = LEVELS[level].missedOnly ? "mid" : tuning();
+    const tu = LEVELS[level].hardFacts ? "mid" : tuning();
     const pWeak = Math.min(tu==="hard" ? 0.4 : 0.3, 0.06*weak.length) * (tu==="easy" ? 0.3 : 1);
     for(let t=0;t<40;t++){
       let p=null;
@@ -883,7 +1111,7 @@ details.hist summary{cursor:pointer;font-weight:700;color:var(--muted);font-size
         const f = w.f;
         if(f.three) p = build("three", f);
         else {
-          const types = lt.filter(k=>k!=="three");
+          const types = lt.filter(k=>ARITH.has(k) && k!=="three");
           p = build(weightedPick(types, tunedWeight), f);
         }
         if(p) p.focus = true;
@@ -902,7 +1130,17 @@ details.hist summary{cursor:pointer;font-weight:700;color:var(--muted);font-size
     decomp:{cat:"あと いくつ かにゃ？", dog:"いくつと いくつ かな わん"},
     pic:{cat:"まるを かぞえて みるにゃ", dog:"まるを ゆびで さして かぞえよう わん"},
     word:{cat:"おはなしを よく よむにゃ", dog:"ゆっくり よんでね わん"},
-    three:{cat:"まえから じゅんばんに けいさん だにゃ", dog:"ひとつずつ やろう わん！"}
+    three:{cat:"まえから じゅんばんに けいさん だにゃ", dog:"ひとつずつ やろう わん！"},
+    nth:{cat:"まえ と うしろ を よく みるにゃ", dog:"ゆびで ひとつずつ かぞえよう わん"},
+    more:{cat:"ならべて くらべて みるにゃ", dog:"どっちが おおいかな わん？"},
+    atoiku:{cat:"あと いくつ たりないかにゃ？", dog:"ゆびを たして いこう わん"},
+    ten:{cat:"10の まとまりを つくるにゃ", dog:"あいてる ところを かぞえよう わん"},
+    sort:{cat:"いちばん ちいさい かずから さがすにゃ", dog:"じゅんばんに タップしてね わん"},
+    next:{cat:"かずの ならびを よく みるにゃ", dog:"つぎは なにかな わん？"},
+    prevnext:{cat:"まえ と あと、どっちかにゃ？", dog:"かずを ゆっくり いって みよう わん"},
+    guess:{cat:"ヒントを ひとつずつ よむにゃ", dog:"ひみつの かず、わかるかな わん？"},
+    seq:{cat:"となりの かずを みるにゃ", dog:"□ の まえと あとを みよう わん"},
+    bigger:{cat:"どっちが おおきいかにゃ？", dog:"よく くらべてね わん"}
   };
 
   function renderTrack(){
@@ -918,11 +1156,46 @@ details.hist summary{cursor:pointer;font-weight:700;color:var(--muted);font-size
     $("streak").textContent = streak;
   }
 
+  /* ならべかえ：すうじを じゅんばんに タップ。まちがえたら「けす」で ひとつ もどせる */
+  function renderOrder(p){
+    chEl.className = "choices order";
+    const picked = [];
+    const slots = document.createElement("div"); slots.className = "oslots";
+    const tiles = document.createElement("div"); tiles.className = "otiles";
+    const undo = document.createElement("button"); undo.className = "oundo"; undo.textContent = "ひとつ けす"; undo.type="button";
+    const draw = () => {
+      slots.innerHTML = Array.from({length:p.order.k}, (_,i)=>`<span class="oslot num ${picked[i]!=null?"fill":""}">${picked[i] ?? ""}</span>`).join(`<i class="oarrow">→</i>`);
+      [...tiles.children].forEach(b=>{ b.disabled = picked.includes(+b.dataset.v); });
+      undo.disabled = !picked.length;
+    };
+    p.order.nums.forEach(v=>{
+      const b=document.createElement("button");
+      b.className="choice num"; b.textContent=v; b.dataset.v=v;
+      b.addEventListener("click",()=>{
+        if(!current || picked.includes(v)) return;
+        picked.push(v); draw();
+        if(picked.length===p.order.k) answer(picked.join(" → "), null);
+      });
+      tiles.appendChild(b);
+    });
+    undo.addEventListener("click",()=>{ if(current && picked.length){ picked.pop(); draw(); } });
+    chEl.append(slots, tiles, undo);
+    p._picked = picked;
+    draw();
+  }
+  function markOrder(p, n){
+    const want = String(p.ans).split(" → ").map(Number), got = p._picked || [];
+    chEl.querySelectorAll(".oslot").forEach((el,i)=>{
+      el.classList.add(got[i]===want[i] ? "right" : "wrong");
+    });
+    chEl.querySelectorAll("button").forEach(b=>{ b.disabled = true; });
+  }
+
   function nextProblem(){
     qIndex++;
     const dueIdx = reviewQueue.findIndex(r=>r.due<=qIndex);
     let p;
-    if(missRun>=2 && !LEVELS[level].missedOnly){ p = easyWin(); p.retry = null; missRun = 0; reviewQueue.forEach(r=>{ if(r.due<=qIndex) r.due = qIndex+2; }); }
+    if(missRun>=2 && !LEVELS[level].hardFacts){ p = easyWin(); p.retry = null; missRun = 0; reviewQueue.forEach(r=>{ if(r.due<=qIndex) r.due = qIndex+2; }); }
     else if(dueIdx>=0){ const r=reviewQueue.splice(dueIdx,1)[0]; p = {...r.p, retry:r.kind}; }
     else { p = makeProblem(); p.retry = null; }
     current = p; lastKey = fKey(p.f);
@@ -935,8 +1208,18 @@ details.hist summary{cursor:pointer;font-weight:700;color:var(--muted);font-size
     qEl.className = "q num " + (p.cls||"");
     qEl.innerHTML = p.html;
 
-    chEl.innerHTML = "";
-    for(let n=1;n<=10;n++){
+    chEl.innerHTML = ""; chEl.className = "choices"; chEl.style.gridTemplateColumns = "";
+    if(p.order) renderOrder(p);
+    else if(p.choices){
+      const cs=p.choices;
+      chEl.style.gridTemplateColumns = `repeat(${cs.length<=4 ? cs.length : Math.ceil(cs.length/2)},1fr)`;
+      cs.forEach((c,i)=>{
+        const b=document.createElement("button");
+        b.className="choice " + (c.emoji ? "emoji" : "num"); b.textContent=c.label; b.dataset.v=String(c.v);
+        b.addEventListener("click",()=>answer(c.v,b));
+        chEl.appendChild(b);
+      });
+    }else for(let n=1;n<=10;n++){
       const b=document.createElement("button");
       b.className="choice num"; b.textContent=n; b.dataset.v=n; b.id="c"+n;
       b.addEventListener("click",()=>answer(n,b));
@@ -964,7 +1247,7 @@ details.hist summary{cursor:pointer;font-weight:700;color:var(--muted);font-size
   }
   function startTimer(){
     stopTimer();
-    const ms = LEVELS[level].timed, el = $("timer");
+    const ms = LEVELS[level].timed ? Math.max(LEVELS[level].timed, (current&&current.time)||0) : 0, el = $("timer");
     el.hidden = !ms;
     if(!ms || !current) return;
     el.style.setProperty("--tms", ms+"ms");
@@ -979,19 +1262,24 @@ details.hist summary{cursor:pointer;font-weight:700;color:var(--muted);font-size
   });
 
   function updateFact(p, ok, slow){
+    if(p.f.x){ typeTally(p.type, ok, slow); saveStats(); return null; }
     const k=fKey(p.f);
     const e = stats.facts[k] || (stats.facts[k] = {score:0, seen:0, miss:0, f:p.f});
     e.seen++; e.f=p.f;
     if(!ok){ e.miss++; e.score = Math.min(6, e.score+3); }
     else if(slow){ e.score = Math.min(6, e.score+1.5); }
     else { e.score *= 0.5; if(e.score<0.3) e.score=0; }
-    const ts=typeStat(p.type);
-    ts.seen++; if(!ok) ts.miss++; if(ok&&slow) ts.slow++;
-    // 古い成績が効きすぎないように、見た回数を上限でまるめる
-    if(ts.seen>60){ ts.seen=Math.round(ts.seen*0.8); ts.miss=Math.round(ts.miss*0.8); ts.slow=Math.round(ts.slow*0.8); }
+    typeTally(p.type, ok, slow);
     const nm = updateMastery(p.f, ok, slow);
     saveStats();
     return nm;
+  }
+
+  function typeTally(t, ok, slow){
+    const ts=typeStat(t);
+    ts.seen++; if(!ok) ts.miss++; if(ok&&slow) ts.slow++;
+    // 古い成績が効きすぎないように、見た回数を上限でまるめる
+    if(ts.seen>60){ ts.seen=Math.round(ts.seen*0.8); ts.miss=Math.round(ts.miss*0.8); ts.slow=Math.round(ts.slow*0.8); }
   }
 
   function answer(n, btn){
@@ -1001,16 +1289,16 @@ details.hist summary{cursor:pointer;font-weight:700;color:var(--muted);font-size
     const ms = performance.now()-shownAt;
     const ok = n===p.ans;
     const slow = ok && ms > slowLimit(p.type);
-    [...chEl.children].forEach(b=>{
+    if(p.order) markOrder(p, n);
+    else [...chEl.children].forEach(b=>{
       b.disabled = true;
-      const v=+b.dataset.v;
-      if(v===p.ans) b.classList.add("right");
+      if(b.dataset.v===String(p.ans)) b.classList.add("right");
       else if(b===btn) b.classList.add("wrong");
       else b.classList.add("dim");
     });
 
     let errType = null;
-    if(!ok){ errType = timeout ? "timeout" : Math.abs(n-p.ans)===1 ? "off1" : (p.confuse.includes(n) ? "confuse" : "other"); }
+    if(!ok){ errType = timeout ? "timeout" : (typeof n==="number" && typeof p.ans==="number" && Math.abs(n-p.ans)===1) ? "off1" : (p.confuse.includes(n) ? "confuse" : "other"); }
     if(ok){ const ts=typeStat(p.type).times; ts.push(ms); if(ts.length>30) ts.shift(); }
     const nm = updateFact(p, ok, slow);
     onAnswered(ok); recordAcc(ok); stickerStep();
@@ -1018,7 +1306,8 @@ details.hist summary{cursor:pointer;font-weight:700;color:var(--muted);font-size
                 errType, retry:p.retry, focus:!!p.focus, adj:p.adj||null, tags:factTags(p.f)});
     current = null;
 
-    const base = {type:p.type, f:p.f, ans:p.ans, cls:p.cls, html:p.html, parent:p.parent, confuse:p.confuse, explain:p.explain, frame:p.frame};
+    const base = {type:p.type, f:p.f, ans:p.ans, cls:p.cls, html:p.html, parent:p.parent, confuse:p.confuse, explain:p.explain, frame:p.frame,
+                  choices:p.choices, order:p.order, time:p.time};
     if(!ok && p.retry!=="miss") reviewQueue.push({p:base, kind:"miss", due:qIndex+REVIEW_GAP});
     else if(slow && !p.retry) reviewQueue.push({p:base, kind:"slow", due:qIndex+SLOW_GAP});
 
@@ -1036,7 +1325,7 @@ details.hist summary{cursor:pointer;font-weight:700;color:var(--muted);font-size
       streak = 0;
       fbEl.innerHTML = `<div class="msg ng pop">${timeout ? "じかんぎれ！" : "おしい！"}</div>`;
       const ex=document.createElement("div"); ex.className="explain pop";
-      ex.innerHTML = `<div class="say">${p.explain}</div>` + (p.frame||frameHTML(p.f.a,p.f.op,p.f.b));
+      ex.innerHTML = `<div class="say">${p.explain}</div>` + (p.f.x ? (p.frame||"") : (p.frame||frameHTML(p.f.a,p.f.op,p.f.b)));
       const nb=document.createElement("button"); nb.className="next"; nb.textContent="つぎへ"; nb.id="nextBtn";
       nb.addEventListener("click", afterAnswer);
       fbEl.appendChild(ex); fbEl.appendChild(nb);
@@ -1061,7 +1350,17 @@ details.hist summary{cursor:pointer;font-weight:700;color:var(--muted);font-size
     pic:"数える途中で数え落としや数え直しが起きている可能性があります。指でさしながら数えると防ぎやすいです。",
     word:"文章を式に置き換える段階でつまずいている可能性があります。一緒に読んで、ふえるのか・へるのかを確認するとよさそうです。",
     three:"前から順番に計算する手順の確認がおすすめです。途中の答えを声に出すと整理しやすいです。",
-    plain:""
+    plain:"",
+    nth:"「まえから」「うしろから」の向きの取り違えがないか確認するとよさそうです。",
+    more:"2つの数のちがい（差）は、1対1で並べて余った数を見る考え方がおすすめです。",
+    atoiku:"目標の数まで指を足していく「数えたし」を一緒にやってみると分かりやすいかもしれません。",
+    ten:"10の合成（いくつといくつで10）は、くり上がり・くり下がりの土台になります。",
+    sort:"いちばん小さい（大きい）数から1つずつ探す手順を確認するとよさそうです。",
+    next:"数の並び（数詞の順番）を声に出して確認するとよさそうです。",
+    prevnext:"「ひとつ前」「ひとつ後」は数直線で指さすと分かりやすいです。",
+    guess:"ヒントを1つずつ読んで、当てはまらない数を消していく練習がおすすめです。",
+    seq:"数の並びの規則（1ずつ・2ずつ）に気づけているか確認するとよさそうです。",
+    bigger:"数の大きさの比較は、数直線でどちらが右にあるかで確認できます。"
   };
 
   function analyze(rs){
@@ -1706,7 +2005,7 @@ details.hist summary{cursor:pointer;font-weight:700;color:var(--muted);font-size
     level = l;
     try{ lsSet(LV_KEY, l); }catch(e){}
     document.querySelectorAll(".lv[data-lv]").forEach(b=>b.setAttribute("aria-pressed", b.dataset.lv===l ? "true" : "false"));
-    $("superNote").hidden = !LEVELS[l].missedOnly;
+    $("superNote").hidden = !LEVELS[l].hardFacts;
     if(!LEVELS[l].timed){ stopTimer(); $("timer").hidden = true; }
     if(announce){
       // むずかしさを かえたら 20もんを やりなおす
