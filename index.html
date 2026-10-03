@@ -223,7 +223,17 @@ details.hist summary{cursor:pointer;font-weight:700;color:var(--muted);font-size
 .grid td.ok{background:var(--ok-soft);border-color:transparent;color:var(--ok)}
 .grid td.ng{background:var(--ng-soft);border-color:var(--ng);color:var(--ng)}
 .grid .opcol{font-size:20px}
-.gstart{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;background:color-mix(in srgb,var(--surface) 55%,transparent);border-radius:18px}
+.grid th.corner .cgd{display:inline-block;font-size:11px;line-height:1.25;color:var(--muted);font-weight:900}
+.grid th.corner .cgd b{color:var(--blue);margin-left:1px}
+.grid td .gq{font-size:15px;color:var(--muted);letter-spacing:-.02em;white-space:nowrap}
+.ghow{background:var(--surface);border:2px solid var(--line);border-radius:16px;padding:10px 14px;font-size:15px;font-weight:700;text-align:center;line-height:1.6;box-shadow:0 4px 12px rgba(0,0,0,.12)}
+.ghow b{color:var(--blue)}
+.gex{display:flex;align-items:center;justify-content:center;gap:6px;margin-top:4px;font-size:18px;font-weight:900}
+.gex-r,.gex-c{background:var(--frame);border-radius:8px;padding:0 8px}
+.gex-a{color:var(--muted);font-size:14px}
+.gex-k{display:inline-flex;flex-direction:column;align-items:center;gap:1px}
+.gex-k small{font-size:10px;color:var(--muted)}
+.gstart{position:absolute;inset:0;display:flex;flex-direction:column;gap:12px;align-items:center;justify-content:center;background:color-mix(in srgb,var(--surface) 55%,transparent);border-radius:18px}
 .gresult{background:var(--surface);border:2px solid var(--line);border-radius:22px;padding:20px;display:flex;flex-direction:column;gap:16px}
 .gresult .next{align-self:center}
 .gr-stk{font-weight:700;color:var(--blue);font-size:15px}
@@ -481,7 +491,7 @@ details.hist summary{cursor:pointer;font-weight:700;color:var(--muted);font-size
 
   <div id="gridMain" class="stack" hidden>
     <div class="gwrap"><table class="grid num" id="grid" aria-label="ます けいさん"></table>
-      <div class="gstart" id="gstartWrap"><button class="next" id="gstart">よーい スタート！</button></div>
+      <div class="gstart" id="gstartWrap"><div class="ghow" id="ghow" hidden></div><button class="next" id="gstart">よーい スタート！</button></div>
     </div>
     <div class="choices" id="gpad"></div>
     <div class="gresult" id="gresult" hidden>
@@ -1503,7 +1513,7 @@ details.hist summary{cursor:pointer;font-weight:700;color:var(--muted);font-size
 
   function renderGrid(){
     const t=$("grid"); const {rows,cols}=G;
-    const corner = gkind==="add" ? "+" : gkind==="sub" ? "−" : "";
+    const corner = gkind==="add" ? "+" : gkind==="sub" ? "−" : `<span class="cgd">ひだり<b>→</b><br>うえ</span>`;
     let h = `<tr><th class="corner">${corner}</th>` + cols.map((c,j)=>`<th id="gh-c${j}" class="${gkind==="mix"?"opcol":""}">${gkind==="mix" ? opText(c.op)+c.v : c.v}</th>`).join("") + "</tr>";
     rows.forEach((r,i)=>{
       h += `<tr><th id="gh-r${i}">${r}</th>`;
@@ -1511,7 +1521,11 @@ details.hist summary{cursor:pointer;font-weight:700;color:var(--muted);font-size
         const k=i*GN+j, cell=G.cells[k];
         let cls="", txt="";
         if(cell.chosen!=null){ cls = cell.ok ? "ok" : "ng"; txt = cell.ans; }
-        else if(k===G.idx && G.running) cls="cur";
+        else if(k===G.idx && G.running){
+          cls="cur";
+          // まぜまぜ：いま とく ますに「ひだりの かず ＋/− うえの かず」を うすく だす
+          if(gkind==="mix") txt = `<span class="gq">${r}${opText(c.op)}${c.v}</span>`;
+        }
         h += `<td id="gc${k}" class="${cls}">${txt}</td>`;
       });
       h += "</tr>";
@@ -1533,6 +1547,10 @@ details.hist summary{cursor:pointer;font-weight:700;color:var(--muted);font-size
     G = {...g, cells, idx:0, start:0, timer:null, running:false, cellAt:0};
     $("gtime").textContent="0:00";
     $("gstartWrap").hidden=false;
+    // まぜまぜは やりかたを スタートの まえに みせる
+    $("ghow").hidden = gkind!=="mix";
+    $("ghow").innerHTML = `<div><b>ひだりの かず</b>に <b>うえの ＋・−</b>を するよ</div>
+      <div class="gex"><span class="gex-k"><span class="gex-r">7</span><small>ひだり</small></span><span class="gex-k"><span class="gex-c">−2</span><small>うえ</small></span><span class="gex-a">なら</span><span>7 − 2 ＝ <b>5</b></span></div>`;
     $("gresult").hidden=true; $("gpad").hidden=false;
     setPadEnabled(false);
     renderGrid();
@@ -1540,7 +1558,7 @@ details.hist summary{cursor:pointer;font-weight:700;color:var(--muted);font-size
     const w=pick(["cat","dog"]);
     const hint = gkind==="add" ? "ひだりの かずと うえの かずを たそう"
                : gkind==="sub" ? "ひだりの かず から うえの かずを ひこう"
-               : "うえの + と − を よく みてね";
+               : "ひだりの かずに うえの ＋か− を するよ";
     say(w, hint + (w==="cat" ? "にゃ" : " わん"));
   }
 
