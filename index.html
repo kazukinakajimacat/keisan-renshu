@@ -137,6 +137,21 @@ body{
 details.hist{background:var(--surface);border:2px solid var(--line);border-radius:16px;padding:12px 16px}
 details.hist summary{cursor:pointer;font-weight:700;color:var(--muted);font-size:15px}
 .hist-body{display:flex;flex-direction:column;gap:14px;margin-top:12px}
+.trend{background:var(--frame);border:2px solid var(--line);border-radius:14px;padding:12px 14px;display:flex;flex-direction:column;gap:10px}
+.trend .tr-h{font-weight:900;font-size:16px}
+.tr-tiles{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:8px}
+.tr-tile{background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:8px 10px;display:flex;flex-direction:column;gap:2px}
+.tr-tile small{font-size:12px;color:var(--muted);font-weight:700}
+.tr-tile b{font-size:17px;font-weight:900;font-variant-numeric:tabular-nums}
+.tr-tile i{font-style:normal;font-size:12px;font-weight:700;color:var(--muted)}
+.tr-tile i.up{color:var(--ok)}
+.tr-tile i.down{color:var(--ng)}
+.trend ul{margin:0;padding-left:1.2em;font-size:14px;line-height:1.7}
+.tr-sub{font-size:13px;font-weight:900;color:var(--muted)}
+.tr-chips{display:flex;flex-wrap:wrap;gap:6px}
+.tr-chips span{background:var(--ng-soft);color:var(--ink);border-radius:999px;padding:2px 10px;font-size:14px;font-weight:700;font-variant-numeric:tabular-nums}
+.tr-chips.ok span{background:var(--ok-soft)}
+.tr-note{font-size:12px;color:var(--muted)}
 .hist-item{border-top:1px solid var(--line);padding-top:10px;display:flex;flex-direction:column;gap:6px}
 .hist-item .h{font-weight:900;font-size:15px}
 .hist-item ul{margin:0;padding-left:1.2em;font-size:14px}
@@ -1436,6 +1451,11 @@ details.hist summary{cursor:pointer;font-weight:700;color:var(--muted);font-size
     });
     history = history.slice(0,30);
     try{ lsSet(STORE, JSON.stringify(history)); }catch(e){}
+    const ty = {};
+    round.forEach(r=>{ const x = ty[r.type] || (ty[r.type]=[0,0]); x[1]++; if(r.ok) x[0]++; });
+    const okOf = op => { const x=round.filter(r=>r.op===op); return [x.filter(r=>r.ok).length, x.length]; };
+    logSession({k:"drill", lv:level, n:round.length, ok:s.ok, ms:Math.round(round.reduce((a,r)=>a+r.ms,0)/round.length),
+                add:okOf("+"), sub:okOf("-"), ty});
     renderHistory();
 
     stopTimer();
@@ -1457,7 +1477,7 @@ details.hist summary{cursor:pointer;font-weight:700;color:var(--muted);font-size
       body.innerHTML = note + `<div class="empty">20問ごとに、正解数とミスの傾向がここに残ります。</div>`;
       return;
     }
-    body.innerHTML = note + history.map(h=>`
+    body.innerHTML = note + trendHTML() + history.map(h=>`
       <div class="hist-item">
         <div class="h num">${h.at}　${h.lv?`【${h.lv}】`:""}${h.ok}/${h.total||20}問正解　<span style="font-weight:500;color:var(--muted)">${h.total===25 ? `タイム ${h.avg}` : `たし算 ${h.add}・ひき算 ${h.sub}・平均 ${h.avg}`}</span></div>
         <ul>${h.findings.map(x=>`<li>${x}</li>`).join("")}</ul>
@@ -1471,6 +1491,109 @@ details.hist summary{cursor:pointer;font-weight:700;color:var(--muted);font-size
       markDirty();
       renderHistory();
     });
+  }
+
+  /* ---------- これまでの けいこう（おうちの方へ） ----------
+     1かいごとの けっかを かずで のこして、さいしょの ころと さいきんを くらべる */
+  function logSession(e){
+    if(!stats.sess) stats.sess = [];
+    stats.sess.push({d:todayKey(), ...e});
+    if(stats.sess.length>500) stats.sess = stats.sess.slice(-500);
+    saveStats();
+  }
+  // まえの きろく（ぶんしょう だけ）から かずを よみとって ひきつぐ（1かい だけ）
+  function backfillSessions(){
+    if(stats.sess || !history.length) return;
+    const now = new Date(), out = [];
+    [...history].reverse().forEach(h=>{
+      const m = String(h.at||"").match(/^(\d+)\/(\d+)/); if(!m) return;
+      let y = now.getFullYear(); if(+m[1] > now.getMonth()+1) y--;
+      const d = `${y}-${String(m[1]).padStart(2,"0")}-${String(m[2]).padStart(2,"0")}`;
+      const frac = v => { const x = String(v||"").match(/(\d+)\/(\d+)/); return x ? [+x[1], +x[2]] : [0,0]; };
+      if(h.total===25){
+        const t = String(h.avg||"").match(/(\d+):(\d+)/), ms = t ? (+t[1]*60 + +t[2])*1000 : 0;
+        const gk = Object.keys(GKINDS).find(k=>String(h.lv||"").includes(GKINDS[k].label)) || "add";
+        out.push({d, k:"grid", gk, n:25, ok:h.ok, t:ms, ms:Math.round(ms/25)});
+      }else{
+        const lv = Object.keys(LEVELS).find(k=>LEVELS[k].label===h.lv) || null;
+        const a = String(h.avg||"").match(/([\d.]+)秒/);
+        out.push({d, k:"drill", lv, n:20, ok:h.ok, ms:a ? Math.round(+a[1]*1000) : 0, add:frac(h.add), sub:frac(h.sub)});
+      }
+    });
+    stats.sess = out;
+  }
+  const pct = (a,b) => b ? Math.round(a/b*100) : 0;
+  const sum2 = (xs, f) => xs.reduce((acc,x)=>{ const v=f(x)||[0,0]; return [acc[0]+v[0], acc[1]+v[1]]; }, [0,0]);
+  const factText = g => `${g.a} ${opText(g.op)} ${g.b}`;
+  function trendHTML(){
+    backfillSessions();
+    const S = stats.sess || [];
+    const D = S.filter(x=>x.k==="drill"), Gs = S.filter(x=>x.k==="grid");
+    if(D.length + Gs.length < 2) return "";
+    const tiles = [], f = [];
+
+    // いろいろ もんだい：さいしょの ころ（3かい）と さいきん（3かい）
+    if(D.length>=2){
+      const k = Math.min(3, Math.floor(D.length/2)), early = D.slice(0,k), late = D.slice(-k);
+      const accE = pct(...sum2(early, x=>[x.ok,x.n])), accL = pct(...sum2(late, x=>[x.ok,x.n]));
+      const msOf = xs => { const v = xs.filter(x=>x.ms); return v.length ? v.reduce((a,x)=>a+x.ms,0)/v.length : 0; };
+      const msE = msOf(early), msL = msOf(late);
+      tiles.push(`<div class="tr-tile"><small>正答率</small><b>${accE}% → ${accL}%</b><i class="${accL>accE?"up":accL<accE?"down":""}">${accL===accE?"変わらず":(accL>accE?"+":"")+(accL-accE)+"ポイント"}</i></div>`);
+      if(msE && msL) tiles.push(`<div class="tr-tile"><small>1問の平均時間</small><b>${(msE/1000).toFixed(1)}秒 → ${(msL/1000).toFixed(1)}秒</b><i class="${msL<msE*0.95?"up":msL>msE*1.05?"down":""}">${msL<msE*0.95?"速くなった":msL>msE*1.05?"ゆっくり":"変わらず"}</i></div>`);
+      if(accL-accE>=5) f.push(`いろいろもんだいの正答率が、はじめの${k}回（${accE}%）から最近の${k}回（${accL}%）へ上がっています。`);
+      else if(accE-accL>=10) f.push(`最近の正答率（${accL}%）が、はじめの頃（${accE}%）より下がっています。むずかしさを上げた直後や、新しいパターンが増えた影響のこともあります。`);
+      if(msE && msL && msL < msE*0.85) f.push(`1問あたりの時間が${(msE/1000).toFixed(1)}秒から${(msL/1000).toFixed(1)}秒に短くなり、考えずに答えられる計算が増えてきています。`);
+      // たし算・ひき算
+      const aE=sum2(early,x=>x.add), aL=sum2(late,x=>x.add), sE=sum2(early,x=>x.sub), sL=sum2(late,x=>x.sub);
+      if(sE[1]>=3 && sL[1]>=3 && pct(...sL)-pct(...sE)>=10) f.push(`ひき算の正答率が${pct(...sE)}%から${pct(...sL)}%に伸びています。`);
+      if(aE[1]>=3 && aL[1]>=3 && pct(...aL)-pct(...aE)>=10) f.push(`たし算の正答率が${pct(...aE)}%から${pct(...aL)}%に伸びています。`);
+      // パターン別（かずで のこした かいだけ）
+      const withTy = D.filter(x=>x.ty);
+      if(withTy.length>=2){
+        const recent = withTy.slice(-5), agg = {};
+        recent.forEach(x=>Object.entries(x.ty).forEach(([t,[o,n]])=>{ const a=agg[t]||(agg[t]=[0,0]); a[0]+=o; a[1]+=n; }));
+        const weak = Object.entries(agg).filter(([t,[o,n]])=>n>=3 && o/n<0.8).sort((x,y)=>x[1][0]/x[1][1]-y[1][0]/y[1][1])[0];
+        const strong = Object.entries(agg).filter(([t,[o,n]])=>n>=4 && o===n).map(([t])=>TYPES[t] ? TYPES[t].name : t);
+        if(weak && TYPES[weak[0]]) f.push(`最近5回のパターン別では、${TYPES[weak[0]].name}がまだ不安定です（${weak[1][1]}問中${weak[1][0]}問正解）。`);
+        if(strong.length) f.push(`最近ミスがないパターン：${strong.slice(0,4).join("、")}。`);
+      }
+      // むずかしさの へんか
+      const lvRankOf = l => ({easy:0, normal:1, hard:2, super:3})[l];
+      const lvE = early.map(x=>x.lv).filter(Boolean)[0], lvL = late.map(x=>x.lv).filter(Boolean).pop();
+      if(lvE && lvL && lvRankOf(lvL) > lvRankOf(lvE)) f.push(`むずかしさは「${LEVELS[lvE].label}」から「${LEVELS[lvL].label}」に上がっています。`);
+    }
+
+    // ます けいさん：はじめの タイムと さいこう タイム
+    Object.keys(GKINDS).forEach(gk=>{
+      const xs = Gs.filter(x=>x.gk===gk && x.ok===x.n && x.t);
+      if(xs.length>=2){
+        const first = xs[0].t, best = Math.min(...xs.map(x=>x.t));
+        if(best < first) f.push(`ます計算（${GKINDS[gk].label}）の全問正解タイムが、はじめの${fmtT(first)}から最高${fmtT(best)}に縮まっています（${xs.length}回）。`);
+      }
+    });
+
+    // れんしゅう した 日
+    const dayKeys = Object.keys(stats.days||{}).filter(k=>(stats.days[k].n||0)>0);
+    if(dayKeys.length){
+      const wk = new Date(); wk.setDate(wk.getDate()-6); const wkKey = dayKey(wk);
+      const w = dayKeys.filter(k=>k>=wkKey).length;
+      tiles.push(`<div class="tr-tile"><small>練習した日</small><b>${dayKeys.length}日</b><i>この1週間で${w}日</i></div>`);
+    }
+
+    // すらすら ずかん：できるように なった けいさん と まだ にがて
+    const zk = [...ZK_ADD.flat(), ...ZK_SUB.flat()];
+    const lv1 = masterCount(zk,1), lv2 = masterCount(zk,2), lv3 = masterCount(zk,3);
+    tiles.push(`<div class="tr-tile"><small>すらすら（ぴかぴか・きらきら）</small><b>${lv1} / ${ZK_TOTAL}</b><i>ぴかぴか${lv2}・きらきら${lv3}</i></div>`);
+    const facts = Object.values(stats.facts||{}).filter(e=>e && e.f && !e.f.three && !e.f.x);
+    const overcame = facts.filter(e=>(e.miss||0)>0 && (e.score||0)===0 && e.master).sort((x,y)=>(y.miss||0)-(x.miss||0)).slice(0,8).map(e=>factText(e.f));
+    const weakNow = facts.filter(e=>(e.score||0)>=1).sort((x,y)=>y.score-x.score).slice(0,8).map(e=>factText(e.f));
+
+    let h = `<div class="trend"><div class="tr-h">これまでの傾向</div><div class="tr-tiles">${tiles.join("")}</div>`;
+    if(f.length) h += `<ul>${f.map(x=>`<li>${x}</li>`).join("")}</ul>`;
+    if(overcame.length) h += `<div class="tr-sub">前は間違えていたけれど、今はすらすら解ける計算</div><div class="tr-chips ok">${overcame.map(x=>`<span>${x}</span>`).join("")}</div>`;
+    if(weakNow.length) h += `<div class="tr-sub">いま苦手として多めに出している計算</div><div class="tr-chips">${weakNow.map(x=>`<span>${x}</span>`).join("")}</div>`;
+    h += `<div class="tr-note">はじめの頃と最近を比べています（各最大3回分）。回数が少ないうちは目安です。</div></div>`;
+    return h;
   }
 
 
@@ -1633,6 +1756,7 @@ details.hist summary{cursor:pointer;font-weight:700;color:var(--muted);font-size
       lv:`ます・${GKINDS[gkind].label}`, ok:okN, total:25, add:"-", sub:"-", avg:fmtT(total), findings:f});
     history=history.slice(0,30);
     try{ lsSet(STORE, JSON.stringify(history)); }catch(e){}
+    logSession({k:"grid", gk:gkind, n:G.cells.length, ok:okN, t:Math.round(total), ms:Math.round(total/G.cells.length)});
     renderHistory();
     $("gresult").scrollIntoView({behavior:"smooth", block:"start"});
     if(pendingSticker) setTimeout(showStickerBanner, 700);
@@ -2134,6 +2258,7 @@ details.hist summary{cursor:pointer;font-weight:700;color:var(--muted);font-size
     try{ if(navigator.storage && navigator.storage.persist) await navigator.storage.persist(); }catch(e){}
   }
 
+  backfillSessions();   // まえの きろくを かずに して ひきつぐ（1かい だけ）
   setLevel(level, false);
   renderHistory();
   renderGoal();
