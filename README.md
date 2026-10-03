@@ -1,3 +1,11 @@
+<p align="center">
+  <img src="assets/logo.png" alt="けいさん れんしゅう みーところ" width="560">
+</p>
+
+<p align="center">
+  <a href="https://kazukinakajimacat.github.io/keisan-renshu/"><b>▶ あそんでみる</b></a>
+</p>
+
 # けいさん れんしゅう　サービス紹介
 
 小学1年生が、10までのたし算・ひき算を毎日楽しく続けるための練習ページです。ねこの みー と いぬの ころ が、いっしょに応援します。
