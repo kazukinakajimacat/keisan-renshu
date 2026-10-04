@@ -352,6 +352,22 @@ details.hist summary{cursor:pointer;font-weight:700;color:var(--muted);font-size
 .nk-merr{min-height:1.2em;font-size:14px;font-weight:700;color:var(--ng)}
 .nk-mbtns{display:flex;flex-direction:column;gap:8px;align-items:center;width:100%}
 .nk-ghost{font:inherit;font-weight:700;font-size:15px;color:var(--muted);background:none;border:2px solid var(--line);border-radius:999px;padding:6px 16px;cursor:pointer}
+.pet .pet-face.mc img{object-fit:contain;object-position:50% 100%}
+.mc-entry{display:block;margin:0 0 10px auto;font:inherit;font-weight:900;font-size:15px;color:#fff;background:var(--blue);border:0;border-radius:999px;padding:8px 18px;cursor:pointer;box-shadow:0 3px 0 color-mix(in srgb,var(--blue) 60%,#000)}
+.mc-card{max-width:520px;max-height:calc(100vh - 32px);overflow-y:auto}
+.mc-prev{min-height:150px;display:flex;flex-direction:column;align-items:center;justify-content:flex-end;gap:6px}
+.mc-prev .nk-mimg{max-height:120px}
+.mc-hint{margin:0;font-size:15px;font-weight:700;color:var(--muted)}
+.mc-say{background:var(--surface);border:2px solid var(--line);border-radius:16px;padding:6px 14px;font-weight:900;font-size:17px}
+.mc-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;width:100%}
+.mc-pick{font:inherit;position:relative;display:flex;flex-direction:column;align-items:center;gap:2px;background:var(--bg);border:3px solid transparent;border-radius:16px;padding:6px 2px;cursor:pointer;min-width:0}
+.mc-pick img{width:100%;max-width:72px;aspect-ratio:26/31;object-fit:contain}
+.mc-pick b{font-size:13px;font-weight:900;color:var(--ink);white-space:nowrap}
+.mc-pick i{position:absolute;top:2px;left:50%;transform:translateX(-50%);font-style:normal;font-size:10px;font-weight:900;color:#fff;background:var(--ok);border-radius:999px;padding:0 6px;white-space:nowrap}
+.mc-pick.now{border-color:var(--ok)}
+.mc-pick.sel{border-color:var(--blue);background:color-mix(in srgb,var(--blue) 14%,var(--surface))}
+@media (max-width:360px){.mc-grid{grid-template-columns:repeat(3,1fr)}}
+.nkd.cur{outline:2px solid var(--ok);outline-offset:-2px}
 .nkdex{display:grid;grid-template-columns:repeat(auto-fill,minmax(96px,1fr));gap:10px}
 .nkdex .empty{grid-column:1/-1;text-align:center;padding:12px 8px}
 .nkd{display:flex;flex-direction:column;align-items:center;gap:2px;text-align:center;background:var(--bg);border-radius:14px;padding:8px 4px}
@@ -510,6 +526,16 @@ details.hist summary{cursor:pointer;font-weight:700;color:var(--muted);font-size
     <div class="goal-l"><span id="goalText"></span><span class="goal-st" id="goalStreak" hidden></span></div>
     <div class="goal-dots" id="goalDots" aria-hidden="true"></div>
   </div>
+  <div class="nk-modal" id="mcModal" hidden><div class="nk-mcard mc-card" role="dialog" aria-modal="true" aria-labelledby="mcTitle">
+    <h2 id="mcTitle">MCを えらぼう</h2>
+    <div class="mc-prev" id="mcPrev"></div>
+    <div class="mc-grid" id="mcGrid"></div>
+    <div class="nk-mbtns">
+      <button class="next" id="mcOk" disabled>このこに する</button>
+      <button class="nk-ghost" id="mcReset" hidden>みー と ころ に もどす</button>
+      <button class="nk-ghost" id="mcClose">とじる</button>
+    </div>
+  </div></div>
   <div class="nk-modal" id="nkModal" hidden><div class="nk-mcard" role="dialog" aria-modal="true" aria-labelledby="nkMTitle">
     <div class="nk-mpic" id="nkMPic"></div>
     <h2 id="nkMTitle"></h2>
@@ -627,6 +653,7 @@ details.hist summary{cursor:pointer;font-weight:700;color:var(--muted);font-size
     </section>
     <section class="zk-panel">
       <h3>なかま ずかん <span id="nkDexCount"></span></h3>
+      <button class="mc-entry" id="mcEntry" hidden></button>
       <div class="nkdex" id="nkDex"></div>
     </section>
     <section class="zk-panel">
@@ -745,14 +772,40 @@ details.hist summary{cursor:pointer;font-weight:700;color:var(--muted);font-size
         dog:["おしい わん！つぎは できるよ","まちがえても へっちゃら だわん"]}
   };
   function setPets(cat, dog){
+    if(mcOn()) cat = cat || dog;          // MCが いる ときは ひだりの 1たいだけ
     catEl.className="pet"; dogEl.className="pet";
     void catEl.offsetWidth; // アニメーションを毎回やり直す
     if(cat) catEl.classList.add(cat);
     if(dog) dogEl.classList.add(dog);
   }
   function say(who, text){
+    if(mcOn()){ who = "cat"; text = mcNeutral(text); }
     bubbleEl.className = "bubble from-" + who;
     bubbleEl.textContent = text;
+  }
+  /* ---------- MC（12しゅるい ぜんぶ あつめたら、なかまが MCに なれる） ---------- */
+  const mcData = () => stats.mc || (stats.mc = {id:null, announced:false});
+  const mcChar = () => { const id = stats && stats.mc && stats.mc.id; return id ? (window.NAKAMA||[]).find(x=>x.id===id) || null : null; };
+  const mcOn = () => !!mcChar();
+  // みー と ころ むけの ことば（〜にゃ・〜わん）を ふつうの はなしかたに なおす
+  const mcNeutral = t => String(t).replace(/だにゃ/g,"だよ").replace(/かにゃ/g,"かな").replace(/にゃ〜/g,"ね〜").replace(/にゃ/g,"よ")
+    .replace(/だわん/g,"だよ").replace(/かな わん/g,"かな").replace(/ ?わん/g,"").replace(/よよ/g,"よ");
+  const mcRecent = {};
+  // おなじ セリフが つづかない ように、さいきん つかった ものを よける
+  function mcLine(cat){
+    const c = mcChar(); if(!c || !c.mc || !c.mc[cat]) return null;
+    const list = c.mc[cat], key = c.id+":"+cat, rec = mcRecent[key] || (mcRecent[key] = []);
+    const pool = list.filter(l=>!rec.includes(l));
+    const l = pick(pool.length ? pool : list);
+    rec.push(l); if(rec.length > Math.max(1, list.length-1)) rec.shift();
+    return l;
+  }
+  const mcHTML = c => `<div class="pet-face mc" aria-hidden="true">${[["n","n"],["h","h"],["b","h"],["s","s"]]
+    .map(([cl,f])=>`<img class="f-${cl}" src="nakama/${c.id}/adult_${f}.webp" alt="" draggable="false">`).join("")}</div><div class="name">${c.name}</div>`;
+  function applyMc(){
+    const c = mcChar();
+    catEl.innerHTML = c ? mcHTML(c) : CAT_SVG;
+    dogEl.hidden = !!c;
   }
 
   /* ---------- 出題パターン ---------- */
@@ -1319,7 +1372,8 @@ details.hist summary{cursor:pointer;font-weight:700;color:var(--muted);font-size
     setPets(null,null);
     const w = pick(["cat","dog"]);
     let line;
-    if(p.retry==="miss") line = w==="cat" ? "さっきの もんだい だにゃ！" : "もういちど やってみよう わん！";
+    if(mcOn()) line = p.retry ? mcLine("retry") : (IDLE_BY_TYPE[p.type] && Math.random()<0.4) ? mcLine("hint") : mcLine("questionStart");
+    else if(p.retry==="miss") line = w==="cat" ? "さっきの もんだい だにゃ！" : "もういちど やってみよう わん！";
     else if(p.retry==="slow") line = w==="cat" ? "さっきより はやく できるかにゃ？" : "こんどは すらすら いけるかな わん";
     else if(IDLE_BY_TYPE[p.type] && Math.random()<0.6) line = IDLE_BY_TYPE[p.type][w];
     else line = pick(LINES.idle[w]);
@@ -1407,7 +1461,8 @@ details.hist summary{cursor:pointer;font-weight:700;color:var(--muted);font-size
       if(streak%5===0) setPets("wow","wow"); else setPets("happy","happy");
       nkCheer();
       const w = pick(["cat","dog"]);
-      if(streak%5===0) say(w, `${streak}もん れんぞく せいかい！${w==="cat"?"すごすぎるにゃ":"すごすぎる わん"}！`);
+      if(mcOn()) say(w, streak%5===0 ? `${streak}もん れんぞく！${mcLine("streak")}` : mcLine("correct"));
+      else if(streak%5===0) say(w, `${streak}もん れんぞく せいかい！${w==="cat"?"すごすぎるにゃ":"すごすぎる わん"}！`);
       else say(w, pick(LINES.ok[w]));
       if(nm) celebrateMaster(nm);
       setTimeout(afterAnswer, nm ? 1600 : 900);
@@ -1427,7 +1482,8 @@ details.hist summary{cursor:pointer;font-weight:700;color:var(--muted);font-size
       renderTrack();
       const w = pick(["cat","dog"]);
       setPets(w==="cat" ? null : "sad", w==="dog" ? null : "sad");
-      say(w, timeout ? (w==="cat" ? "じかんぎれ だにゃ。こたえを みて つぎに いこう" : "じかんぎれ わん！つぎは まにあうよ") : pick(LINES.ng[w]));
+      if(mcOn()) say(w, (timeout ? "じかんぎれ！" : "") + mcLine("incorrect"));
+      else say(w, timeout ? (w==="cat" ? "じかんぎれ だにゃ。こたえを みて つぎに いこう" : "じかんぎれ わん！つぎは まにあうよ") : pick(LINES.ng[w]));
       nb.focus({preventScroll:true});
     }
   }
@@ -1534,6 +1590,7 @@ details.hist summary{cursor:pointer;font-weight:700;color:var(--muted);font-size
     $("sumTitle").textContent = (s.ok===ROUND ? "ぜんもん せいかい！すごい！" : "20もん おわったよ！");
     $("sumLevel").textContent = LEVELS[level].label;
     $("sumPets").innerHTML = `<img class="sum-cheer" src="${pickCheer()}" alt="みー と ころ が よろこんで いるよ" draggable="false">`;
+    if(mcOn()){ setPets("happy",null); say("cat", mcLine("finish")); }
     if(pendingSticker){
       const ps = pendingSticker; pendingSticker = null;
       $("sumStk").innerHTML = `<div class="sum-stk-img">${stickerSVG(ps.dk, ps.tier, 120)}</div><div class="sum-stk-t">${stickerMessage(ps)}</div>`;
@@ -1597,7 +1654,7 @@ details.hist summary{cursor:pointer;font-weight:700;color:var(--muted);font-size
       markDirty();
       renderHistory();
       // がめんの うえの「きょうの めあて」「きょうの シール」なども すぐ もとに もどす
-      renderGoal(); renderStickerRow(); nkTick(); renderNk();
+      renderGoal(); renderStickerRow(); nkTick(); renderNk(); applyMc();
       $("gbest").textContent = "-";
       if(mode==="zukan") renderZukan();
     });
@@ -1815,7 +1872,7 @@ details.hist summary{cursor:pointer;font-weight:700;color:var(--muted);font-size
     onAnswered(cell.ok);
     G.idx++;
     if(cell.ok){
-      if(Math.random()<0.25){ setPets("happy","happy"); const w=pick(["cat","dog"]); say(w, pick(LINES.ok[w])); }
+      if(Math.random()<0.25){ setPets("happy","happy"); const w=pick(["cat","dog"]); say(w, mcOn() ? mcLine("correct") : pick(LINES.ok[w])); }
     }else{
       const w=pick(["cat","dog"]);
       setPets(w==="cat"?null:"sad", w==="dog"?null:"sad");
@@ -2130,8 +2187,13 @@ details.hist summary{cursor:pointer;font-weight:700;color:var(--muted);font-size
     const t = today < lim ? today : lim;
     return Math.max(0, dkDiff(last, t) - 1);
   }
+  // あつめた（たびだった・だんかいは とわない。いえでは のぞく）なかまの しゅるい
+  const nkCollected = () => new Set(((stats.nk && stats.nk.dex) || []).filter(e=>e.result==="tabidachi").map(e=>e.id));
+  const mcUnlocked = () => NK_LIST.length > 0 && NK_LIST.every(sp=>nkCollected().has(sp.id));
   function nkNewEgg(T){
-    const sp = pick(NK_LIST);
+    // まだ あつめて いない こ から さきに うまれる（ぜんぶ あつめたら また ぜんぶから）
+    const got = nkCollected(), fresh = NK_LIST.filter(sp=>!got.has(sp.id));
+    const sp = pick(fresh.length ? fresh : NK_LIST);
     return {id:sp.id, start:T, days:[], name:"", born:false};
   }
   function nkTick(){
@@ -2148,6 +2210,7 @@ details.hist summary{cursor:pointer;font-weight:700;color:var(--muted);font-size
       const c = nk.cur, e = {id:c.id, name:c.name, stage:nkStage(c), month:c.start.slice(0,7), result:"tabidachi", at:T};
       nk.dex.push(e); nk.cur = null; nk.nextEgg = null;
       nk.queue.push({t:"depart", e});
+      if(mcUnlocked() && !mcData().announced) nk.queue.push({t:"mcUnlock"});
     }
     if(!nk.cur && (!nk.nextEgg || nk.nextEgg <= T)){
       nk.cur = nkNewEgg(T); nk.nextEgg = null;
@@ -2268,6 +2331,13 @@ details.hist summary{cursor:pointer;font-weight:700;color:var(--muted);font-size
         text: e.stage===0 ? "こんどは うまれるまで いっしょに いようね。なかま ずかんに のったよ"
           : `${nkLabel(sp, e.stage)}まで そだったよ。ありがとう！<br>なかま ずかんに のったよ`,
         buttons:[{label:"いってらっしゃい"}]});
+    }else if(ev.t==="mcUnlock"){
+      mcData().announced = true; saveStats();
+      const pics = NK_LIST.slice(0,3).map(sp=>`<img class="nk-mimg pop" src="nakama/${sp.id}/adult_h.webp" alt="" style="max-height:120px;max-width:100px">`).join("");
+      nkModal({pic:`<div style="display:flex;gap:4px;align-items:flex-end">${pics}</div>`, title:"なかまたちが MCに なれるように なったよ！",
+        text:"12しゅるい ぜんぶ あつめたね！<br>すきな なかまを えらぶと、いっしょに べんきょうして くれるよ",
+        buttons:[{label:"MCを えらぶ", onClick:()=>{ setTimeout(openMcPicker, 350); }}, {label:"あとで", ghost:true}]});
+      renderMcEntry();
     }else if(ev.t==="iede"){
       const e = ev.e, nm = e.stage===0 ? "たまご" : (e.name || nkSp(e.id).name);
       nkModal({pic:nkPicHTML(`nakama/${e.id}/letter.webp`, "pop", 3).replace("<img ", `<img onerror="this.onerror=null;this.src='nakama/letter.webp'" `), title:"おてがみが おいてあるよ…",
@@ -2282,19 +2352,62 @@ details.hist summary{cursor:pointer;font-weight:700;color:var(--muted);font-size
     nkCheer(); say(pick(["cat","dog"]), "たまごの なかで なにか うごいてる！");
   });
 
+  function renderMcEntry(){
+    const b = $("mcEntry"); if(!b) return;
+    b.hidden = !mcUnlocked();
+    b.textContent = mcOn() ? "MCを かえる" : "MCを えらぶ";
+  }
+  let mcCand = null;
+  function openMcPicker(){
+    if(!mcUnlocked()) return;
+    mcCand = null;
+    const cur = mcData().id;
+    $("mcGrid").innerHTML = NK_LIST.map(sp=>`<button class="mc-pick ${sp.id===cur?"now":""}" data-id="${sp.id}" aria-label="${sp.name}">
+        <img src="nakama/${sp.id}/adult_n.webp" alt="" loading="lazy"><b>${sp.name}</b>${sp.id===cur?'<i>いまの MC</i>':""}</button>`).join("");
+    $("mcPrev").innerHTML = `<p class="mc-hint">${cur ? "あたらしい MCを えらんでね" : "すきな なかまを タップしてね"}</p>`;
+    $("mcOk").disabled = true;
+    $("mcReset").hidden = !cur;
+    $("mcGrid").querySelectorAll(".mc-pick").forEach(b=>b.addEventListener("click",()=>{
+      mcCand = b.dataset.id;
+      $("mcGrid").querySelectorAll(".mc-pick").forEach(x=>x.classList.toggle("sel", x===b));
+      const sp = NK_LIST.find(x=>x.id===mcCand);
+      $("mcPrev").innerHTML = `<img class="nk-mimg pop" src="nakama/${sp.id}/adult_h.webp" alt=""><div class="mc-say">${pick(sp.mc.select)}</div>`;
+      $("mcOk").disabled = false;
+    }));
+    $("mcModal").hidden = false;
+  }
+  function closeMcPicker(){ $("mcModal").hidden = true; setTimeout(nkShowQueue, 300); }
+  $("mcEntry").addEventListener("click", openMcPicker);
+  $("mcClose").addEventListener("click", closeMcPicker);
+  $("mcOk").addEventListener("click", ()=>{
+    if(!mcCand) return;
+    mcData().id = mcCand; saveStats(); applyMc(); renderMcEntry(); closeMcPicker();
+    setPets("happy", null); say("cat", mcLine("greeting"));
+  });
+  $("mcReset").addEventListener("click", ()=>{
+    mcData().id = null; saveStats(); applyMc(); renderMcEntry(); closeMcPicker();
+    setPets("happy","happy"); say("cat", "ただいま！また いっしょに がんばろうにゃ");
+  });
+
   function renderNkDex(){
     const nk = stats.nk || {dex:[]}, box = $("nkDex"), dex = [...(nk.dex||[])].reverse();
-    const met = new Set((nk.dex||[]).filter(e=>e.stage>0).map(e=>e.id));
-    $("nkDexCount").textContent = `${met.size} / ${NK_LIST.length} しゅるい`;
-    const items = dex.map(e=>{
+    const got = nkCollected();
+    $("nkDexCount").textContent = `あつめた ${got.size} / ${NK_LIST.length}`;
+    const card = (e, cur) => {
       const sp = nkSp(e.id), [y,m] = e.month.split("-").map(Number);
       const stage = e.stage, iede = e.result==="iede";
       const src = nkImgSrc(e.id, stage, iede ? "s" : "n");
-      const nm = stage===0 ? "たまご" : (e.name || sp.name);
-      const note = iede ? "いえでしちゃった" : stage===0 ? "うまれる まえに たびだった" : `${nkLabel(sp, stage)}まで そだった`;
-      return `<div class="nkd ${iede?"iede":""}"><img src="${src}" alt="" loading="lazy" style="scale:${NK_SCALE[stage]}"><b>${nm}</b><small>${m}がつ・${note}</small></div>`;
-    });
-    const unseen = NK_LIST.filter(sp=>!met.has(sp.id)).map(sp=>`<div class="nkd unseen"><img src="nakama/${sp.id}/adult_n.webp" alt="" loading="lazy"><b>？？？</b><small>まだ あって いない</small></div>`);
+      const nm = stage===0 && cur ? "なぞの たまご" : (e.name || sp.name);
+      const note = cur ? `いくせいちゅうだよ（${nkLabel(sp, stage)}）`
+        : iede ? "いえでしちゃったよ" : `たびだったよ（${nkLabel(sp, stage)}で）`;
+      return `<div class="nkd ${iede?"iede":""} ${cur?"cur":""}"><img src="${src}" alt="" loading="lazy" style="scale:${NK_SCALE[stage]}"><b>${nm}</b><small>${m}がつ・${note}</small></div>`;
+    };
+    const items = [];
+    if(nk.cur) items.push(card({id:nk.cur.id, name:nk.cur.name, stage:nkStage(nk.cur), month:nk.cur.start.slice(0,7), result:"cur"}, true));
+    dex.forEach(e=>items.push(card(e, false)));
+    const shown = new Set([...(nk.dex||[]).map(e=>e.id), ...(nk.cur && nkStage(nk.cur)>0 ? [nk.cur.id] : [])]);
+    const unseen = NK_LIST.filter(sp=>!shown.has(sp.id)).map(sp=>`<div class="nkd unseen"><img src="nakama/${sp.id}/adult_n.webp" alt="" loading="lazy"><b>？？？</b><small>まだ あって いない</small></div>`);
+    renderMcEntry();
     box.innerHTML = items.length || unseen.length ? items.join("") + unseen.join("")
       : `<div class="empty">そだてた なかまが ここに のるよ</div>`;
   }
@@ -2573,6 +2686,7 @@ details.hist summary{cursor:pointer;font-weight:700;color:var(--muted);font-size
 
   backfillSessions();   // まえの きろくを かずに して ひきつぐ（1かい だけ）
   nkTick(); renderNk(); setTimeout(nkShowQueue, 900);
+  applyMc(); if(mcOn()){ setPets(null,null); say("cat", mcLine("greeting")); }
   setLevel(level, false);
   renderHistory();
   renderGoal();
