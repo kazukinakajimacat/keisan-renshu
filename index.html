@@ -914,7 +914,7 @@ details.hist summary{cursor:pointer;font-weight:700;color:var(--muted);font-size
       const r=lvRank(), set=pick([ANIMALS,FRUITS,RIDES]);
       const n = Math.min(set.length, rnd([3,4,5,6][r], [5,6,7,7][r]));
       const row = shuffle(set).slice(0,n);
-      const back = r>0 && Math.random()<0.5;
+      const back = Math.random() < (r===0 ? 0.4 : 0.5);   // かんたん でも「うしろから」を だす
       const k = rnd(r===0 ? 2 : 1, n);
       const idx = back ? n-k : k-1, item=row[idx];
       const mirror = row[back ? k-1 : n-k];
@@ -992,13 +992,14 @@ details.hist summary{cursor:pointer;font-weight:700;color:var(--muted);font-size
     next(){
       const r=lvRank();
       const step = r>=2 && Math.random()<0.3 ? 2 : 1;
-      const shown = 3;
-      const s0 = rnd(1, 10 - step*shown);
-      const seq = Array.from({length:shown}, (_,i)=>s0+i*step), ans = s0+shown*step;
-      return { type:"next", f:xf(`next:${s0}+${step}`), ans, cls:"mid",
+      const down = Math.random() < [0.35,0.45,0.5,0.5][r];   // へって いく ならび（9 → 8 → 7 → ?）
+      const shown = 3, d = down ? -step : step;
+      const s0 = down ? rnd(1 + step*shown, 10) : rnd(1, 10 - step*shown);
+      const seq = Array.from({length:shown}, (_,i)=>s0+i*d), ans = s0+shown*d, last = seq[shown-1];
+      return { type:"next", f:xf(`next:${s0}${down?"-":"+"}${step}`), ans, cls:"mid",
         html:`${seq.join(`<span class="op">→</span>`)}<span class="op">→</span>${BL}`,
-        parent:`${seq.join("→")}→?`, confuse:[seq[shown-1], ans+1, ans-1],
-        explain: step===1 ? `${seq[shown-1]} の つぎは <b class="num">${ans}</b>` : `${step}ずつ ふえて いるので <b class="num">${ans}</b>`,
+        parent:`${seq.join("→")}→?`, confuse:[last, last-d, ans+1, ans-1].filter(v=>v!==ans),
+        explain: `${step}ずつ ${down ? "へって" : "ふえて"} いるので <b class="num">${ans}</b>`,
         frame:numLine(ans, {soft:i=>seq.includes(i)}) };
     },
 
