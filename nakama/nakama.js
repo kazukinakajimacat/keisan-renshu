@@ -3,7 +3,8 @@
   ------------------------------------------------------------
   あたらしい なかまを ふやす ときは：
     1. nakama/<id>/ フォルダに え を いれる
-       egg_n, egg_h, baby_n/h/s, child_n/h/s, young_n/h/s, adult_n/h/s, elder_n/h/s, depart（すべて .webp）
+       egg_n, egg_h, baby_n/h/s, child_n/h/s, young_n/h/s, adult_n/h/s, elder_n/h/s, depart, letter（すべて .webp）
+       letter（いえでの てがみ）が ない ときは nakama/letter.webp を つかう
        _n＝ふつう、_h＝よろこび、_s＝しょんぼり
     2. 下の リストの「いちばん さいご」に 1行 たす
          { id: "フォルダ名", name: "しゅるいの なまえ（ひらがな）", young: "おとめ" か "せいねん" },
@@ -11,4 +12,5 @@
 */
 window.NAKAMA = [
   { id: "popura", name: "ぽぷら", young: "おとめ" },
+  { id: "gorosuke", name: "ごろすけ", young: "せいねん" },
 ];

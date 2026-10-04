@@ -135,7 +135,7 @@
 
 ## なかまの追加方法
 
-1. `nakama/<id>/` フォルダに絵を入れる（egg_n, egg_h, baby_n/h/s, child_n/h/s, young_n/h/s, adult_n/h/s, elder_n/h/s, depart。すべて .webp）
+1. `nakama/<id>/` フォルダに絵を入れる（egg_n, egg_h, baby_n/h/s, child_n/h/s, young_n/h/s, adult_n/h/s, elder_n/h/s, depart, letter。すべて .webp。letter がなければ共通の手紙を使う）
 2. `nakama/nakama.js` のリストのいちばん最後に1行足す
 3. 絵の作り方は `docs/ideas/nakama-sodate.md` を参照
 

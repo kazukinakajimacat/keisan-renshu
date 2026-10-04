@@ -2270,7 +2270,7 @@ details.hist summary{cursor:pointer;font-weight:700;color:var(--muted);font-size
         buttons:[{label:"いってらっしゃい"}]});
     }else if(ev.t==="iede"){
       const e = ev.e, nm = e.stage===0 ? "たまご" : (e.name || nkSp(e.id).name);
-      nkModal({pic:nkPicHTML("nakama/letter.webp", "pop", 3), title:"おてがみが おいてあるよ…",
+      nkModal({pic:nkPicHTML(`nakama/${e.id}/letter.webp`, "pop", 3).replace("<img ", `<img onerror="this.onerror=null;this.src='nakama/letter.webp'" `), title:"おてがみが おいてあるよ…",
         text:`「さみしくなって たびに でるね。また どこかで あおうね。」<br>${nm}は いえでしちゃった。<br>あした あたらしい たまごが とどくよ`,
         buttons:[{label:"また あおうね"}]});
     }else setTimeout(nkShowQueue, 0);
