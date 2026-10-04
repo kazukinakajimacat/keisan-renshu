@@ -2310,7 +2310,7 @@ details.hist summary{cursor:pointer;font-weight:700;color:var(--muted);font-size
   }
   function nkShowQueue(){
     const nk = stats.nk; if(!nk || !nk.queue || !nk.queue.length || nkModalOpen) return;
-    if(!$("overlay").hidden || !$("missPop").hidden){ setTimeout(nkShowQueue, 1500); return; }
+    if(!$("overlay").hidden || !$("missPop").hidden || !$("mcModal").hidden){ setTimeout(nkShowQueue, 1500); return; }
     const ev = nk.queue.shift(); saveStats();
     const c = nk.cur;
     if(ev.t==="egg"){
