@@ -97,6 +97,54 @@
   Clock.prototype.addMinute = function(d){ const t = ClockMath.add(this.h, this.m, d * this.step); this.set(t.h, t.m); };
   Clock.prototype.render = function(){ this.el.innerHTML = clockSVG(this.h, this.m, { size: this.size, cls: "ck-live" }); };
 
-  root.ClockMath = ClockMath; root.clockSVG = clockSVG; root.Clock = Clock;
+  /* ---------- ドラムロール（上下に スワイプして えらぶ） ---------- */
+  // values：えらべる かず。まわりつづける ように 同じ ならびを くりかえして ならべる
+  function Wheel(el, opt){
+    this.el = el; this.values = opt.values; this.fmt = opt.format || (v => String(v));
+    this.onChange = opt.onChange || function(){}; this.itemH = opt.itemH || 46;
+    const n = this.values.length; this.reps = Math.max(5, Math.ceil(60 / n)); if(this.reps % 2 === 0) this.reps++;
+    let html = "";
+    for(let r = 0; r < this.reps; r++) this.values.forEach((v, i) => { html += `<div class="wh-item" data-i="${r * n + i}">${this.fmt(v)}</div>`; });
+    el.classList.add("wh");
+    el.innerHTML = `<div class="wh-scroll" tabindex="0">${`<div class="wh-pad"></div>`}${html}<div class="wh-pad"></div></div><div class="wh-band" aria-hidden="true"></div>`;
+    this.sc = el.querySelector(".wh-scroll"); this.items = [...el.querySelectorAll(".wh-item")];
+    this.idx = -1;
+    this.setValue(opt.value != null ? opt.value : this.values[0], false);
+    let t = null;
+    this.sc.addEventListener("scroll", () => { this.mark(); clearTimeout(t); t = setTimeout(() => this.settle(), 110); }, { passive: true });
+    this.items.forEach(it => it.addEventListener("click", () => this.scrollToIndex(+it.dataset.i, true)));
+    this.sc.addEventListener("keydown", e => {
+      if(e.key === "ArrowUp"){ e.preventDefault(); this.scrollToIndex(this.idx - 1, true); }
+      if(e.key === "ArrowDown"){ e.preventDefault(); this.scrollToIndex(this.idx + 1, true); }
+    });
+  }
+  Wheel.prototype.centerIndex = function(){ return Math.round(this.sc.scrollTop / this.itemH); };
+  Wheel.prototype.mark = function(){
+    if(!this.el.isConnected) return;   // つぎの もんだいに かわった あとの ふるい ドラムは なにも しない
+    const c = this.centerIndex();
+    if(c === this.idx) return;
+    this.items.forEach((it, i) => it.classList.toggle("on", i === c));
+    this.idx = c;
+    this.value = this.values[((c % this.values.length) + this.values.length) % this.values.length];
+    this.onChange(this.value);
+  };
+  Wheel.prototype.scrollToIndex = function(i, smooth){
+    i = Math.max(0, Math.min(this.items.length - 1, i));
+    this.sc.scrollTo({ top: i * this.itemH, behavior: smooth ? "smooth" : "auto" });
+    if(!smooth) this.mark();
+  };
+  // はしに ちかづいたら まんなかの おなじ かずへ こっそり もどす（ずっと まわせる）
+  Wheel.prototype.settle = function(){
+    if(!this.el.isConnected) return;
+    const n = this.values.length, c = this.centerIndex(), mid = Math.floor(this.reps / 2) * n + (c % n);
+    if(Math.abs(c - mid) >= n * 2) this.scrollToIndex(mid, false);
+    else if(Math.abs(this.sc.scrollTop - c * this.itemH) > 1) this.scrollToIndex(c, true);
+  };
+  Wheel.prototype.setValue = function(v, smooth){
+    const n = this.values.length, k = Math.max(0, this.values.indexOf(v));
+    this.scrollToIndex(Math.floor(this.reps / 2) * n + k, smooth);
+  };
+
+  root.ClockMath = ClockMath; root.clockSVG = clockSVG; root.Clock = Clock; root.Wheel = Wheel;
   if(typeof module !== "undefined" && module.exports) module.exports = { ClockMath };
 })(typeof window !== "undefined" ? window : globalThis);

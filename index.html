@@ -382,6 +382,18 @@ details.hist summary{cursor:pointer;font-weight:700;color:var(--muted);font-size
 
 
 /* とけい */
+.ck-wheels{display:flex;align-items:center;justify-content:center;gap:10px}
+.ck-wu{font-size:20px;font-weight:900;color:var(--muted);min-width:2em}
+.wh{position:relative;width:96px;height:144px;border:3px solid var(--blue);border-radius:18px;background:var(--surface);overflow:hidden}
+.wh-scroll{height:100%;overflow-y:scroll;scroll-snap-type:y mandatory;scrollbar-width:none;-webkit-overflow-scrolling:touch;overscroll-behavior:contain}
+.wh-scroll::-webkit-scrollbar{display:none}
+.wh-pad{height:46px}
+.wh-item{height:46px;display:flex;align-items:center;justify-content:center;scroll-snap-align:center;font-size:24px;font-weight:900;color:var(--blue);opacity:.7;cursor:pointer;user-select:none;-webkit-user-select:none;font-variant-numeric:tabular-nums;transition:opacity .1s,font-size .1s}
+.wh-item.on{opacity:1;font-size:34px;color:var(--ink)}
+.wh-band{position:absolute;left:0;right:0;top:46px;height:46px;background:color-mix(in srgb,var(--blue) 14%,transparent);border-top:2px solid color-mix(in srgb,var(--blue) 40%,transparent);border-bottom:2px solid color-mix(in srgb,var(--blue) 40%,transparent);pointer-events:none}
+.wh::before,.wh::after{content:"";position:absolute;left:0;right:0;height:18px;pointer-events:none;z-index:1}
+.wh::before{top:0;background:linear-gradient(var(--surface),transparent)}
+.wh::after{bottom:0;background:linear-gradient(transparent,var(--surface))}
 #clockTop .levels.ck-lv{grid-template-columns:repeat(3,1fr)!important}
 .lv[data-ck][aria-pressed="true"]{color:#fff}
 .lv[data-ck="easy"][aria-pressed="true"]{background:var(--ok)}
@@ -2583,30 +2595,14 @@ details.hist summary{cursor:pointer;font-weight:700;color:var(--muted);font-size
       q.innerHTML = ask;
       box.innerHTML = clockSVG(p.h, p.m, {size:240});
       const needM = !(p.type==="read" && p.m===0);
-      const one = CK_LEVELS[ckLevel].oneMin;
-      const mins = p.type==="read" ? CK_LEVELS[ckLevel].mins : [0,10,20,30,40,50];
-      // むずかしい：ふんは −10 −1 ＋1 ＋10 で かずを うごかす（1ぷん たんい）
-      const minRows = one
-        ? `<div class="ck-row"><span class="ck-unit">ふん</span><div class="ck-step">
-             <button class="choice sm" data-ms="-10">−10</button><button class="choice" data-ms="-1">−1</button>
-             <b class="ck-mval num" id="ckMinVal">0</b>
-             <button class="choice" data-ms="1">＋1</button><button class="choice sm" data-ms="10">＋10</button></div></div>`
-        : `<div class="ck-row"><span class="ck-unit">ふん</span><div class="ck-mins">${mins.map(m=>`<button class="choice num" data-m="${m}">${m===0?"00":m}</button>`).join("")}</div></div>`;
-      ans.innerHTML = `<div class="ck-row"><span class="ck-unit">じ</span><div class="ck-hours">${Array.from({length:12},(_,i)=>`<button class="choice num" data-h="${i+1}">${i+1}</button>`).join("")}</div></div>`
-        + (needM ? minRows : "")
-        + `<div class="ck-pick" id="ckPick"></div><button class="next ck-go" id="ckGo" disabled>こたえる</button>`;
-      if(!needM || one) ckSel.m = 0;
-      const upd = () => {
-        if($("ckMinVal")) $("ckMinVal").textContent = ckSel.m;
-        ans.querySelectorAll("[data-h]").forEach(b=>b.classList.toggle("sel", +b.dataset.h===ckSel.h));
-        ans.querySelectorAll("[data-m]").forEach(b=>b.classList.toggle("sel", +b.dataset.m===ckSel.m));
-        $("ckGo").disabled = ckSel.h===null || ckSel.m===null;
-        $("ckPick").textContent = one && needM ? `${ckSel.h ?? "？"}じ ${ckSel.m}${CM.funLabel(ckSel.m)}` : "";
-      };
-      ans.querySelectorAll("[data-h]").forEach(b=>b.addEventListener("click",()=>{ if(ckCur){ ckSel.h=+b.dataset.h; upd(); } }));
-      ans.querySelectorAll("[data-m]").forEach(b=>b.addEventListener("click",()=>{ if(ckCur){ ckSel.m=+b.dataset.m; upd(); } }));
-      ans.querySelectorAll("[data-ms]").forEach(b=>b.addEventListener("click",()=>{ if(ckCur){ ckSel.m = (ckSel.m + +b.dataset.ms + 60) % 60; upd(); } }));
-      upd();
+      // じ と ふん は ドラムロールで えらぶ（ふんは むずかしさで きざみが かわる）
+      const mins = p.type==="read" ? CK_LEVELS[ckLevel].mins : CK_LEVELS[ckLevel].oneMin ? CK_LEVELS[ckLevel].mins : [0,10,20,30,40,50];
+      ans.innerHTML = `<div class="ck-wheels"><div id="ckWh"></div><span class="ck-wu">じ</span>${needM ? `<div id="ckWm"></div><span class="ck-wu" id="ckWmU">ふん</span>` : ""}</div>
+        <button class="next ck-go" id="ckGo">こたえる</button>`;
+      ckSel = {h:12, m:0};
+      new window.Wheel($("ckWh"), {values:Array.from({length:12},(_,i)=>i+1), value:12, onChange:v=>{ ckSel.h = v; }});
+      if(needM) new window.Wheel($("ckWm"), {values:mins, value:0, onChange:v=>{ ckSel.m = v; if($("ckWmU")) $("ckWmU").textContent = CM.funLabel(v); }});
+      $("ckGo").addEventListener("click", ()=>ckAnswer({h:ckSel.h, m:ckSel.m}));
       $("ckGo").addEventListener("click", ()=>{ if(ckSel.h!==null && ckSel.m!==null) ckAnswer({h:ckSel.h, m:ckSel.m}); });
     }
     ckTrack(); setPets(null,null);
