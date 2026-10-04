@@ -408,6 +408,10 @@ details.hist summary{cursor:pointer;font-weight:700;color:var(--muted);font-size
 .ck-mins{flex:1;display:grid;grid-template-columns:repeat(6,1fr);gap:6px}
 .ck-ones{flex:1;display:grid;grid-template-columns:repeat(5,1fr);gap:6px}
 .ck-ones .choice{font-size:clamp(20px,6vw,28px);padding:6px 0}
+.ck-step{flex:1;display:flex;gap:6px;align-items:center}
+.ck-step .choice{flex:1;font-size:clamp(20px,6vw,26px);padding:8px 0}
+.ck-step .choice.sm{font-size:clamp(16px,4.6vw,20px)}
+.ck-mval{flex:0 0 2.4em;text-align:center;font-size:clamp(30px,9vw,40px);font-weight:900;background:var(--surface);border:3px solid var(--blue);border-radius:14px;padding:2px 0}
 .ck-pick{text-align:center;font-size:22px;font-weight:900;min-height:1.2em}
 .ck-pick:empty{display:none}
 .ck-ctl .choice.sm{font-size:18px}
@@ -2581,29 +2585,27 @@ details.hist summary{cursor:pointer;font-weight:700;color:var(--muted);font-size
       const needM = !(p.type==="read" && p.m===0);
       const one = CK_LEVELS[ckLevel].oneMin;
       const mins = p.type==="read" ? CK_LEVELS[ckLevel].mins : [0,10,20,30,40,50];
-      // むずかしい：ふんは「10の くらい」と「1の くらい」を えらぶ（1ぷん たんい）
+      // むずかしい：ふんは −10 −1 ＋1 ＋10 で かずを うごかす（1ぷん たんい）
       const minRows = one
-        ? `<div class="ck-row"><span class="ck-unit">ふん</span><div class="ck-mins">${[0,1,2,3,4,5].map(t=>`<button class="choice num" data-mt="${t}">${t*10===0?"00":t*10}</button>`).join("")}</div></div>
-           <div class="ck-row"><span class="ck-unit">＋</span><div class="ck-ones">${[0,1,2,3,4,5,6,7,8,9].map(o=>`<button class="choice num" data-mo="${o}">${o}</button>`).join("")}</div></div>`
+        ? `<div class="ck-row"><span class="ck-unit">ふん</span><div class="ck-step">
+             <button class="choice sm" data-ms="-10">−10</button><button class="choice" data-ms="-1">−1</button>
+             <b class="ck-mval num" id="ckMinVal">0</b>
+             <button class="choice" data-ms="1">＋1</button><button class="choice sm" data-ms="10">＋10</button></div></div>`
         : `<div class="ck-row"><span class="ck-unit">ふん</span><div class="ck-mins">${mins.map(m=>`<button class="choice num" data-m="${m}">${m===0?"00":m}</button>`).join("")}</div></div>`;
       ans.innerHTML = `<div class="ck-row"><span class="ck-unit">じ</span><div class="ck-hours">${Array.from({length:12},(_,i)=>`<button class="choice num" data-h="${i+1}">${i+1}</button>`).join("")}</div></div>`
         + (needM ? minRows : "")
         + `<div class="ck-pick" id="ckPick"></div><button class="next ck-go" id="ckGo" disabled>こたえる</button>`;
-      let mt = null, mo = null;
-      if(!needM) ckSel.m = 0;
+      if(!needM || one) ckSel.m = 0;
       const upd = () => {
-        if(one && needM) ckSel.m = (mt===null || mo===null) ? null : mt*10 + mo;
+        if($("ckMinVal")) $("ckMinVal").textContent = ckSel.m;
         ans.querySelectorAll("[data-h]").forEach(b=>b.classList.toggle("sel", +b.dataset.h===ckSel.h));
         ans.querySelectorAll("[data-m]").forEach(b=>b.classList.toggle("sel", +b.dataset.m===ckSel.m));
-        ans.querySelectorAll("[data-mt]").forEach(b=>b.classList.toggle("sel", +b.dataset.mt===mt));
-        ans.querySelectorAll("[data-mo]").forEach(b=>b.classList.toggle("sel", +b.dataset.mo===mo));
         $("ckGo").disabled = ckSel.h===null || ckSel.m===null;
-        $("ckPick").textContent = one && needM ? `${ckSel.h ?? "？"}じ ${mt===null ? "？" : mt}${mo===null ? "？" : mo}${(mt===null||mo===null) ? "ふん" : CM.funLabel(mt*10+mo)}` : "";
+        $("ckPick").textContent = one && needM ? `${ckSel.h ?? "？"}じ ${ckSel.m}${CM.funLabel(ckSel.m)}` : "";
       };
       ans.querySelectorAll("[data-h]").forEach(b=>b.addEventListener("click",()=>{ if(ckCur){ ckSel.h=+b.dataset.h; upd(); } }));
       ans.querySelectorAll("[data-m]").forEach(b=>b.addEventListener("click",()=>{ if(ckCur){ ckSel.m=+b.dataset.m; upd(); } }));
-      ans.querySelectorAll("[data-mt]").forEach(b=>b.addEventListener("click",()=>{ if(ckCur){ mt=+b.dataset.mt; upd(); } }));
-      ans.querySelectorAll("[data-mo]").forEach(b=>b.addEventListener("click",()=>{ if(ckCur){ mo=+b.dataset.mo; upd(); } }));
+      ans.querySelectorAll("[data-ms]").forEach(b=>b.addEventListener("click",()=>{ if(ckCur){ ckSel.m = (ckSel.m + +b.dataset.ms + 60) % 60; upd(); } }));
       upd();
       $("ckGo").addEventListener("click", ()=>{ if(ckSel.h!==null && ckSel.m!==null) ckAnswer({h:ckSel.h, m:ckSel.m}); });
     }
