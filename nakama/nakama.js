@@ -14,4 +14,5 @@ window.NAKAMA = [
   { id: "popura", name: "ぽぷら", young: "おとめ" },
   { id: "gorosuke", name: "ごろすけ", young: "せいねん" },
   { id: "fuwarin", name: "ふわりん", young: "おとめ" },
+  { id: "shizuku", name: "しずく", young: "しょうねん" },
 ];
