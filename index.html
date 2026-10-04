@@ -441,6 +441,21 @@ details.hist summary{cursor:pointer;font-weight:700;color:var(--muted);font-size
 .ck-arrow{font-weight:900;color:var(--muted);text-align:center;font-size:14px;line-height:1.3}
 #ckFb .ck-flow{margin-top:4px}
 
+
+/* ホーム */
+.navbar{display:flex;align-items:center;gap:10px}
+.navbar .home-btn{flex:0 0 auto;padding:8px 14px;font-size:15px}
+.crumb{font-weight:900;font-size:18px}
+.tiles{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.tile{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px;padding:14px 6px!important;min-height:112px;color:var(--ink)!important}
+.tile b{font-size:17px;font-weight:900}
+.ti{display:flex;align-items:center;justify-content:center;width:56px;height:56px;border-radius:16px;font-weight:900}
+.ti-drill{background:color-mix(in srgb,var(--blue) 18%,transparent);color:var(--blue);font-size:22px}
+.ti-grid{display:grid;grid-template-columns:1fr 1fr;gap:4px;padding:10px;background:color-mix(in srgb,var(--ok) 18%,transparent)}
+.ti-grid i{display:block;width:16px;height:16px;background:var(--ok);border-radius:4px}
+.ti-clock{background:color-mix(in srgb,var(--red) 14%,transparent)}
+.ti-clock .ck{width:46px;height:46px}
+.ti-zukan{background:color-mix(in srgb,var(--yellow) 25%,transparent);color:var(--yellow);font-size:30px}
 /* today's sticker */
 .stkrow{display:flex;align-items:center;gap:12px;background:var(--surface);border:2px solid var(--line);border-radius:16px;padding:8px 12px}
 .stk-icon{flex:0 0 52px;color:var(--line);display:flex}
@@ -580,15 +595,9 @@ details.hist summary{cursor:pointer;font-weight:700;color:var(--muted);font-size
 </style>
 
 <div class="wrap">
-  <div class="modes" role="group" aria-label="コース">
-    <button class="md" data-md="drill" id="md-drill">いろいろ</button>
-    <button class="md" data-md="grid" id="md-grid">ます けいさん</button>
-    <button class="md" data-md="clock" id="md-clock">とけい</button>
-    <button class="md" data-md="zukan" id="md-zukan">ずかん</button>
-  </div>
-  <div class="goal">
-    <div class="goal-l"><span id="goalText"></span><span class="goal-st" id="goalStreak" hidden></span></div>
-    <div class="goal-dots" id="goalDots" aria-hidden="true"></div>
+  <div class="navbar" id="navbar" hidden>
+    <button class="md home-btn" data-md="home" id="md-home" aria-label="ホームに もどる">◀ ホーム</button>
+    <div class="crumb" id="crumb"></div>
   </div>
   <div class="nk-modal" id="mcModal" hidden><div class="nk-mcard mc-card" role="dialog" aria-modal="true" aria-labelledby="mcTitle">
     <h2 id="mcTitle">MCを えらぼう</h2>
@@ -631,19 +640,6 @@ details.hist summary{cursor:pointer;font-weight:700;color:var(--muted);font-size
     <button class="lv" data-lv="super" id="lv-super">ちょう むずかしい</button>
   </div>
   <div class="super-note" id="superNote" hidden>むずかしい もんだい ばかり。1もん 10びょう！</div>
-  <div class="stkrow">
-    <div class="stk-icon" id="stkIcon"></div>
-    <div class="stk-txt"><div id="stkText"></div><div class="stk-next"><span id="stkNext"></span><span class="stk-pips" id="stkPips" aria-hidden="true"></span></div></div>
-  </div>
-  <div class="nkrow" id="nkRow" hidden>
-    <button class="nk-pic" id="nkPic" aria-label="なかま"><img id="nkImg" alt="" draggable="false"></button>
-    <div class="nk-txt">
-      <div class="nk-name"><b id="nkName"></b><span class="nk-stage" id="nkStage"></span></div>
-      <div class="nk-next" id="nkNext"></div>
-      <div class="nk-bar" aria-hidden="true"><i id="nkBar"></i></div>
-      <div class="nk-mood" id="nkMood"></div>
-    </div>
-  </div>
   <div class="track" id="track" aria-hidden="true"></div>
   </div>
 
@@ -675,6 +671,36 @@ details.hist summary{cursor:pointer;font-weight:700;color:var(--muted);font-size
     <div class="pet" id="cat"></div>
     <div class="bubble from-cat" id="bubble" aria-live="polite"></div>
     <div class="pet" id="dog"></div>
+  </div>
+
+  <div id="homeMain" class="stack">
+    <div class="goal">
+    <div class="goal-l"><span id="goalText"></span><span class="goal-st" id="goalStreak" hidden></span></div>
+    <div class="goal-dots" id="goalDots" aria-hidden="true"></div>
+  </div>
+  <div class="stkrow">
+    <div class="stk-icon" id="stkIcon"></div>
+    <div class="stk-txt"><div id="stkText"></div><div class="stk-next"><span id="stkNext"></span><span class="stk-pips" id="stkPips" aria-hidden="true"></span></div></div>
+  </div>
+  <div class="nkrow" id="nkRow" hidden>
+    <button class="nk-pic" id="nkPic" aria-label="なかま"><img id="nkImg" alt="" draggable="false"></button>
+    <div class="nk-txt">
+      <div class="nk-name"><b id="nkName"></b><span class="nk-stage" id="nkStage"></span></div>
+      <div class="nk-next" id="nkNext"></div>
+      <div class="nk-bar" aria-hidden="true"><i id="nkBar"></i></div>
+      <div class="nk-mood" id="nkMood"></div>
+    </div>
+  </div>
+    <div class="tiles" role="group" aria-label="コース">
+      <button class="md tile" data-md="drill" id="md-drill"><span class="ti ti-drill">1+2</span><b>いろいろ もんだい</b></button>
+      <button class="md tile" data-md="grid" id="md-grid"><span class="ti ti-grid"><i></i><i></i><i></i><i></i></span><b>ます けいさん</b></button>
+      <button class="md tile" data-md="clock" id="md-clock"><span class="ti ti-clock" id="tileClock"></span><b>とけい</b></button>
+      <button class="md tile" data-md="zukan" id="md-zukan"><span class="ti ti-zukan">★</span><b>ずかん</b></button>
+    </div>
+  <details class="hist" id="hist">
+    <summary>おうちの方へ：これまでの記録</summary>
+    <div class="hist-body" id="histBody"></div>
+  </details>
   </div>
 
   <div id="drillMain" class="stack">
@@ -767,10 +793,6 @@ details.hist summary{cursor:pointer;font-weight:700;color:var(--muted);font-size
   </div>
 
   <div class="save-state" id="saveState" aria-live="polite"></div>
-  <details class="hist" id="hist">
-    <summary>おうちの方へ：これまでの記録</summary>
-    <div class="hist-body" id="histBody"></div>
-  </details>
 </div>
 
 <div class="overlay" id="overlay" hidden>
@@ -2852,12 +2874,23 @@ details.hist summary{cursor:pointer;font-weight:700;color:var(--muted);font-size
     return p;
   }
 
-  let mode = "drill";
-  try{ const m=localStorage.getItem(MODE_KEY); if(m==="grid"||m==="drill"||m==="zukan"||m==="clock") mode=m; }catch(e){}
+  let mode = "home";
+  try{ const m=localStorage.getItem(MODE_KEY); /* さいしょは いつも ホームから */ }catch(e){}
+  function renderHome(){
+    renderGoal(); renderStickerRow(); renderNk(); renderHistory();
+    if(!$("tileClock").firstChild) $("tileClock").innerHTML = clockSVG(3, 0, {size:52});
+    setPets(null,null);
+    const w = pick(["cat","dog"]), t = (stats.days[todayKey()]||{});
+    say(w, mcOn() ? mcLine("greeting") : t.done ? (w==="cat" ? "きょうの めあては クリアずみ だにゃ！" : "きょうも よく がんばったね わん")
+      : (w==="cat" ? "きょうは なにを するかにゃ？" : "どれで あそぶ？ わん"));
+  }
   function setMode(m){
     mode=m; try{ lsSet(MODE_KEY,m); }catch(e){}
     document.querySelectorAll(".md").forEach(b=>b.setAttribute("aria-pressed", b.dataset.md===m?"true":"false"));
-    const g = m==="grid", z = m==="zukan", d = m==="drill", c = m==="clock";
+    const g = m==="grid", z = m==="zukan", d = m==="drill", c = m==="clock", h = m==="home";
+    $("homeMain").hidden = !h; $("navbar").hidden = h;
+    $("crumb").textContent = {drill:"いろいろ もんだい", grid:"ます けいさん", clock:"とけい", zukan:"ずかん"}[m] || "";
+    window.scrollTo({top:0});
     $("goalBanner").hidden = true;
     $("drillTop").hidden=!d; $("drillMain").hidden=!d;
     $("gridTop").hidden=!g; $("gridMain").hidden=!g;
@@ -2869,6 +2902,7 @@ details.hist summary{cursor:pointer;font-weight:700;color:var(--muted);font-size
     if(g) setGKind(gkind);
     else if(d){ nextProblem(); renderStickerRow(); }
     else if(c) ckStart();
+    else if(h) renderHome();
     else renderZukan();
   }
   document.querySelectorAll(".md").forEach(b=>b.addEventListener("click",()=>{ if(b.dataset.md!==mode) setMode(b.dataset.md); }));
@@ -2952,7 +2986,7 @@ details.hist summary{cursor:pointer;font-weight:700;color:var(--muted);font-size
     }catch(e){}
     booting = true;
     setLevel(level, false); renderHistory(); renderGoal(); renderStickerRow();
-    const m = (d.mode==="grid"||d.mode==="zukan"||d.mode==="drill"||d.mode==="clock") ? d.mode : mode;
+    const m = (d.mode==="grid"||d.mode==="zukan"||d.mode==="drill"||d.mode==="clock"||d.mode==="home") ? d.mode : mode;
     if(!(G && G.running)) setMode(m);
     booting = false;
   }
