@@ -382,6 +382,7 @@ details.hist summary{cursor:pointer;font-weight:700;color:var(--muted);font-size
 
 
 /* とけい */
+#clockTop .levels.ck-lv{grid-template-columns:repeat(3,1fr)!important}
 .lv[data-ck][aria-pressed="true"]{color:#fff}
 .lv[data-ck="easy"][aria-pressed="true"]{background:var(--ok)}
 .lv[data-ck="normal"][aria-pressed="true"]{background:var(--blue)}
@@ -405,11 +406,17 @@ details.hist summary{cursor:pointer;font-weight:700;color:var(--muted);font-size
 .ck-unit{flex:0 0 2.2em;font-weight:900;color:var(--muted);text-align:center}
 .ck-hours{flex:1;display:grid;grid-template-columns:repeat(6,1fr);gap:6px}
 .ck-mins{flex:1;display:grid;grid-template-columns:repeat(6,1fr);gap:6px}
+.ck-ones{flex:1;display:grid;grid-template-columns:repeat(5,1fr);gap:6px}
+.ck-ones .choice{font-size:clamp(20px,6vw,28px);padding:6px 0}
+.ck-pick{text-align:center;font-size:22px;font-weight:900;min-height:1.2em}
+.ck-pick:empty{display:none}
+.ck-ctl .choice.sm{font-size:18px}
 .ck-hours .choice,.ck-mins .choice{font-size:clamp(20px,6vw,28px);padding:8px 0}
 .ck-row .choice.sel{border-color:var(--blue);background:color-mix(in srgb,var(--blue) 18%,var(--btn));color:var(--ink)}
 .ck-go{align-self:center;min-width:60%}
 .ck-go:disabled{opacity:.45;cursor:default}
-.ck-ctl{display:grid;grid-template-columns:auto 1fr 1fr auto 1fr 1fr;gap:6px;align-items:center}
+.ck-ctl{display:flex;gap:6px;align-items:center}
+.ck-ctl .choice{flex:1}
 .ck-ctl span{font-weight:900;color:var(--muted);padding:0 4px}
 .ck-ctl .choice{font-size:28px;padding:6px 0}
 .ck-flow{display:flex;align-items:center;justify-content:center;gap:8px;flex-wrap:wrap}
@@ -638,7 +645,7 @@ details.hist summary{cursor:pointer;font-weight:700;color:var(--muted);font-size
   </div>
 
   <div id="clockTop" class="stack" hidden>
-    <div class="levels" role="group" aria-label="むずかしさ">
+    <div class="levels ck-lv" role="group" aria-label="むずかしさ">
       <button class="lv" data-ck="easy">やさしい</button>
       <button class="lv" data-ck="normal">ふつう</button>
       <button class="lv" data-ck="hard">むずかしい</button>
@@ -2498,7 +2505,7 @@ details.hist summary{cursor:pointer;font-weight:700;color:var(--muted);font-size
   const CK_LEVELS = {
     easy:  {label:"やさしい",  types:["read","set"],               mins:[0,30],               step:30},
     normal:{label:"ふつう",    types:["read","set","fwd","back"], mins:[0,10,20,30,40,50], step:10, deltas:[10,20,30],       cross:false},
-    hard:  {label:"むずかしい", types:["read","set","fwd","back"], mins:[0,10,20,30,40,50], step:10, deltas:[10,20,30,40,50], cross:true}
+    hard:  {label:"むずかしい", types:["read","set","fwd","back"], mins:Array.from({length:60},(_,i)=>i), step:1, deltas:[10,20,30,40,50], cross:true, oneMin:true}
   };
   const CK_ROUND = 10, CK_KEY = "sansu-drill-clocklv-v1";
   let ckLevel = "easy"; try{ const l = localStorage.getItem(CK_KEY); if(CK_LEVELS[l]) ckLevel = l; }catch(e){}
@@ -2555,13 +2562,15 @@ details.hist summary{cursor:pointer;font-weight:700;color:var(--muted);font-size
       q.innerHTML = `<b>${fmtCk(p.ans)}</b>に<br>とけいを あわせよう！`;
       box.innerHTML = `<div class="ck-live-wrap" id="ckLive"></div>`;
       ckLive = new window.Clock($("ckLive"), {h:12, m:0, step:CK_LEVELS[ckLevel].step, size:260});
-      ans.innerHTML = `<div class="ck-ctl"><span>じ</span><button class="choice" data-ctl="h-">−</button><button class="choice" data-ctl="h+">＋</button>
-        <span>ふん</span><button class="choice" data-ctl="m-">−</button><button class="choice" data-ctl="m+">＋</button></div>
+      const one = CK_LEVELS[ckLevel].oneMin;
+      ans.innerHTML = `<div class="ck-ctl"><span>じ</span><button class="choice" data-ctl="h-">−</button><button class="choice" data-ctl="h+">＋</button></div>
+        <div class="ck-ctl"><span>ふん</span>${one ? `<button class="choice sm" data-ctl="m-10">−10</button>` : ""}<button class="choice" data-ctl="m-">−${one?"1":""}</button><button class="choice" data-ctl="m+">＋${one?"1":""}</button>${one ? `<button class="choice sm" data-ctl="m+10">＋10</button>` : ""}</div>
         <button class="next ck-go" id="ckGo">こたえる</button>`;
       ans.querySelectorAll("[data-ctl]").forEach(b=>b.addEventListener("click",()=>{
         if(!ckCur) return; const c=b.dataset.ctl;
         if(c==="h+") ckLive.addHour(1); if(c==="h-") ckLive.addHour(-1);
         if(c==="m+") ckLive.addMinute(1); if(c==="m-") ckLive.addMinute(-1);
+        if(c==="m+10") ckLive.addMinute(10); if(c==="m-10") ckLive.addMinute(-10);
       }));
       $("ckGo").addEventListener("click", ()=>ckAnswer({h:ckLive.h, m:ckLive.m}));
     }else{
@@ -2570,18 +2579,32 @@ details.hist summary{cursor:pointer;font-weight:700;color:var(--muted);font-size
       q.innerHTML = ask;
       box.innerHTML = clockSVG(p.h, p.m, {size:240});
       const needM = !(p.type==="read" && p.m===0);
+      const one = CK_LEVELS[ckLevel].oneMin;
       const mins = p.type==="read" ? CK_LEVELS[ckLevel].mins : [0,10,20,30,40,50];
+      // むずかしい：ふんは「10の くらい」と「1の くらい」を えらぶ（1ぷん たんい）
+      const minRows = one
+        ? `<div class="ck-row"><span class="ck-unit">ふん</span><div class="ck-mins">${[0,1,2,3,4,5].map(t=>`<button class="choice num" data-mt="${t}">${t*10===0?"00":t*10}</button>`).join("")}</div></div>
+           <div class="ck-row"><span class="ck-unit">＋</span><div class="ck-ones">${[0,1,2,3,4,5,6,7,8,9].map(o=>`<button class="choice num" data-mo="${o}">${o}</button>`).join("")}</div></div>`
+        : `<div class="ck-row"><span class="ck-unit">ふん</span><div class="ck-mins">${mins.map(m=>`<button class="choice num" data-m="${m}">${m===0?"00":m}</button>`).join("")}</div></div>`;
       ans.innerHTML = `<div class="ck-row"><span class="ck-unit">じ</span><div class="ck-hours">${Array.from({length:12},(_,i)=>`<button class="choice num" data-h="${i+1}">${i+1}</button>`).join("")}</div></div>`
-        + (needM ? `<div class="ck-row"><span class="ck-unit">ふん</span><div class="ck-mins">${mins.map(m=>`<button class="choice num" data-m="${m}">${m===0?"00":m}</button>`).join("")}</div></div>` : "")
-        + `<button class="next ck-go" id="ckGo" disabled>こたえる</button>`;
+        + (needM ? minRows : "")
+        + `<div class="ck-pick" id="ckPick"></div><button class="next ck-go" id="ckGo" disabled>こたえる</button>`;
+      let mt = null, mo = null;
       if(!needM) ckSel.m = 0;
       const upd = () => {
+        if(one && needM) ckSel.m = (mt===null || mo===null) ? null : mt*10 + mo;
         ans.querySelectorAll("[data-h]").forEach(b=>b.classList.toggle("sel", +b.dataset.h===ckSel.h));
         ans.querySelectorAll("[data-m]").forEach(b=>b.classList.toggle("sel", +b.dataset.m===ckSel.m));
+        ans.querySelectorAll("[data-mt]").forEach(b=>b.classList.toggle("sel", +b.dataset.mt===mt));
+        ans.querySelectorAll("[data-mo]").forEach(b=>b.classList.toggle("sel", +b.dataset.mo===mo));
         $("ckGo").disabled = ckSel.h===null || ckSel.m===null;
+        $("ckPick").textContent = one && needM ? `${ckSel.h ?? "？"}じ ${mt===null ? "？" : mt}${mo===null ? "？" : mo}${(mt===null||mo===null) ? "ふん" : CM.funLabel(mt*10+mo)}` : "";
       };
       ans.querySelectorAll("[data-h]").forEach(b=>b.addEventListener("click",()=>{ if(ckCur){ ckSel.h=+b.dataset.h; upd(); } }));
       ans.querySelectorAll("[data-m]").forEach(b=>b.addEventListener("click",()=>{ if(ckCur){ ckSel.m=+b.dataset.m; upd(); } }));
+      ans.querySelectorAll("[data-mt]").forEach(b=>b.addEventListener("click",()=>{ if(ckCur){ mt=+b.dataset.mt; upd(); } }));
+      ans.querySelectorAll("[data-mo]").forEach(b=>b.addEventListener("click",()=>{ if(ckCur){ mo=+b.dataset.mo; upd(); } }));
+      upd();
       $("ckGo").addEventListener("click", ()=>{ if(ckSel.h!==null && ckSel.m!==null) ckAnswer({h:ckSel.h, m:ckSel.m}); });
     }
     ckTrack(); setPets(null,null);
@@ -2608,9 +2631,8 @@ details.hist summary{cursor:pointer;font-weight:700;color:var(--muted);font-size
     if(ok){
       setPets("happy","happy");
       say(w, mcOn() ? mcLine("correct") : pick(LINES.ok[w]));
-      $("ckFb").innerHTML = `<div class="msg ok pop">せいかい！ ${fmtCk(p.ans)}</div>${p.type==="set" ? "" : ckExplainHTML(p)}<button class="next" id="ckNextBtn">つぎへ</button>`;
-      $("ckNextBtn").addEventListener("click", ckAfter);
-      ckNextTimer = setTimeout(ckAfter, p.type==="fwd"||p.type==="back" ? 3200 : 2200);
+      $("ckFb").innerHTML = `<div class="msg ok pop">せいかい！</div>`;
+      ckNextTimer = setTimeout(ckAfter, 1000);
     }else{
       setPets(w==="cat"?null:"sad", w==="dog"?null:"sad");
       say(w, mcOn() ? mcLine("incorrect") : pick(LINES.ng[w]));

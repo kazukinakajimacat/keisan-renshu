@@ -41,4 +41,16 @@ assert.equal(C.fmt(2, 20), "2じ20ぷん");
 assert.equal(C.fmt(2, 50), "2じ50ぷん");
 assert.ok(C.same({ h: 12, m: 0 }, { h: 12, m: 0 }));
 
+// 1ぷん たんい（むずかしい）
+eq(C.add(3, 47, 20), 4, 7, "3:47 + 20分 = 4:07");
+eq(C.add(12, 3, -10), 11, 53, "12:03 - 10分 = 11:53");
+assert.equal(C.hourAngle(3, 47), 113.5);
+assert.equal(C.minuteAngle(47), 282);
+for(let h = 1; h <= 12; h++) for(let m = 0; m < 60; m++) for(const d of [10, 20, 30, 40, 50]){
+  const f = C.add(h, m, d); eq(C.add(f.h, f.m, -d), h, m, `${h}:${m} ±${d}`);
+}
+// ぷん／ふん の よみわけ
+const fun = { 1:"ぷん", 2:"ふん", 3:"ぷん", 4:"ぷん", 5:"ふん", 6:"ぷん", 7:"ふん", 8:"ぷん", 9:"ふん", 10:"ぷん", 12:"ふん", 15:"ふん", 24:"ぷん", 37:"ふん", 58:"ぷん" };
+for(const [m, w] of Object.entries(fun)) assert.equal(C.funLabel(+m), w, `${m}${w}`);
+
 console.log("clock tests: all passed");
