@@ -2212,6 +2212,8 @@ details.hist summary{cursor:pointer;font-weight:700;color:var(--muted);font-size
       nk.queue.push({t:"depart", e});
       if(mcUnlocked() && !mcData().announced) nk.queue.push({t:"mcUnlock"});
     }
+    // 12しゅるい ぜんぶ あつめたら そだては おしまい（あたらしい たまごは こない）
+    if(!nk.cur && mcUnlocked()){ nk.nextEgg = null; saveStats(); return; }
     if(!nk.cur && (!nk.nextEgg || nk.nextEgg <= T)){
       nk.cur = nkNewEgg(T); nk.nextEgg = null;
       nk.queue.push({t:"egg"});
@@ -2335,7 +2337,7 @@ details.hist summary{cursor:pointer;font-weight:700;color:var(--muted);font-size
       mcData().announced = true; saveStats();
       const pics = NK_LIST.slice(0,3).map(sp=>`<img class="nk-mimg pop" src="nakama/${sp.id}/adult_h.webp" alt="" style="max-height:120px;max-width:100px">`).join("");
       nkModal({pic:`<div style="display:flex;gap:4px;align-items:flex-end">${pics}</div>`, title:"なかまたちが MCに なれるように なったよ！",
-        text:"12しゅるい ぜんぶ あつめたね！<br>すきな なかまを えらぶと、いっしょに べんきょうして くれるよ",
+        text:"12しゅるい ぜんぶ あつめたね！なかま そだては これで おしまい。<br>これからは すきな なかまを えらぶと、いっしょに べんきょうして くれるよ",
         buttons:[{label:"MCを えらぶ", onClick:()=>{ setTimeout(openMcPicker, 350); }}, {label:"あとで", ghost:true}]});
       renderMcEntry();
     }else if(ev.t==="iede"){
