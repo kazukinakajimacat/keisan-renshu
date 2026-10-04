@@ -4,6 +4,8 @@
 
 <p align="center">
   <a href="https://kazukinakajimacat.github.io/keisan-renshu/"><b>▶ あそんでみる</b></a>
+  ・
+  <a href="CHANGELOG.md">更新履歴</a>
 </p>
 
 # けいさん れんしゅう　サービス紹介
