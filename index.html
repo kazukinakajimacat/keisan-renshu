@@ -6,6 +6,7 @@
 <link rel="apple-touch-icon" href="apple-touch-icon.png?v=3">
 <link rel="manifest" href="manifest.json">
 <script src="stickers/stickers.js"></script>
+<script src="nakama/nakama.js"></script>
 <meta name="apple-mobile-web-app-title" content="けいさん">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -310,6 +311,57 @@ details.hist summary{cursor:pointer;font-weight:700;color:var(--muted);font-size
 @keyframes hue{to{filter:hue-rotate(360deg)}}
 @media (max-width:380px){.evo-main{flex-direction:column}}
 
+
+/* なかま */
+.nkrow{display:flex;align-items:center;gap:12px;background:var(--surface);border:2px solid var(--line);border-radius:16px;padding:8px 12px}
+.nk-pic{flex:0 0 84px;height:100px;border:0;background:radial-gradient(circle at 50% 70%,color-mix(in srgb,var(--ok) 18%,transparent),transparent 70%);padding:0;cursor:pointer;display:flex;align-items:flex-end;justify-content:center;border-radius:12px}
+.nk-img{width:84px;height:100px;object-fit:contain;transform-origin:50% 100%;user-select:none;-webkit-user-select:none}
+.nk-img.idle{animation:nkIdle 2.8s ease-in-out infinite}
+.nk-img.egg{animation:nkWobble 3.2s ease-in-out infinite}
+.nk-img.egg.near{animation:nkWobble 1.2s ease-in-out infinite}
+.nk-img.sad{animation:nkSad 3.6s ease-in-out infinite}
+.nk-img.hop{animation:nkHop .5s ease-out 2}
+@keyframes nkIdle{0%,100%{transform:translateY(0) scale(1,1)}50%{transform:translateY(-3px) scale(1.01,.99)}}
+@keyframes nkWobble{0%,70%,100%{transform:rotate(0)}76%{transform:rotate(-8deg)}84%{transform:rotate(7deg)}92%{transform:rotate(-4deg)}}
+@keyframes nkSad{0%,100%{transform:rotate(0)}50%{transform:rotate(-3deg) translateY(1px)}}
+@keyframes nkHop{0%,100%{transform:translateY(0)}40%{transform:translateY(-14px) scale(1.04)}}
+.nk-txt{flex:1;min-width:0;display:flex;flex-direction:column;gap:3px;font-size:14px;font-weight:700}
+.nk-name{display:flex;align-items:baseline;gap:8px;flex-wrap:wrap}
+.nk-name b{font-size:17px;font-weight:900}
+.nk-stage{font-size:12px;color:var(--ok);background:var(--ok-soft);border-radius:999px;padding:0 8px}
+.nk-next{color:var(--muted);font-size:13px}
+.nk-bar{height:8px;border-radius:4px;background:var(--line);overflow:hidden}
+.nk-bar i{display:block;height:100%;background:linear-gradient(90deg,var(--ok),var(--yellow));border-radius:4px;transition:width .4s}
+.nk-mood{font-size:13px;color:var(--muted)}
+.nk-mood.warn{color:var(--ng)}
+.nk-modal{position:fixed;inset:0;z-index:30;display:flex;align-items:center;justify-content:center;padding:16px;background:color-mix(in srgb,var(--bg) 72%,transparent);backdrop-filter:blur(3px)}
+.nk-modal[hidden]{display:none}
+.nk-mcard{width:100%;max-width:420px;background:var(--surface);border:2px solid var(--line);border-radius:24px;padding:20px;display:flex;flex-direction:column;align-items:center;gap:10px;text-align:center;box-shadow:0 10px 30px rgba(0,0,0,.25);animation:missUp .3s ease-out}
+.nk-mcard h2{margin:0;font-size:21px;font-weight:900}
+.nk-mcard p{margin:0;font-size:15px;line-height:1.7;color:var(--muted);font-weight:700}
+.nk-mpic{height:190px;display:flex;align-items:flex-end;justify-content:center;padding-bottom:4px}
+.nk-mimg{max-height:180px;max-width:220px;object-fit:contain;transform-origin:50% 100%}
+.nk-mimg.pop{animation:nkPop .6s ease-out}
+.nk-mimg.wobble{animation:nkWobble 1.4s ease-in-out infinite}
+.nk-mimg.evolve{animation:nkEvolve 1.1s ease-out}
+@keyframes nkPop{0%{transform:scale(.4);opacity:0}70%{transform:scale(1.08)}100%{transform:scale(1);opacity:1}}
+@keyframes nkEvolve{0%{transform:scale(.7);filter:brightness(3) saturate(0);opacity:.4}50%{filter:brightness(2.2) saturate(.3);transform:scale(1.1)}100%{transform:scale(1);filter:none;opacity:1}}
+@media (prefers-reduced-motion:reduce){.nk-img,.nk-mimg{animation:none!important}}
+.nk-mname{width:100%;display:flex;flex-direction:column;gap:4px;align-items:center}
+.nk-mname input{font:inherit;font-size:22px;font-weight:900;text-align:center;width:min(240px,100%);padding:8px 12px;border-radius:14px;border:2px solid var(--line);background:var(--bg);color:var(--ink)}
+.nk-merr{min-height:1.2em;font-size:14px;font-weight:700;color:var(--ng)}
+.nk-mbtns{display:flex;flex-direction:column;gap:8px;align-items:center;width:100%}
+.nk-ghost{font:inherit;font-weight:700;font-size:15px;color:var(--muted);background:none;border:2px solid var(--line);border-radius:999px;padding:6px 16px;cursor:pointer}
+.nkdex{display:grid;grid-template-columns:repeat(auto-fill,minmax(96px,1fr));gap:10px}
+.nkdex .empty{grid-column:1/-1;text-align:center;padding:12px 8px}
+.nkd{display:flex;flex-direction:column;align-items:center;gap:2px;text-align:center;background:var(--bg);border-radius:14px;padding:8px 4px}
+.nkd img{width:72px;height:86px;object-fit:contain;transform-origin:50% 100%}
+.nkd b{font-size:14px;font-weight:900}
+.nkd small{font-size:11px;color:var(--muted);font-weight:700;line-height:1.4}
+.nkd.iede img{opacity:.4;filter:grayscale(.6)}
+.nkd.iede b{color:var(--muted)}
+.nkd.unseen img{filter:brightness(0);opacity:.18}
+
 /* today's sticker */
 .stkrow{display:flex;align-items:center;gap:12px;background:var(--surface);border:2px solid var(--line);border-radius:16px;padding:8px 12px}
 .stk-icon{flex:0 0 52px;color:var(--line);display:flex}
@@ -458,6 +510,16 @@ details.hist summary{cursor:pointer;font-weight:700;color:var(--muted);font-size
     <div class="goal-l"><span id="goalText"></span><span class="goal-st" id="goalStreak" hidden></span></div>
     <div class="goal-dots" id="goalDots" aria-hidden="true"></div>
   </div>
+  <div class="nk-modal" id="nkModal" hidden><div class="nk-mcard" role="dialog" aria-modal="true" aria-labelledby="nkMTitle">
+    <div class="nk-mpic" id="nkMPic"></div>
+    <h2 id="nkMTitle"></h2>
+    <p id="nkMText"></p>
+    <div class="nk-mname" id="nkMNameWrap" hidden>
+      <input id="nkMInput" type="text" inputmode="text" maxlength="5" autocomplete="off" autocapitalize="off" spellcheck="false" placeholder="ひらがな 5もじ まで" aria-label="なまえ">
+      <div class="nk-merr" id="nkMErr"></div>
+    </div>
+    <div class="nk-mbtns" id="nkMBtns"></div>
+  </div></div>
   <div class="gbanner" id="goalBanner" hidden>
     <div class="gb-stamp" id="gbIcon"></div>
     <div class="gb-t" id="gbTitle">きょうの めあて クリア！</div>
@@ -482,6 +544,15 @@ details.hist summary{cursor:pointer;font-weight:700;color:var(--muted);font-size
   <div class="stkrow">
     <div class="stk-icon" id="stkIcon"></div>
     <div class="stk-txt"><div id="stkText"></div><div class="stk-next"><span id="stkNext"></span><span class="stk-pips" id="stkPips" aria-hidden="true"></span></div></div>
+  </div>
+  <div class="nkrow" id="nkRow" hidden>
+    <button class="nk-pic" id="nkPic" aria-label="なかま"><img id="nkImg" alt="" draggable="false"></button>
+    <div class="nk-txt">
+      <div class="nk-name"><b id="nkName"></b><span class="nk-stage" id="nkStage"></span></div>
+      <div class="nk-next" id="nkNext"></div>
+      <div class="nk-bar" aria-hidden="true"><i id="nkBar"></i></div>
+      <div class="nk-mood" id="nkMood"></div>
+    </div>
   </div>
   <div class="track" id="track" aria-hidden="true"></div>
   </div>
@@ -553,6 +624,10 @@ details.hist summary{cursor:pointer;font-weight:700;color:var(--muted);font-size
     <section class="zk-panel">
       <h3>ひきざん ずかん <span class="num" id="zkSubN"></span></h3>
       <div class="zgrid" id="zkSub"></div>
+    </section>
+    <section class="zk-panel">
+      <h3>なかま ずかん <span id="nkDexCount"></span></h3>
+      <div class="nkdex" id="nkDex"></div>
     </section>
     <section class="zk-panel">
       <h3>シール ちょう <span id="albCount"></span></h3>
@@ -1330,6 +1405,7 @@ details.hist summary{cursor:pointer;font-weight:700;color:var(--muted);font-size
       fbEl.innerHTML = `<div class="msg ok pop">せいかい！</div>`;
       renderTrack();
       if(streak%5===0) setPets("wow","wow"); else setPets("happy","happy");
+      nkCheer();
       const w = pick(["cat","dog"]);
       if(streak%5===0) say(w, `${streak}もん れんぞく せいかい！${w==="cat"?"すごすぎるにゃ":"すごすぎる わん"}！`);
       else say(w, pick(LINES.ok[w]));
@@ -1521,7 +1597,7 @@ details.hist summary{cursor:pointer;font-weight:700;color:var(--muted);font-size
       markDirty();
       renderHistory();
       // がめんの うえの「きょうの めあて」「きょうの シール」なども すぐ もとに もどす
-      renderGoal(); renderStickerRow();
+      renderGoal(); renderStickerRow(); nkTick(); renderNk();
       $("gbest").textContent = "-";
       if(mode==="zukan") renderZukan();
     });
@@ -1983,6 +2059,7 @@ details.hist summary{cursor:pointer;font-weight:700;color:var(--muted);font-size
     if(goal){
       if(mode==="grid" && G && G.running) pendingEvent = true;
       else setTimeout(showGoalBanner, 950);
+      nkGoalDay();
     }
   }
   let pendingEvent = false;
@@ -2020,6 +2097,207 @@ details.hist summary{cursor:pointer;font-weight:700;color:var(--muted);font-size
 
   $("gbStamp").addEventListener("click", ()=>{ $("goalBanner").hidden=true; setMode("zukan"); });
   $("gbGo").addEventListener("click", ()=>{ $("goalBanner").hidden=true; });
+
+
+  /* ---------- なかま そだて ----------
+     めあて（10もん）を クリアした ひの かずで そだつ。3にち やすむと いえで（よくじつ あたらしい たまご）。
+     つきが かわると たびだって、なかま ずかんに のる。きろくは この たんまつ だけ。 */
+  const NK_LIST = window.NAKAMA || [];
+  const NK_STAGES = ["egg","baby","child","young","adult","elder"];
+  const NK_BASE = [0, 2, 6, 11, 17, 23];          // 1かげつ まるごとの とき、その だんかいに なる ひかず
+  const nkLabel = (sp, i) => ["たまご","あかちゃん","こども", (sp&&sp.young)||"わかもの","おとな","おとしより"][i];
+  const nkSp = id => NK_LIST.find(x=>x.id===id) || NK_LIST[0];
+  // ちいさい だんかいは すこし おおきく みせる（そだって いる かんじは のこす）
+  const NK_SCALE = [1.9, 1.5, 1.15, 1, 1, 1];
+  const nkImgSrc = (id, stage, mood) => `nakama/${id}/${NK_STAGES[stage]}_${stage===0 && mood==="s" ? "n" : mood}.webp`;
+  const dkDate = k => { const [y,m,d]=k.split("-").map(Number); return new Date(y, m-1, d); };
+  const dkAdd = (k, n) => { const d=dkDate(k); d.setDate(d.getDate()+n); return dayKey(d); };
+  const dkDiff = (a, b) => Math.round((dkDate(b)-dkDate(a))/86400000);   // b − a（にち）
+  const dkMonthEndNext = k => { const d=dkDate(k); return dayKey(new Date(d.getFullYear(), d.getMonth()+1, 1)); };
+  function nkData(){ return stats.nk || (stats.nk = {cur:null, dex:[], nextEgg:null, queue:[]}); }
+  // つきの とちゅうから はじまった たまごは、のこりの ひかずに あわせて ひつような ひかずを ちぢめる
+  function nkThresholds(cur){
+    const d0=dkDate(cur.start), dim=new Date(d0.getFullYear(), d0.getMonth()+1, 0).getDate();
+    const avail = dim - d0.getDate() + 1, f = Math.min(1, avail/(dim-7));
+    let prev = 0;
+    return NK_BASE.map((t,i)=>{ if(!i) return 0; const v = Math.max(prev+1, Math.round(t*f)); prev = v; return v; });
+  }
+  function nkStage(cur){ const th=nkThresholds(cur), n=cur.days.length; let s=0; th.forEach((t,i)=>{ if(n>=t) s=i; }); return s; }
+  // さいごに めあてを クリアした ひ から、なんにち やすんで いるか（つきの おわりまでで かぞえる）
+  function nkMissed(cur, today){
+    const last = cur.days.length ? cur.days[cur.days.length-1] : dkAdd(cur.start, -1);
+    const lim = dkMonthEndNext(cur.start);
+    const t = today < lim ? today : lim;
+    return Math.max(0, dkDiff(last, t) - 1);
+  }
+  function nkNewEgg(T){
+    const sp = pick(NK_LIST);
+    return {id:sp.id, start:T, days:[], name:"", born:false};
+  }
+  function nkTick(){
+    if(!NK_LIST.length) return;
+    const nk = nkData(), T = todayKey();
+    if(nk.cur && nkMissed(nk.cur, T) >= 3){
+      const c = nk.cur, e = {id:c.id, name:c.name, stage:nkStage(c), month:c.start.slice(0,7), result:"iede", at:T};
+      nk.dex.push(e); nk.cur = null;
+      const lim = dkMonthEndNext(c.start);
+      nk.nextEgg = T < lim ? dkAdd(T, 1) : null;     // いえでの よくじつに あたらしい たまご
+      nk.queue.push({t:"iede", e});
+    }
+    if(nk.cur && nk.cur.start.slice(0,7) < T.slice(0,7)){   // とけいが もどっても たびだたない
+      const c = nk.cur, e = {id:c.id, name:c.name, stage:nkStage(c), month:c.start.slice(0,7), result:"tabidachi", at:T};
+      nk.dex.push(e); nk.cur = null; nk.nextEgg = null;
+      nk.queue.push({t:"depart", e});
+    }
+    if(!nk.cur && (!nk.nextEgg || nk.nextEgg <= T)){
+      nk.cur = nkNewEgg(T); nk.nextEgg = null;
+      nk.queue.push({t:"egg"});
+    }
+    saveStats();
+  }
+  function nkGoalDay(){
+    const nk = nkData(); nkTick(); const c = nk.cur, T = todayKey();
+    if(!c || c.days.includes(T)) return;
+    const before = nkStage(c); c.days.push(T); const after = nkStage(c);
+    if(after > before) nk.queue.push({t: before===0 ? "hatch" : "grow", stage:after});
+    saveStats(); renderNk();
+    setTimeout(nkShowQueue, 2200);
+  }
+  function nkDisplayName(c){ return c.name || nkSp(c.id).name; }
+  let nkCheerTimer = null;
+  function renderNk(){
+    const row = $("nkRow"), nk = stats.nk;
+    if(!NK_LIST.length || !nk || !nk.cur){ row.hidden = true; return; }
+    const c = nk.cur, sp = nkSp(c.id), st = nkStage(c), T = todayKey();
+    const doneToday = c.days.includes(T), miss = doneToday ? 0 : nkMissed(c, T);
+    const mood = doneToday ? "h" : miss>=2 ? "s" : "n";
+    row.hidden = false;
+    const img = $("nkImg");
+    if(!nkCheerTimer) img.src = nkImgSrc(c.id, st, mood);
+    img.style.scale = NK_SCALE[st];
+    const th = nkThresholds(c), n = c.days.length;
+    img.className = "nk-img " + (st===0 ? (n >= th[1]-1 ? "egg near" : "egg") : mood==="s" ? "sad" : "idle");
+    $("nkName").textContent = st===0 ? "なぞの たまご" : nkDisplayName(c);
+    $("nkStage").textContent = nkLabel(sp, st);
+    if(st < 5){
+      const left = th[st+1] - n;
+      $("nkNext").textContent = st===0 ? `うまれるまで あと ${left}にち` : `${nkLabel(sp, st+1)}まで あと ${left}にち`;
+      $("nkBar").style.width = Math.round((n - th[st]) / (th[st+1] - th[st]) * 100) + "%";
+    }else{ $("nkNext").textContent = "さいごまで そだったよ！"; $("nkBar").style.width = "100%"; }
+    $("nkMood").textContent = doneToday ? "きょうも あえて うれしいな"
+      : miss===1 ? "さみしいな…"
+      : miss>=2 ? "あいたいな… きょう めあてを クリアしてね"
+      : st===0 ? "めあてを クリアすると そだつよ" : "きょうも いっしょに がんばろう";
+    $("nkMood").className = "nk-mood" + (miss>=2 ? " warn" : "");
+  }
+  function nkCheer(){
+    const nk = stats.nk; if(!nk || !nk.cur || $("nkRow").hidden) return;
+    const c = nk.cur, st = nkStage(c), img = $("nkImg");
+    clearTimeout(nkCheerTimer);
+    img.src = nkImgSrc(c.id, st, "h");
+    img.classList.remove("hop"); void img.offsetWidth; img.classList.add("hop");
+    nkCheerTimer = setTimeout(()=>{ nkCheerTimer = null; renderNk(); }, 1300);
+  }
+
+  // なまえ：ひらがな（と のばしぼう）だけ、1〜5もじ。いじわるな ことばは つけられない
+  const NK_NG = ["ばか","あほ","まぬけ","とんま","のろま","しね","ころす","ころせ","きえろ","きもい","きもち","うざ","ぶす","でぶ","ぶさ","はげ","くず","かす","ごみ","くそ","うんこ","うんち","ちんこ","ちんちん","まんこ","おっぱい","おしり","へんたい","えろ","きらい","いじめ","ざこ","ぼけ","あんぽんたん","おたんこ","どじ","まけいぬ","ださい","ちび"];
+  function nkNameError(v){
+    if(!v) return "なまえを いれてね";
+    if(!/^[ぁ-ゖー]+$/.test(v)) return "ひらがなで いれてね";
+    if([...v].length > 5) return "5もじ までだよ";
+    const flat = v.replace(/ー/g,"").replace(/[ぁぃぅぇぉっゃゅょゎ]/g, ch=>"あいうえおつやゆよわ"["ぁぃぅぇぉっゃゅょゎ".indexOf(ch)]);
+    if(NK_NG.some(w=>v.includes(w) || flat.includes(w))) return "やさしい なまえに しようね";
+    return "";
+  }
+
+  let nkModalOpen = false;
+  function nkModal({pic, title, text, name, buttons}){
+    nkModalOpen = true;
+    $("nkMPic").innerHTML = pic || "";
+    $("nkMTitle").textContent = title; $("nkMText").innerHTML = text || "";
+    $("nkMNameWrap").hidden = !name; $("nkMErr").textContent = "";
+    if(name){ $("nkMInput").value = name.value || ""; }
+    const bw = $("nkMBtns"); bw.innerHTML = "";
+    buttons.forEach(b=>{
+      const el=document.createElement("button"); el.className = b.ghost ? "nk-ghost" : "next"; el.textContent = b.label;
+      el.addEventListener("click", ()=>{ if(b.onClick && b.onClick()===false) return; $("nkModal").hidden = true; nkModalOpen = false; setTimeout(nkShowQueue, 300); });
+      bw.appendChild(el);
+    });
+    $("nkModal").hidden = false;
+    if(name) setTimeout(()=>$("nkMInput").focus(), 50); else bw.firstChild.focus({preventScroll:true});
+  }
+  const nkPicHTML = (src, cls="", stage=3) => `<img class="nk-mimg ${cls}" src="${src}" alt="" draggable="false" style="scale:${NK_SCALE[stage]}">`;
+  function nkAskName(c, first){
+    const sp = nkSp(c.id);
+    nkModal({
+      pic: nkPicHTML(nkImgSrc(c.id, Math.max(1, nkStage(c)), "h"), "pop", Math.max(1, nkStage(c))),
+      title: first ? `${sp.name}が うまれたよ！` : "なまえを かえる",
+      text: first ? "なまえを つけてあげよう（ひらがな 5もじ まで）" : "あたらしい なまえを いれてね",
+      name: {value: c.name},
+      buttons: [
+        {label:"けってい", onClick:()=>{
+          const v = $("nkMInput").value.trim(), err = nkNameError(v);
+          if(err){ $("nkMErr").textContent = err; return false; }
+          c.name = v; saveStats(); renderNk();
+          const w=pick(["cat","dog"]); say(w, `${v}、よろしくね${w==="cat"?"にゃ":" わん"}！`);
+        }},
+        {label: first ? `「${sp.name}」の まま` : "やめる", ghost:true, onClick:()=>{ renderNk(); }}
+      ]
+    });
+  }
+  function nkShowQueue(){
+    const nk = stats.nk; if(!nk || !nk.queue || !nk.queue.length || nkModalOpen) return;
+    if(!$("overlay").hidden || !$("missPop").hidden){ setTimeout(nkShowQueue, 1500); return; }
+    const ev = nk.queue.shift(); saveStats();
+    const c = nk.cur;
+    if(ev.t==="egg"){
+      nkModal({pic:nkPicHTML(nkImgSrc(c ? c.id : NK_LIST[0].id, 0, "h"), "wobble", 0), title:"あたらしい たまごが とどいたよ！",
+        text:"めあて（10もん）を クリアした ひが ふえると、たまごが そだつよ。<br>3にち つづけて やすむと、いえでしちゃうから きをつけてね。",
+        buttons:[{label:"たいせつに するね"}]});
+    }else if(ev.t==="hatch" && c){
+      nkAskName(c, true);
+    }else if(ev.t==="grow" && c){
+      const sp = nkSp(c.id);
+      nkModal({pic:nkPicHTML(nkImgSrc(c.id, ev.stage, "h"), "evolve", ev.stage), title:`${nkDisplayName(c)}が ${nkLabel(sp, ev.stage)}に なったよ！`,
+        text: ev.stage===5 ? "さいごまで そだったね。つきの おわりに たびだつよ" : "これからも いっしょに がんばろうね",
+        buttons:[{label:"やったね！"}]});
+    }else if(ev.t==="depart"){
+      const e = ev.e, sp = nkSp(e.id), nm = e.name || sp.name;
+      const pic = e.stage===0 ? nkPicHTML(nkImgSrc(e.id, 0, "n"), "", 0) : nkPicHTML(`nakama/${e.id}/depart.webp`, "pop");
+      nkModal({pic, title: e.stage===0 ? "たまごが たびだって いったよ" : `${nm}が たびだって いったよ`,
+        text: e.stage===0 ? "こんどは うまれるまで いっしょに いようね。なかま ずかんに のったよ"
+          : `${nkLabel(sp, e.stage)}まで そだったよ。ありがとう！<br>なかま ずかんに のったよ`,
+        buttons:[{label:"いってらっしゃい"}]});
+    }else if(ev.t==="iede"){
+      const e = ev.e, nm = e.stage===0 ? "たまご" : (e.name || nkSp(e.id).name);
+      nkModal({pic:nkPicHTML("nakama/letter.webp", "pop", 3), title:"おてがみが おいてあるよ…",
+        text:`「さみしくなって たびに でるね。また どこかで あおうね。」<br>${nm}は いえでしちゃった。<br>あした あたらしい たまごが とどくよ`,
+        buttons:[{label:"また あおうね"}]});
+    }else setTimeout(nkShowQueue, 0);
+  }
+  $("nkPic").addEventListener("click", ()=>{
+    const nk = stats.nk; if(!nk || !nk.cur) return;
+    const c = nk.cur;
+    if(nkStage(c) >= 1){ nkAskName(c, false); return; }
+    nkCheer(); say(pick(["cat","dog"]), "たまごの なかで なにか うごいてる！");
+  });
+
+  function renderNkDex(){
+    const nk = stats.nk || {dex:[]}, box = $("nkDex"), dex = [...(nk.dex||[])].reverse();
+    const met = new Set((nk.dex||[]).filter(e=>e.stage>0).map(e=>e.id));
+    $("nkDexCount").textContent = `${met.size} / ${NK_LIST.length} しゅるい`;
+    const items = dex.map(e=>{
+      const sp = nkSp(e.id), [y,m] = e.month.split("-").map(Number);
+      const stage = e.stage, iede = e.result==="iede";
+      const src = nkImgSrc(e.id, stage, iede ? "s" : "n");
+      const nm = stage===0 ? "たまご" : (e.name || sp.name);
+      const note = iede ? "いえでしちゃった" : stage===0 ? "うまれる まえに たびだった" : `${nkLabel(sp, stage)}まで そだった`;
+      return `<div class="nkd ${iede?"iede":""}"><img src="${src}" alt="" loading="lazy" style="scale:${NK_SCALE[stage]}"><b>${nm}</b><small>${m}がつ・${note}</small></div>`;
+    });
+    const unseen = NK_LIST.filter(sp=>!met.has(sp.id)).map(sp=>`<div class="nkd unseen"><img src="nakama/${sp.id}/adult_n.webp" alt="" loading="lazy"><b>？？？</b><small>まだ あって いない</small></div>`);
+    box.innerHTML = items.length || unseen.length ? items.join("") + unseen.join("")
+      : `<div class="empty">そだてた なかまが ここに のるよ</div>`;
+  }
 
   /* ---------- すらすら ずかん ---------- */
   const ZK_ADD=[], ZK_SUB=[];
@@ -2137,6 +2415,7 @@ details.hist summary{cursor:pointer;font-weight:700;color:var(--muted);font-size
             : `${txt} は まだ でて いないよ`);
     }));
 
+    renderNkDex();
     calView = null;   // ずかんを ひらいたら こんげつ から
     renderCal();
 
@@ -2293,6 +2572,7 @@ details.hist summary{cursor:pointer;font-weight:700;color:var(--muted);font-size
   }
 
   backfillSessions();   // まえの きろくを かずに して ひきつぐ（1かい だけ）
+  nkTick(); renderNk(); setTimeout(nkShowQueue, 900);
   setLevel(level, false);
   renderHistory();
   renderGoal();
