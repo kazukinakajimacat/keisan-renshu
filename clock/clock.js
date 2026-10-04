@@ -105,7 +105,7 @@
     const n = this.values.length; this.reps = Math.max(5, Math.ceil(60 / n)); if(this.reps % 2 === 0) this.reps++;
     let html = "";
     for(let r = 0; r < this.reps; r++) this.values.forEach((v, i) => { html += `<div class="wh-item" data-i="${r * n + i}">${this.fmt(v)}</div>`; });
-    el.classList.add("wh");
+    el.classList.add("wh"); el.style.setProperty("--wh", this.itemH + "px");
     el.innerHTML = `<div class="wh-scroll" tabindex="0">${`<div class="wh-pad"></div>`}${html}<div class="wh-pad"></div></div><div class="wh-band" aria-hidden="true"></div>`;
     this.sc = el.querySelector(".wh-scroll"); this.items = [...el.querySelectorAll(".wh-item")];
     this.idx = -1;

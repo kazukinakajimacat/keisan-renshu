@@ -5,9 +5,9 @@
 <link rel="icon" type="image/png" sizes="64x64" href="favicon.png?v=3">
 <link rel="apple-touch-icon" href="apple-touch-icon.png?v=3">
 <link rel="manifest" href="manifest.json">
-<script src="stickers/stickers.js"></script>
-<script src="nakama/nakama.js"></script>
-<script src="clock/clock.js"></script>
+<script src="stickers/stickers.js?v=202610042228"></script>
+<script src="nakama/nakama.js?v=202610042228"></script>
+<script src="clock/clock.js?v=202610042228"></script>
 <meta name="apple-mobile-web-app-title" content="けいさん">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -384,13 +384,13 @@ details.hist summary{cursor:pointer;font-weight:700;color:var(--muted);font-size
 /* とけい */
 .ck-wheels{display:flex;align-items:center;justify-content:center;gap:10px}
 .ck-wu{font-size:20px;font-weight:900;color:var(--muted);min-width:2em}
-.wh{position:relative;width:96px;height:144px;border:3px solid var(--blue);border-radius:18px;background:var(--surface);overflow:hidden}
+.wh{position:relative;width:96px;height:calc(var(--wh,46px)*3 + 6px);border:3px solid var(--blue);border-radius:18px;background:var(--surface);overflow:hidden}
 .wh-scroll{height:100%;overflow-y:scroll;scroll-snap-type:y mandatory;scrollbar-width:none;-webkit-overflow-scrolling:touch;overscroll-behavior:contain}
 .wh-scroll::-webkit-scrollbar{display:none}
-.wh-pad{height:46px}
-.wh-item{height:46px;display:flex;align-items:center;justify-content:center;scroll-snap-align:center;font-size:24px;font-weight:900;color:var(--blue);opacity:.7;cursor:pointer;user-select:none;-webkit-user-select:none;font-variant-numeric:tabular-nums;transition:opacity .1s,font-size .1s}
+.wh-pad{height:var(--wh,46px)}
+.wh-item{height:var(--wh,46px);display:flex;align-items:center;justify-content:center;scroll-snap-align:center;font-size:24px;font-weight:900;color:var(--blue);opacity:.7;cursor:pointer;user-select:none;-webkit-user-select:none;font-variant-numeric:tabular-nums;transition:opacity .1s,font-size .1s}
 .wh-item.on{opacity:1;font-size:34px;color:var(--ink)}
-.wh-band{position:absolute;left:0;right:0;top:46px;height:46px;background:color-mix(in srgb,var(--blue) 14%,transparent);border-top:2px solid color-mix(in srgb,var(--blue) 40%,transparent);border-bottom:2px solid color-mix(in srgb,var(--blue) 40%,transparent);pointer-events:none}
+.wh-band{position:absolute;left:0;right:0;top:var(--wh,46px);height:var(--wh,46px);background:color-mix(in srgb,var(--blue) 14%,transparent);border-top:2px solid color-mix(in srgb,var(--blue) 40%,transparent);border-bottom:2px solid color-mix(in srgb,var(--blue) 40%,transparent);pointer-events:none}
 .wh::before,.wh::after{content:"";position:absolute;left:0;right:0;height:18px;pointer-events:none;z-index:1}
 .wh::before{top:0;background:linear-gradient(var(--surface),transparent)}
 .wh::after{bottom:0;background:linear-gradient(transparent,var(--surface))}
@@ -442,10 +442,61 @@ details.hist summary{cursor:pointer;font-weight:700;color:var(--muted);font-size
 #ckFb .ck-flow{margin-top:4px}
 
 
+
+/* もんだいの がめん：スクロールを できるだけ しない ように つめる */
+body.course .wrap{gap:8px}
+body.course .stack{gap:8px}
+body.course .top{gap:6px}
+body.course .round-label{font-size:13px}
+body.course .chip{padding:2px 10px;font-size:12px}
+body.course .chip .v{font-size:14px}
+body.course .levels{padding:3px}
+body.course .levels .lv{padding:5px 2px;font-size:13px}
+body.course .super-note{font-size:12px;padding:2px 8px}
+body.course .track i{height:7px}
+body.course .pet,body.course .sum-pets .pet{width:54px;flex-basis:54px}
+body.course .buddies .pet .pet-face{width:54px;height:54px}
+body.course .buddies .pet .name{display:none}
+body.course .bubble{font-size:14px;padding:6px 10px;line-height:1.35}
+body.course .card{padding:12px 12px 12px;border-radius:18px}
+body.course .q{font-size:clamp(44px,13vw,70px)}
+body.course .q.small{font-size:clamp(34px,10vw,54px)}
+body.course .q.story{font-size:18px;line-height:1.6}
+body.course .q.pic{gap:8px;font-size:20px}
+body.course .q.pic .tenframe{grid-template-columns:repeat(5,38px);grid-template-rows:repeat(2,38px)}
+body.course .q.pic .tenframe span::after{width:26px;height:26px}
+body.course .q .ask{margin-top:4px;font-size:17px}
+body.course .xe{font-size:clamp(20px,6vw,28px)}
+body.course .xbig{font-size:clamp(40px,12vw,60px)}
+body.course .q.story .hints{gap:4px;margin-top:4px}
+body.course .q.story .hints li{padding:3px 10px}
+body.course .choices{gap:8px}
+body.course .choice{padding:8px 0;font-size:clamp(24px,7.4vw,34px)}
+body.course .tags .ptag{margin-bottom:4px}
+body.course .fb{min-height:0}
+body.course .grid th,body.course .grid td{height:40px;font-size:21px}
+body.course .gbar .chip{padding:2px 6px}
+body.course .ck-card{gap:6px}
+body.course .ck-card .tags{display:none}
+body.course .ck-q{white-space:nowrap}
+.ck-ctl .ck-go{flex:1.6;margin:0;padding:10px 4px;font-size:18px;min-width:0}
+body.course .ck-q{font-size:17px;line-height:1.4}
+body.course .ck-q b{font-size:22px}
+body.course .ck-box .ck,body.course .ck-live-wrap .ck{width:min(210px,56vw,31vh)}
+body.course .ck-wheels{gap:6px}
+body.course .ck-wheels .wh{width:76px}
+body.course .ck-wheels .ck-wu{min-width:1.6em;font-size:17px}
+body.course .ck-wheels .ck-go{min-width:0;flex:1;padding:12px 6px;font-size:18px;margin-left:4px}
+body.course .wh-item{font-size:21px}
+body.course .wh-item.on{font-size:29px}
+body.course .ck-pick{display:none}
+body.course .ck-ans{gap:6px}
+body.course .ck-go{padding-top:10px;padding-bottom:10px}
+body.course .ck-ctl .choice{padding:4px 0;font-size:24px}
 /* ホーム */
-.navbar{display:flex;align-items:center;gap:10px}
-.navbar .home-btn{flex:0 0 auto;padding:8px 14px;font-size:15px}
-.crumb{font-weight:900;font-size:18px}
+.navbar{display:grid;grid-template-columns:auto repeat(4,1fr);gap:5px;position:sticky;top:0;z-index:5;background:var(--bg);padding:6px 0;margin:-6px 0}
+.navbar .nv{font-size:clamp(13px,3.9vw,16px);padding:8px 2px;border-radius:12px;min-width:0}
+.navbar .home-btn{padding:6px 10px;display:flex;align-items:center;justify-content:center}
 .tiles{display:grid;grid-template-columns:1fr 1fr;gap:10px}
 .tile{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px;padding:14px 6px!important;min-height:112px;color:var(--ink)!important}
 .tile b{font-size:17px;font-weight:900}
@@ -595,9 +646,12 @@ details.hist summary{cursor:pointer;font-weight:700;color:var(--muted);font-size
 </style>
 
 <div class="wrap">
-  <div class="navbar" id="navbar" hidden>
-    <button class="md home-btn" data-md="home" id="md-home" aria-label="ホームに もどる">◀ ホーム</button>
-    <div class="crumb" id="crumb"></div>
+  <div class="navbar" id="navbar" role="group" aria-label="コース" hidden>
+    <button class="md nv home-btn" data-md="home" id="md-home" aria-label="ホーム"><svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true"><path d="M3 11 12 3l9 8v10h-6v-6H9v6H3z" fill="currentColor"/></svg></button>
+    <button class="md nv" data-md="drill">いろいろ</button>
+    <button class="md nv" data-md="grid">ます</button>
+    <button class="md nv" data-md="clock">とけい</button>
+    <button class="md nv" data-md="zukan">ずかん</button>
   </div>
   <div class="nk-modal" id="mcModal" hidden><div class="nk-mcard mc-card" role="dialog" aria-modal="true" aria-labelledby="mcTitle">
     <h2 id="mcTitle">MCを えらぼう</h2>
@@ -2597,13 +2651,12 @@ details.hist summary{cursor:pointer;font-weight:700;color:var(--muted);font-size
     $("ckTag").textContent = p.type==="fwd" ? `${p.d}ぷん あと` : p.type==="back" ? `${p.d}ぷん まえ` : CK_TYPES[p.type].label;
     const box = $("ckBox"), q = $("ckQ"), ans = $("ckAns");
     if(p.type==="set"){
-      q.innerHTML = `<b>${fmtCk(p.ans)}</b>に<br>とけいを あわせよう！`;
+      q.innerHTML = `<b>${fmtCk(p.ans)}</b>に とけいを あわせよう！`;
       box.innerHTML = `<div class="ck-live-wrap" id="ckLive"></div>`;
       ckLive = new window.Clock($("ckLive"), {h:12, m:0, step:CK_LEVELS[ckLevel].step, size:260});
       const one = CK_LEVELS[ckLevel].oneMin;
-      ans.innerHTML = `<div class="ck-ctl"><span>じ</span><button class="choice" data-ctl="h-">−</button><button class="choice" data-ctl="h+">＋</button></div>
-        <div class="ck-ctl"><span>ふん</span>${one ? `<button class="choice sm" data-ctl="m-10">−10</button>` : ""}<button class="choice" data-ctl="m-">−${one?"1":""}</button><button class="choice" data-ctl="m+">＋${one?"1":""}</button>${one ? `<button class="choice sm" data-ctl="m+10">＋10</button>` : ""}</div>
-        <button class="next ck-go" id="ckGo">こたえる</button>`;
+      ans.innerHTML = `<div class="ck-ctl"><span>じ</span><button class="choice" data-ctl="h-">−</button><button class="choice" data-ctl="h+">＋</button><button class="next ck-go" id="ckGo">こたえる</button></div>
+        <div class="ck-ctl"><span>ふん</span>${one ? `<button class="choice sm" data-ctl="m-10">−10</button>` : ""}<button class="choice" data-ctl="m-">−${one?"1":""}</button><button class="choice" data-ctl="m+">＋${one?"1":""}</button>${one ? `<button class="choice sm" data-ctl="m+10">＋10</button>` : ""}</div>`;
       ans.querySelectorAll("[data-ctl]").forEach(b=>b.addEventListener("click",()=>{
         if(!ckCur) return; const c=b.dataset.ctl;
         if(c==="h+") ckLive.addHour(1); if(c==="h-") ckLive.addHour(-1);
@@ -2613,17 +2666,18 @@ details.hist summary{cursor:pointer;font-weight:700;color:var(--muted);font-size
       $("ckGo").addEventListener("click", ()=>ckAnswer({h:ckLive.h, m:ckLive.m}));
     }else{
       const ask = p.type==="read" ? (p.m===0 ? "いま なんじ？" : "いま なんじ なんぷん？")
-        : `${p.d}ぷん ${p.type==="fwd" ? "あと" : "まえ"}は<br>なんじ なんぷん？`;
+        : `${p.d}ぷん ${p.type==="fwd" ? "あと" : "まえ"}は なんじ なんぷん？`;
       q.innerHTML = ask;
       box.innerHTML = clockSVG(p.h, p.m, {size:240});
       const needM = !(p.type==="read" && p.m===0);
       // じ と ふん は ドラムロールで えらぶ（ふんは むずかしさで きざみが かわる）
       const mins = p.type==="read" ? CK_LEVELS[ckLevel].mins : CK_LEVELS[ckLevel].oneMin ? CK_LEVELS[ckLevel].mins : [0,10,20,30,40,50];
-      ans.innerHTML = `<div class="ck-wheels"><div id="ckWh"></div><span class="ck-wu">じ</span>${needM ? `<div id="ckWm"></div><span class="ck-wu" id="ckWmU">ふん</span>` : ""}</div>
-        <button class="next ck-go" id="ckGo">こたえる</button>`;
+      ans.innerHTML = `<div class="ck-wheels"><div id="ckWh"></div><span class="ck-wu">じ</span>${needM ? `<div id="ckWm"></div><span class="ck-wu" id="ckWmU">ふん</span>` : ""}
+        <button class="next ck-go" id="ckGo">こたえる</button></div>`;
       ckSel = {h:12, m:0};
-      new window.Wheel($("ckWh"), {values:Array.from({length:12},(_,i)=>i+1), value:12, onChange:v=>{ ckSel.h = v; }});
-      if(needM) new window.Wheel($("ckWm"), {values:mins, value:0, onChange:v=>{ ckSel.m = v; if($("ckWmU")) $("ckWmU").textContent = CM.funLabel(v); }});
+      const ih = 40;
+      new window.Wheel($("ckWh"), {values:Array.from({length:12},(_,i)=>i+1), value:12, itemH:ih, onChange:v=>{ ckSel.h = v; }});
+      if(needM) new window.Wheel($("ckWm"), {values:mins, value:0, itemH:ih, onChange:v=>{ ckSel.m = v; if($("ckWmU")) $("ckWmU").textContent = CM.funLabel(v); }});
       $("ckGo").addEventListener("click", ()=>ckAnswer({h:ckSel.h, m:ckSel.m}));
       $("ckGo").addEventListener("click", ()=>{ if(ckSel.h!==null && ckSel.m!==null) ckAnswer({h:ckSel.h, m:ckSel.m}); });
     }
@@ -2889,7 +2943,7 @@ details.hist summary{cursor:pointer;font-weight:700;color:var(--muted);font-size
     document.querySelectorAll(".md").forEach(b=>b.setAttribute("aria-pressed", b.dataset.md===m?"true":"false"));
     const g = m==="grid", z = m==="zukan", d = m==="drill", c = m==="clock", h = m==="home";
     $("homeMain").hidden = !h; $("navbar").hidden = h;
-    $("crumb").textContent = {drill:"いろいろ もんだい", grid:"ます けいさん", clock:"とけい", zukan:"ずかん"}[m] || "";
+    document.body.classList.toggle("course", !h);   // もんだいの がめんは つめて スクロールを へらす
     window.scrollTo({top:0});
     $("goalBanner").hidden = true;
     $("drillTop").hidden=!d; $("drillMain").hidden=!d;
