@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="assets/logo.png" alt="けいさん れんしゅう みーところ" width="560">
+  <img src="assets/logo.png" alt="けいさん れんしゅう" width="560">
 </p>
 
 <p align="center">
