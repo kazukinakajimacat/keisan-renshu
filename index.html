@@ -5,9 +5,9 @@
 <link rel="icon" type="image/png" sizes="64x64" href="favicon.png?v=3">
 <link rel="apple-touch-icon" href="apple-touch-icon.png?v=3">
 <link rel="manifest" href="manifest.json">
-<script src="stickers/stickers.js?v=202610092232"></script>
-<script src="nakama/nakama.js?v=202610092232"></script>
-<script src="clock/clock.js?v=202610092232"></script>
+<script src="stickers/stickers.js?v=202610092237"></script>
+<script src="nakama/nakama.js?v=202610092237"></script>
+<script src="clock/clock.js?v=202610092237"></script>
 <meta name="apple-mobile-web-app-title" content="けいさん">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -316,7 +316,7 @@ details.hist summary{cursor:pointer;font-weight:700;color:var(--muted);font-size
 
 /* なかま */
 .nkrow{display:flex;align-items:center;gap:12px;background:var(--surface);border:2px solid var(--line);border-radius:16px;padding:8px 12px}
-.nk-pic{flex:0 0 84px;height:100px;border:0;background:radial-gradient(circle at 50% 70%,color-mix(in srgb,var(--ok) 18%,transparent),transparent 70%);padding:0;cursor:pointer;display:flex;align-items:flex-end;justify-content:center;border-radius:12px}
+.nk-pic{flex:0 0 84px;height:100px;border:0;background:radial-gradient(circle at 50% 50%,color-mix(in srgb,var(--ok) 18%,transparent),transparent 70%);padding:0;cursor:pointer;display:flex;align-items:flex-end;justify-content:center;border-radius:12px}
 .nk-img{width:84px;height:100px;object-fit:contain;transform-origin:50% 100%;user-select:none;-webkit-user-select:none}
 .nk-img.idle{animation:nkIdle 2.8s ease-in-out infinite}
 .nk-img.egg{animation:nkWobble 3.2s ease-in-out infinite}
@@ -2418,6 +2418,7 @@ body.course .ck-ctl .choice{padding:4px 0;font-size:24px}
     const img = $("nkImg");
     if(!nkCheerTimer) nkSetImg(img, c.id, st, mood);
     img.style.scale = NK_SCALE[st];
+    if(img.complete && img.naturalWidth) nkCenter(img);
     const th = nkThresholds(c), n = c.days.length;
     // おふろ・ふとん の え は おけや ふとん ごと ゆれると へん なので、たまごでも ゆっくりの うごきに する
     const calm = mood!=="s" && ["bath","night"].includes(nkSlotShown);
@@ -2451,6 +2452,33 @@ body.course .ck-ctl .choice{padding:4px 0;font-size:24px}
   }
   // じかんたいが かわったら（れい：17:01 に おふろ）ホームの え を きりかえる
   setInterval(()=>{ if(mode==="home" && !$("nkRow").hidden && window.TimeSlot.now() !== nkSlotShown) renderNk(); }, 20000);
+
+  /* なかまカードの え を わくの まんなかに おく
+       え の データは「あしもとを 下に そろえる」かたちなので、せの ひくい え（たまご・ふとん）は 下に よって しまう。
+       え の ほんとうの かたち（すけて いない ぶぶん）を よみとって、その まんなかが わくの まんなかに くる ように ずらす */
+  const nkBoxCache = {};
+  function nkContentBox(img){
+    const key = img.currentSrc || img.src;
+    if(nkBoxCache[key]) return nkBoxCache[key];
+    const w = img.naturalWidth, h = img.naturalHeight; if(!w || !h) return null;
+    try{
+      const cv = document.createElement("canvas"); cv.width = w; cv.height = h;
+      const cx = cv.getContext("2d", {willReadFrequently:true}); cx.drawImage(img, 0, 0);
+      const d = cx.getImageData(0, 0, w, h).data;
+      let x0 = w, x1 = -1, y0 = h, y1 = -1;
+      for(let y=0; y<h; y++) for(let x=0; x<w; x++) if(d[(y*w+x)*4+3] > 60){ if(x<x0) x0=x; if(x>x1) x1=x; if(y<y0) y0=y; if(y>y1) y1=y; }
+      if(x1 < 0) return null;
+      return nkBoxCache[key] = {x0:x0/w, x1:(x1+1)/w, y0:y0/h, y1:(y1+1)/h};
+    }catch(e){ return null; }
+  }
+  function nkCenter(img){
+    const b = nkContentBox(img); if(!b){ img.style.translate = ""; return; }
+    const W = img.clientWidth || 84, H = img.clientHeight || 100, sc = parseFloat(img.style.scale) || 1;
+    // かくだいは「下の まんなか」を きてん に している
+    const cy = H - (H - (b.y0 + b.y1)/2 * H) * sc, cx = W/2 + ((b.x0 + b.x1)/2 * W - W/2) * sc;
+    img.style.translate = `${(W/2 - cx).toFixed(1)}px ${(H/2 - cy).toFixed(1)}px`;
+  }
+  $("nkImg").addEventListener("load", ()=>nkCenter($("nkImg")));
 
   function nkCheer(){
     const nk = stats.nk; if(!nk || !nk.cur || $("nkRow").hidden) return;
