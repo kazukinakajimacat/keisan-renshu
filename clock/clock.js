@@ -26,6 +26,22 @@
     funLabel(m){ const d = m % 10; return (m === 0 || [1,3,4,6,8].includes(d) || d === 0) ? "ぷん" : "ふん"; }
   };
 
+  /* ---------- 1日の 時間帯（なかまの 絵を 切りかえる） ----------
+     端末の ローカル時刻を 分単位で 判定する。各区間は 終わりの 分の 59秒までを ふくむ
+       6:00〜 9:00 朝寝起き ／ 9:01〜17:00 日中 ／ 17:01〜19:00 お風呂
+      19:01〜21:00 眠い    ／ 21:01〜 5:59 布団で 寝ている（日付を またぐ） */
+  const TimeSlot = {
+    of(h, m){
+      const t = h * 60 + m;
+      if(t >= 360 && t <= 540) return "morning";
+      if(t >= 541 && t <= 1020) return "day";
+      if(t >= 1021 && t <= 1140) return "bath";
+      if(t >= 1141 && t <= 1260) return "sleepy";
+      return "night";
+    },
+    now(d){ d = d || new Date(); return TimeSlot.of(d.getHours(), d.getMinutes()); }
+  };
+
   /* ---------- 時計の絵 ---------- */
   // 数字は 1〜12 を すべて表示。短針は太く短い・長針は細く長い・中心に丸
   function clockSVG(h, m, opt){
@@ -145,6 +161,6 @@
     this.scrollToIndex(Math.floor(this.reps / 2) * n + k, smooth);
   };
 
-  root.ClockMath = ClockMath; root.clockSVG = clockSVG; root.Clock = Clock; root.Wheel = Wheel;
-  if(typeof module !== "undefined" && module.exports) module.exports = { ClockMath };
+  root.ClockMath = ClockMath; root.TimeSlot = TimeSlot; root.clockSVG = clockSVG; root.Clock = Clock; root.Wheel = Wheel;
+  if(typeof module !== "undefined" && module.exports) module.exports = { ClockMath, TimeSlot };
 })(typeof window !== "undefined" ? window : globalThis);
