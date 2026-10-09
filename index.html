@@ -2416,7 +2416,7 @@ body.course .ck-ctl .choice{padding:4px 0;font-size:24px}
     const mood = doneToday ? "h" : miss>=2 ? "s" : "n";
     row.hidden = false;
     const img = $("nkImg");
-    if(!nkCheerTimer) img.src = nkImgSrc(c.id, st, mood);
+    if(!nkCheerTimer) nkSetImg(img, c.id, st, mood);
     img.style.scale = NK_SCALE[st];
     const th = nkThresholds(c), n = c.days.length;
     img.className = "nk-img " + (st===0 ? (n >= th[1]-1 ? "egg near" : "egg") : mood==="s" ? "sad" : "idle");
@@ -2433,6 +2433,23 @@ body.course .ck-ctl .choice{padding:4px 0;font-size:24px}
       : st===0 ? "めあてを クリアすると そだつよ" : "きょうも いっしょに がんばろう";
     $("nkMood").className = "nk-mood" + (miss>=2 ? " warn" : "");
   }
+  /* なかまの え：じかんたいで かわる（ホームの なかまカード だけ）
+       ファイル名 nakama/<id>/<だんかい>_t_<じかんたい>.webp
+       じかんたい：morning（あさ ねおき）／ day1〜day4（にっちゅう・ひらくたびに どれか）／ bath（おふろ）／ sleepy（ねむい）／ night（ふとん）
+       2にち やすんだ ときの しょんぼりは そちらを ゆうせん。え が まだ ない ときは いままでの え を だす */
+  const NK_DAY_PICK = 1 + Math.floor(Math.random()*4);   // にっちゅうの 4まいは ページを ひらくたびに ランダム
+  let nkSlotShown = null;
+  const nkTimeSrc = (id, stage, slot) => `nakama/${id}/${NK_STAGES[stage]}_t_${slot==="day" ? "day"+NK_DAY_PICK : slot}.webp?v=${NK_IMG_VER}`;
+  function nkSetImg(img, id, stage, mood){
+    const base = nkImgSrc(id, stage, mood);
+    nkSlotShown = window.TimeSlot.now();
+    if(mood === "s"){ img.onerror = null; img.src = base; return; }
+    img.onerror = () => { img.onerror = null; img.src = base; };   // じかんたいの え が ない → いままでの え
+    img.src = nkTimeSrc(id, stage, nkSlotShown);
+  }
+  // じかんたいが かわったら（れい：17:01 に おふろ）ホームの え を きりかえる
+  setInterval(()=>{ if(mode==="home" && !$("nkRow").hidden && window.TimeSlot.now() !== nkSlotShown) renderNk(); }, 20000);
+
   function nkCheer(){
     const nk = stats.nk; if(!nk || !nk.cur || $("nkRow").hidden) return;
     const c = nk.cur, st = nkStage(c), img = $("nkImg");

@@ -1,6 +1,6 @@
 // とけいの 計算の テスト（実行：node tests/clock.test.js）
 const assert = require("node:assert/strict");
-const { ClockMath: C } = require("../clock/clock.js");
+const { ClockMath: C, TimeSlot: TS } = require("../clock/clock.js");
 
 const eq = (got, h, m, label) => assert.deepEqual(got, { h, m }, label);
 
@@ -52,5 +52,19 @@ for(let h = 1; h <= 12; h++) for(let m = 0; m < 60; m++) for(const d of [10, 20,
 // ぷん／ふん の よみわけ
 const fun = { 1:"ぷん", 2:"ふん", 3:"ぷん", 4:"ぷん", 5:"ふん", 6:"ぷん", 7:"ふん", 8:"ぷん", 9:"ふん", 10:"ぷん", 12:"ふん", 15:"ふん", 24:"ぷん", 37:"ふん", 58:"ぷん" };
 for(const [m, w] of Object.entries(fun)) assert.equal(C.funLabel(+m), w, `${m}${w}`);
+
+// 時間帯（なかまの 絵）：さかいめ と、すき間・重なりが ないこと
+const slotCases = [
+  ["5:59","night"],["6:00","morning"],["9:00","morning"],["9:01","day"],["12:00","day"],["17:00","day"],
+  ["17:01","bath"],["19:00","bath"],["19:01","sleepy"],["21:00","sleepy"],["21:01","night"],["23:59","night"],["0:00","night"],["3:30","night"]
+];
+for(const [hm, want] of slotCases){ const [h, m] = hm.split(":").map(Number); assert.equal(TS.of(h, m), want, hm); }
+const count = {};
+for(let t = 0; t < 1440; t++){ const k = TS.of(Math.floor(t / 60), t % 60); assert.ok(["morning","day","bath","sleepy","night"].includes(k)); count[k] = (count[k] || 0) + 1; }
+assert.deepEqual(count, { night: 539, morning: 181, day: 480, bath: 120, sleepy: 120 });   // 合計 1440分
+assert.equal(TS.now(new Date(2026, 9, 9, 9, 0, 59)), "morning", "9:00:59 は まだ 朝");
+assert.equal(TS.now(new Date(2026, 9, 9, 9, 1, 0)), "day");
+assert.equal(TS.now(new Date(2026, 9, 9, 21, 0, 59)), "sleepy");
+assert.equal(TS.now(new Date(2026, 9, 10, 5, 59, 59)), "night");
 
 console.log("clock tests: all passed");
