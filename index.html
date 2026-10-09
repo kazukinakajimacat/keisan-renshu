@@ -5,9 +5,9 @@
 <link rel="icon" type="image/png" sizes="64x64" href="favicon.png?v=3">
 <link rel="apple-touch-icon" href="apple-touch-icon.png?v=3">
 <link rel="manifest" href="manifest.json">
-<script src="stickers/stickers.js?v=202610092237"></script>
-<script src="nakama/nakama.js?v=202610092237"></script>
-<script src="clock/clock.js?v=202610092237"></script>
+<script src="stickers/stickers.js?v=202610092241"></script>
+<script src="nakama/nakama.js?v=202610092241"></script>
+<script src="clock/clock.js?v=202610092241"></script>
 <meta name="apple-mobile-web-app-title" content="けいさん">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -2417,8 +2417,8 @@ body.course .ck-ctl .choice{padding:4px 0;font-size:24px}
     row.hidden = false;
     const img = $("nkImg");
     if(!nkCheerTimer) nkSetImg(img, c.id, st, mood);
-    img.style.scale = NK_SCALE[st];
-    if(img.complete && img.naturalWidth) nkCenter(img);
+    img.dataset.base = NK_SCALE[st];
+    if(img.complete && img.naturalWidth) nkCenter(img); else img.style.scale = NK_SCALE[st];
     const th = nkThresholds(c), n = c.days.length;
     // おふろ・ふとん の え は おけや ふとん ごと ゆれると へん なので、たまごでも ゆっくりの うごきに する
     const calm = mood!=="s" && ["bath","night"].includes(nkSlotShown);
@@ -2473,7 +2473,10 @@ body.course .ck-ctl .choice{padding:4px 0;font-size:24px}
   }
   function nkCenter(img){
     const b = nkContentBox(img); if(!b){ img.style.translate = ""; return; }
-    const W = img.clientWidth || 84, H = img.clientHeight || 100, sc = parseFloat(img.style.scale) || 1;
+    const W = img.clientWidth || 84, H = img.clientHeight || 100, base = parseFloat(img.dataset.base) || 1;
+    // わくから はみだす え（よこに ながい「はしる」え など）は、わくに おさまる おおきさまで ちぢめる
+    const sc = base * Math.min(1, W / ((b.x1 - b.x0) * W * base), H / ((b.y1 - b.y0) * H * base));
+    img.style.scale = sc;
     // かくだいは「下の まんなか」を きてん に している
     const cy = H - (H - (b.y0 + b.y1)/2 * H) * sc, cx = W/2 + ((b.x0 + b.x1)/2 * W - W/2) * sc;
     img.style.translate = `${(W/2 - cx).toFixed(1)}px ${(H/2 - cy).toFixed(1)}px`;
