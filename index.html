@@ -2419,7 +2419,9 @@ body.course .ck-ctl .choice{padding:4px 0;font-size:24px}
     if(!nkCheerTimer) nkSetImg(img, c.id, st, mood);
     img.style.scale = NK_SCALE[st];
     const th = nkThresholds(c), n = c.days.length;
-    img.className = "nk-img " + (st===0 ? (n >= th[1]-1 ? "egg near" : "egg") : mood==="s" ? "sad" : "idle");
+    // おふろ・ふとん の え は おけや ふとん ごと ゆれると へん なので、たまごでも ゆっくりの うごきに する
+    const calm = mood!=="s" && ["bath","night"].includes(nkSlotShown);
+    img.className = "nk-img " + (st===0 && !calm ? (n >= th[1]-1 ? "egg near" : "egg") : mood==="s" ? "sad" : "idle");
     $("nkName").textContent = st===0 ? "なぞの たまご" : nkDisplayName(c);
     $("nkStage").textContent = nkLabel(sp, st);
     if(st < 5){
