@@ -5,9 +5,9 @@
 <link rel="icon" type="image/png" sizes="64x64" href="favicon.png?v=3">
 <link rel="apple-touch-icon" href="apple-touch-icon.png?v=3">
 <link rel="manifest" href="manifest.json">
-<script src="stickers/stickers.js?v=202610092033"></script>
-<script src="nakama/nakama.js?v=202610092033"></script>
-<script src="clock/clock.js?v=202610092033"></script>
+<script src="stickers/stickers.js?v=202610092114"></script>
+<script src="nakama/nakama.js?v=202610092114"></script>
+<script src="clock/clock.js?v=202610092114"></script>
 <meta name="apple-mobile-web-app-title" content="けいさん">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -2343,7 +2343,8 @@ body.course .ck-ctl .choice{padding:4px 0;font-size:24px}
   const nkSp = id => NK_LIST.find(x=>x.id===id) || NK_LIST[0];
   // ちいさい だんかいは すこし おおきく みせる（そだって いる かんじは のこす）
   const NK_SCALE = [1.9, 1.5, 1.15, 1, 1, 1];
-  const nkImgSrc = (id, stage, mood) => `nakama/${id}/${NK_STAGES[stage]}_${stage===0 && mood==="s" ? "n" : mood}.webp`;
+  const NK_IMG_VER = "2";   // なかまの え を さしかえたら ばんごうを あげる（ふるい え が のこらない ように）
+  const nkImgSrc = (id, stage, mood) => `nakama/${id}/${NK_STAGES[stage]}_${stage===0 && mood==="s" ? "n" : mood}.webp?v=${NK_IMG_VER}`;
   const dkDate = k => { const [y,m,d]=k.split("-").map(Number); return new Date(y, m-1, d); };
   const dkAdd = (k, n) => { const d=dkDate(k); d.setDate(d.getDate()+n); return dayKey(d); };
   const dkDiff = (a, b) => Math.round((dkDate(b)-dkDate(a))/86400000);   // b − a（にち）
