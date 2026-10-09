@@ -5,9 +5,9 @@
 <link rel="icon" type="image/png" sizes="64x64" href="favicon.png?v=3">
 <link rel="apple-touch-icon" href="apple-touch-icon.png?v=3">
 <link rel="manifest" href="manifest.json">
-<script src="stickers/stickers.js?v=202610090106"></script>
-<script src="nakama/nakama.js?v=202610090106"></script>
-<script src="clock/clock.js?v=202610090106"></script>
+<script src="stickers/stickers.js?v=202610092033"></script>
+<script src="nakama/nakama.js?v=202610092033"></script>
+<script src="clock/clock.js?v=202610092033"></script>
 <meta name="apple-mobile-web-app-title" content="けいさん">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -378,7 +378,9 @@ details.hist summary{cursor:pointer;font-weight:700;color:var(--muted);font-size
 .nkd small{font-size:11px;color:var(--muted);font-weight:700;line-height:1.4}
 .nkd.iede img{opacity:.4;filter:grayscale(.6)}
 .nkd.iede b{color:var(--muted)}
-.nkd.unseen img{filter:brightness(0);opacity:.18}
+.nk-shadow{display:block;width:72px;height:86px;background:var(--ink);opacity:.16;-webkit-mask-size:contain;mask-size:contain;-webkit-mask-repeat:no-repeat;mask-repeat:no-repeat;-webkit-mask-position:50% 100%;mask-position:50% 100%}
+/* え を ながおし しても プレビューや メニューを ださない */
+img,svg{-webkit-touch-callout:none;-webkit-user-select:none;user-select:none;-webkit-user-drag:none}
 
 
 /* とけい */
@@ -2327,6 +2329,10 @@ body.course .ck-ctl .choice{padding:4px 0;font-size:24px}
   $("gbGo").addEventListener("click", ()=>{ $("goalBanner").hidden=true; });
 
 
+  // え を ながおし・みぎクリック しても ブラウザの メニュー（プレビュー）を ださない
+  document.addEventListener("contextmenu", e=>{ if(e.target.closest("img, svg, .nk-shadow, .nkd, .alb, .mc-pick, .pet")) e.preventDefault(); });
+  document.addEventListener("dragstart", e=>{ if(e.target.closest("img")) e.preventDefault(); });
+
   /* ---------- なかま そだて ----------
      めあて（10もん）を クリアした ひの かずで そだつ。3にち やすむと いえで（よくじつ あたらしい たまご）。
      つきが かわると たびだって、なかま ずかんに のる。きろくは この たんまつ だけ。 */
@@ -2579,7 +2585,7 @@ body.course .ck-ctl .choice{padding:4px 0;font-size:24px}
     if(nk.cur) items.push(card({id:nk.cur.id, name:nk.cur.name, stage:nkStage(nk.cur), month:nk.cur.start.slice(0,7), result:"cur"}, true));
     dex.forEach(e=>items.push(card(e, false)));
     const shown = new Set([...(nk.dex||[]).map(e=>e.id), ...(nk.cur && nkStage(nk.cur)>0 ? [nk.cur.id] : [])]);
-    const unseen = NK_LIST.filter(sp=>!shown.has(sp.id)).map(sp=>`<div class="nkd unseen"><img src="nakama/${sp.id}/adult_n.webp" alt="" loading="lazy"><b>？？？</b><small>まだ あって いない</small></div>`);
+    const unseen = NK_LIST.filter(sp=>!shown.has(sp.id)).map(sp=>`<div class="nkd unseen"><i class="nk-shadow" style="-webkit-mask-image:url(nakama/${sp.id}/adult_n.webp);mask-image:url(nakama/${sp.id}/adult_n.webp)" aria-hidden="true"></i><b>？？？</b><small>まだ あって いない</small></div>`);
     renderMcEntry();
     box.innerHTML = items.length || unseen.length ? items.join("") + unseen.join("")
       : `<div class="empty">そだてた なかまが ここに のるよ</div>`;
