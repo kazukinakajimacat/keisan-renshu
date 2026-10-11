@@ -5,9 +5,9 @@
 <link rel="icon" type="image/png" sizes="64x64" href="favicon.png?v=3">
 <link rel="apple-touch-icon" href="apple-touch-icon.png?v=3">
 <link rel="manifest" href="manifest.json">
-<script src="stickers/stickers.js?v=202610092241"></script>
-<script src="nakama/nakama.js?v=202610092241"></script>
-<script src="clock/clock.js?v=202610092241"></script>
+<script src="stickers/stickers.js?v=202610111101"></script>
+<script src="nakama/nakama.js?v=202610111101"></script>
+<script src="clock/clock.js?v=202610111101"></script>
 <meta name="apple-mobile-web-app-title" content="けいさん">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -188,7 +188,7 @@ details.hist summary{cursor:pointer;font-weight:700;color:var(--muted);font-size
 .q.mid{font-size:clamp(34px,10.5vw,58px)}
 .q.small .ask,.q.mid .ask{font-size:20px;letter-spacing:.03em;white-space:normal}
 .q .xrow{display:flex;align-items:center;justify-content:center;gap:2px;flex-wrap:nowrap}
-.q .xrow.wrap,.explain .xrow{flex-wrap:wrap}
+.q .xrow.xwrap,.explain .xrow{flex-wrap:wrap}
 .q .xcol,.explain .xcol{display:flex;flex-direction:column;gap:8px;align-items:flex-start}
 .xe{font-size:clamp(26px,8vw,36px);line-height:1.15;display:inline-flex;flex-direction:column;align-items:center;font-family:"Apple Color Emoji","Segoe UI Emoji","Noto Color Emoji",sans-serif}
 .xe small{font-size:13px;font-weight:900;color:var(--muted);font-family:inherit}
@@ -1255,7 +1255,7 @@ body.course .ck-ctl .choice{padding:4px 0;font-size:24px}
       const verb = unit==="ひき" ? "います" : "あります";
       const html = asText
         ? `<div class="xbig">${c}<small>${unit}</small></div><span class="ask">${name}が ${c}${unit} ${verb}。<br>あと いくつで ${T}${unit}？</span>`
-        : `<div class="xrow wrap">${emo(e,c)}</div><span class="ask">あと いくつで ${T}${unit}？</span>`;
+        : `<div class="xrow xwrap">${emo(e,c)}</div><span class="ask">あと いくつで ${T}${unit}？</span>`;
       return { type:"atoiku", f:xf(`atoiku:${c}/${T}`), ans:T-c, cls:"pic",
         html,
         parent:`${c} → ${T}（あといくつ）`, confuse:[T, c, T+c],
