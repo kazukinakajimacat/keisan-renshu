@@ -8,6 +8,7 @@
 <script src="stickers/stickers.js?v=202610112112"></script>
 <script src="nakama/nakama.js?v=202610112112"></script>
 <script src="clock/clock.js?v=202610112112"></script>
+<script src="drill/patterns.js?v=202610112112"></script>
 <meta name="apple-mobile-web-app-title" content="けいさん">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -223,6 +224,24 @@ details.hist summary{cursor:pointer;font-weight:700;color:var(--muted);font-size
 .otiles .choice:disabled{opacity:.3}
 .oundo{align-self:center;font:inherit;font-weight:700;font-size:15px;color:var(--muted);background:none;border:2px solid var(--line);border-radius:999px;padding:6px 16px;cursor:pointer}
 .oundo:disabled{opacity:.4;cursor:default}
+/* しきを かんがえる もんだい（10しゅるい） */
+.choice.expr{font-size:clamp(19px,5.8vw,30px);white-space:nowrap;padding:14px 0}
+.choice.sign,.choice.mb{font-size:clamp(36px,11vw,50px);line-height:1.1}
+.q .sq{display:inline-block;color:var(--blue);margin:0 .08em}
+.q .xpair{white-space:nowrap}
+.q.xcmp{font-size:clamp(26px,8vw,44px)}
+.q .xbad{position:relative;display:inline-block;color:var(--ng)}
+.q .xbad::after{content:"✕";position:absolute;left:100%;top:-.2em;margin-left:.05em;font-size:.42em;line-height:1;color:var(--ng)}
+.q .xgood{color:var(--ok)}
+.q .xshop{display:block;text-align:center;font-size:40px;line-height:1.1;font-family:"Apple Color Emoji","Segoe UI Emoji","Noto Color Emoji",sans-serif}
+.xlist{display:flex;flex-direction:column;align-items:center;gap:2px;font-size:20px;font-weight:700;color:var(--muted)}
+.xlist .on{color:var(--ok);font-weight:900}
+.explain .say .nw{white-space:nowrap}
+.explain .say:has(.nw){text-align:center}
+button.oslot{font:inherit;font-size:clamp(24px,7vw,32px);font-weight:900;color:var(--ink);background:none;padding:0;cursor:pointer;touch-action:manipulation}
+button.oslot:disabled{cursor:default}
+.osym{font-size:clamp(24px,7vw,32px);margin:0 4px}
+.mnote{align-self:center;font-size:14px;font-weight:700;color:var(--muted)}
 .type-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(140px,1fr));gap:6px}
 .type-grid div{background:var(--frame);border-radius:10px;padding:6px 10px;font-size:13px;font-weight:700;display:flex;justify-content:space-between;gap:8px}
 .type-grid div.bad{background:var(--ng-soft)}
@@ -474,6 +493,10 @@ body.course .q.story .hints{gap:4px;margin-top:4px}
 body.course .q.story .hints li{padding:3px 10px}
 body.course .choices{gap:8px}
 body.course .choice{padding:8px 0;font-size:clamp(24px,7.4vw,34px)}
+body.course .choice.expr{padding:12px 0;font-size:clamp(18px,5.6vw,28px)}
+body.course .choice.sign,body.course .choice.mb{font-size:clamp(32px,10vw,44px)}
+body.course .q.xcmp{font-size:clamp(24px,7.4vw,40px)}
+body.course .q .xshop{font-size:32px}
 body.course .tags .ptag{margin-bottom:4px}
 body.course .fb{min-height:0}
 body.course .grid th,body.course .grid td{height:40px;font-size:21px}
@@ -1005,6 +1028,17 @@ body.course .ck-ctl .choice{padding:4px 0;font-size:24px}
     guess:  {label:"かずを あてよう",   name:"かずをあてよう（ヒント）", base:0, slowBase:14000},
     seq:    {label:"かずの れつ",       name:"数の列",         base:0, slowBase:6000},
     bigger: {label:"どちらが おおきい？", name:"大きさくらべ",  base:0, slowBase:4000},
+    // しきを かんがえる もんだい（10しゅるい・drill/patterns.js）
+    submiss:  {label:"ひきざんの あなあき",   name:"ひき算の穴あき",       base:0, slowBase:8000},
+    same:     {label:"おなじ こたえは どれ？", name:"同じ答えの式",         base:0, slowBase:14000},
+    target:   {label:"こたえが □に なるのは？", name:"答えが□になる式",     base:0, slowBase:12000},
+    exprcmp:  {label:"しきの おおきさくらべ", name:"式の大きさくらべ",     base:0, slowBase:11000},
+    sign:     {label:"＋かな？ −かな？",       name:"＋か−か",             base:0, slowBase:6000},
+    truefalse:{label:"あってる？ まちがい？", name:"正しい式かどうか",     base:0, slowBase:7000},
+    pickexpr: {label:"しきを えらぼう",       name:"式をえらぶ（文章題）", base:0, slowBase:12000},
+    make:     {label:"しきを つくろう",       name:"式をつくる",           base:0, slowBase:12000},
+    kaimono:  {label:"おかいもの",            name:"おかいもの（おつり）", base:0, slowBase:10000},
+    fix:      {label:"まちがいを なおそう",   name:"まちがいを直す",       base:0, slowBase:7000},
     grid:   {label:"ます けいさん",    name:"ます計算",       base:0,  slowBase:5000}
   };
   const TYPE_KEYS = Object.keys(TYPES);
@@ -1013,17 +1047,21 @@ body.course .ck-ctl .choice{padding:4px 0;font-size:24px}
   // 「見てわかる」→「考えてわかる」→「計算してわかる」の じゅんに、レベルで おもみを かえる
   const LEVELS = {
     easy:  {label:"かんたん",  types:{plain:36, pic:18, decomp:14, word:16,
-                                     nth:7, bigger:7, next:7, seq:6, prevnext:6, ten:6, sort:5, atoiku:5, more:4, guess:3},
+                                     nth:7, bigger:7, next:7, seq:6, prevnext:6, ten:6, sort:5, atoiku:5, more:4, guess:3,
+                                     submiss:3, same:3, target:4, exprcmp:4, sign:5, truefalse:5, pickexpr:4, make:4, kaimono:3, fix:4},
             words:["add","left"], three:null},
     normal:{label:"ふつう",    types:{plain:22, missing:24, pic:8, decomp:10, word:20, three:12,
-                                     nth:5, more:6, atoiku:6, ten:6, sort:5, next:3, prevnext:4, guess:6, seq:4, bigger:3},
+                                     nth:5, more:6, atoiku:6, ten:6, sort:5, next:3, prevnext:4, guess:6, seq:4, bigger:3,
+                                     submiss:5, same:5, target:5, exprcmp:5, sign:4, truefalse:4, pickexpr:5, make:5, kaimono:5, fix:4},
             words:["add","left","diff"], three:"same"},
     hard:  {label:"むずかしい", types:{plain:12, missing:18, decomp:6, pic:4, word:20, three:34,
-                                     nth:5, more:6, atoiku:5, ten:5, sort:6, next:2, prevnext:3, guess:8, seq:4, bigger:2},
+                                     nth:5, more:6, atoiku:5, ten:5, sort:6, next:2, prevnext:3, guess:8, seq:4, bigger:2,
+                                     submiss:5, same:6, target:5, exprcmp:5, sign:3, truefalse:3, pickexpr:5, make:6, kaimono:5, fix:4},
             words:["add","left","diff"], three:"mixed"},
     // ちょう むずかしい：おおきい かずや +と−まぜの もんだいを おおめに・1もん 10びょう
     super: {label:"ちょう むずかしい", types:{plain:14, missing:22, decomp:6, pic:2, word:14, three:30,
-                                     nth:5, more:6, atoiku:5, ten:5, sort:7, next:2, prevnext:2, guess:9, seq:5, bigger:2},
+                                     nth:5, more:6, atoiku:5, ten:5, sort:7, next:2, prevnext:2, guess:9, seq:5, bigger:2,
+                                     submiss:6, same:6, target:5, exprcmp:5, sign:3, truefalse:3, pickexpr:4, make:6, kaimono:4, fix:4},
             words:["add","left","diff"], three:"mixed", timed:10000, hardFacts:true}
   };
   const LV_KEY = "sansu-drill-level-v1";
@@ -1215,6 +1253,12 @@ body.course .ck-ctl .choice{padding:4px 0;font-size:24px}
     return h+'</div>';
   }
 
+  // しきを かんがえる もんだい の ぶひん
+  const PT = window.Patterns;
+  const exH = e => `${e.a}${OP(e.op)}${e.b}`;
+  const exChoices = list => list.map(e=>({v:PT.text(e), label:PT.text(e), cls:"expr"}));
+  const exList = (list, right) => `<div class="xlist num">${list.map(e=>`<span class="${e===right?"on":""}">${PT.text(e)} = ${e.v}</span>`).join("")}</div>`;
+
   const XGEN = {
     // ① なんばんめ？
     nth(){
@@ -1384,6 +1428,112 @@ body.course .ck-ctl .choice{padding:4px 0;font-size:24px}
         explain:`${big ? "おおきい" : "ちいさい"}のは <b class="num">${ans}</b>`,
         frame:numLine(ans, {soft:i=>i===a||i===b}),
         choices: choiceNums([a,b]) };
+    },
+
+    /* ---------- しきを かんがえる もんだい（10しゅるい） ----------
+       もんだいの なかみ（かず・せんたくし）は drill/patterns.js で つくる。ここは がめんに だす かたちに する だけ。
+       しきに でる かず も こたえ も 1〜10。もんだいぶんは ひらがなと すうじ だけ */
+    // ⑪ ひきざんの あなあき（a − ? = c ／ ? − b = c）
+    submiss(){
+      const d = PT.submiss(), {a,b,c} = d, f = {a, op:"-", b, ans:c};
+      return d.form==="R"
+        ? { type:"submiss", f, ans:b, cls:"", html:`${a}${OP("-")}${BL}${EQ}${c}`, parent:`${a} − ? = ${c}`, confuse:[c, a+c],
+            explain:`${a} から <b class="num">${b}</b> を とると ${c}`, frame:frameHTML(a,"-",b) }
+        : { type:"submiss", f, ans:a, cls:"", html:`${BL}${OP("-")}${b}${EQ}${c}`, parent:`? − ${b} = ${c}`, confuse:[c, Math.abs(c-b)],
+            explain:`<b class="num">${a}</b> から ${b} を とると ${c}`, frame:frameHTML(a,"-",b) };
+    },
+
+    // ⑫ おなじ こたえは どれ？
+    same(){
+      const d = PT.same(), bt = PT.text(d.base), rt = PT.text(d.right);
+      return { type:"same", f:xf(d.key), ans:rt, cls:"mid",
+        html:`${exH(d.base)}<span class="ask">と おなじ こたえは どれ？</span>`,
+        parent:`${bt} と同じ答え（${d.choices.map(PT.text).join("／")}）`, confuse:[],
+        explain:`${bt} = ${d.v}<br>おなじ こたえは <b class="num nw">${rt}</b>`,
+        frame:exList(d.choices, d.right), choices:exChoices(d.choices), time:14000 };
+    },
+
+    // ⑬ こたえが □に なるのは？
+    target(){
+      const d = PT.target(), rt = PT.text(d.right);
+      return { type:"target", f:xf(d.key), ans:rt, cls:"pic",
+        html:`<div class="xbig">${d.n}</div><span class="ask">こたえが ${d.n}に なるのは どれ？</span>`,
+        parent:`答えが ${d.n} になる式（${d.choices.map(PT.text).join("／")}）`, confuse:[],
+        explain:`こたえが ${d.n}に なるのは <b class="num nw">${rt}</b>`,
+        frame:exList(d.choices, d.right), choices:exChoices(d.choices), time:14000 };
+    },
+
+    // ⑭ しきの おおきさくらべ
+    exprcmp(){
+      const d = PT.exprcmp(lvRank()), [x,y] = d.pair, w = d.big ? "おおきい" : "ちいさい", rt = PT.text(d.right);
+      return { type:"exprcmp", f:xf(d.key), ans:rt, cls:"mid xcmp",
+        html:`<span class="xpair">${exH(x)}${HA("と")}${exH(y)}</span><span class="ask">こたえが ${w}のは どっち？</span>`,
+        parent:`${PT.text(x)} と ${PT.text(y)}（${w}ほう）`, confuse:[],
+        explain:`${PT.text(x)} = ${x.v}、${PT.text(y)} = ${y.v}<br>${w}のは <b class="num nw">${rt}</b>`,
+        frame:numLine(d.right.v, {soft:i=>i===x.v||i===y.v}), choices:exChoices(d.pair), time:12000 };
+    },
+
+    // ⑮ ＋かな？ −かな？
+    sign(){
+      const d = PT.sign(), lab = o => o==="+" ? "＋" : "−";
+      return { type:"sign", f:xf(d.key), ans:lab(d.ans), cls:"small",
+        html:`${d.a}<span class="sq">□</span>${d.b}${EQ}${d.c}<span class="ask">□に はいるのは どっち？</span>`,
+        parent:`${d.a} □ ${d.b} = ${d.c}`, confuse:[],
+        explain:`${d.a} <b class="num">${opText(d.ans)}</b> ${d.b} = ${d.c}`, frame:frameHTML(d.a,d.ans,d.b),
+        choices: shuffle(["+","-"]).map(o=>({v:lab(o), label:lab(o), cls:"sign", aria:o==="+" ? "たす" : "ひく"})) };
+    },
+
+    // ⑯ あってる？ まちがい？（ばつが せいかいの ときは、ただしい しきを みせてから つぎへ）
+    truefalse(){
+      const d = PT.truefalse(), e = d.e, t = PT.text(e);
+      return { type:"truefalse", f:xf(d.key), ans: d.ok ? "まる" : "ばつ", cls:"small",
+        html:`${exH(e)}${EQ}${d.shown}<span class="ask">この しきは あってる？</span>`,
+        parent:`${t} = ${d.shown} は正しい？`, confuse:[],
+        explain: d.ok ? `${t} = <b class="num">${e.v}</b> で あって いるよ` : `ただしくは ${t} = <b class="num">${e.v}</b>`,
+        frame:frameHTML(e.a,e.op,e.b),
+        done: d.ok ? null : `${exH(e)}${EQ}<span class="xgood">${e.v}</span><span class="ask">ただしくは こうだよ</span>`,
+        choices: shuffle([["まる","○"],["ばつ","×"]]).map(([v,l])=>({v, label:l, cls:"mb", aria:v})) };
+    },
+
+    // ⑰ しきを えらぼう（こたえの かずは きかない）
+    pickexpr(){
+      const d = PT.pickexpr(), rt = PT.text(d.right);
+      const why = d.scene==="add" ? "あわせるので たしざん" : d.scene==="left" ? "へるので ひきざん" : "ちがいを みるので ひきざん";
+      return { type:"pickexpr", f:xf(d.key), ans:rt, cls:"story",
+        html:`${d.story}<span class="ask">${d.ask} しきは どれ？</span>`,
+        parent:`式をえらぶ ${d.a} と ${d.b}（${{add:"ぜんぶで", left:"のこり", diff:"ちがい"}[d.scene]}）`, confuse:[],
+        explain:`${why}。<br>しきは <b class="num nw">${rt}</b>`, frame:frameHTML(d.a,d.op,d.b),
+        choices:exChoices(d.choices), time:16000 };
+    },
+
+    // ⑱ しきを つくろう（かずを おして わくに ならべる）
+    make(){
+      const d = PT.make(), show = a => `${a[0]} ${opText(d.op)} ${a[1]} = ${a[2]}`, a0 = d.answers[0];
+      return { type:"make", f:xf(d.key), ans:show(a0), cls:"pic",
+        html:`<div class="xbig xnums">${d.cards.map(v=>`<span>${v}</span>`).join("")}</div><span class="ask">3つの かずを ならべて しきを つくろう</span>`,
+        parent:`${d.cards.join(" ")} で □ ${opText(d.op)} □ = □`, confuse:[],
+        explain:`<b class="num nw">${show(a0)}</b>${d.answers[1] ? `<br>${show(d.answers[1])} でも せいかい` : ""}`,
+        frame:frameHTML(a0[0], d.op, a0[1]),
+        make:{cards:d.cards, op:d.op}, check: v => d.check((String(v||"").match(/\d+/g) || []).map(Number)), time:16000 };
+    },
+
+    // ⑲ おかいもの（おつり）
+    kaimono(){
+      const d = PT.kaimono(), f = {a:d.money, op:"-", b:d.price, ans:d.ans};
+      return { type:"kaimono", f, ans:d.ans, cls:"story",
+        html:`${d.emoji ? `<span class="xshop">${d.emoji}</span>` : ""}${d.money}えん もって、${d.price}えんの ${d.name}を かいました。<span class="ask">おつりは なんえん？</span>`,
+        parent:`おかいもの ${d.money} − ${d.price}（おつり）`, confuse:[d.money, d.price],
+        explain:`${d.money}えん から ${d.price}えん を はらうと <b class="num">${d.ans}</b>えん`, frame:frameHTML(d.money,"-",d.price) };
+    },
+
+    // ⑳ まちがいを なおそう（せいかいしたら、ただしい しきを みせてから つぎへ）
+    fix(){
+      const d = PT.fix(), e = d.e, t = PT.text(e), f = {a:e.a, op:e.op, b:e.b, ans:e.v};
+      return { type:"fix", f, ans:e.v, cls:"small",
+        html:`${exH(e)}${EQ}<span class="xbad">${d.wrong}</span><span class="ask">${d.wrong}は まちがい。ほんとうの こたえは？</span>`,
+        parent:`${t} = ${d.wrong}（まちがいを直す）`, confuse:[d.wrong],
+        explain:`${t} = <b class="num">${e.v}</b>`, frame:frameHTML(e.a,e.op,e.b),
+        done:`${exH(e)}${EQ}<span class="xgood">${e.v}</span><span class="ask">ただしい しきに なったね</span>` };
     }
   };
 
@@ -1461,7 +1611,17 @@ body.course .ck-ctl .choice{padding:4px 0;font-size:24px}
     prevnext:{cat:"まえ と あと、どっちかにゃ？", dog:"かずを ゆっくり いって みよう わん"},
     guess:{cat:"ヒントを ひとつずつ よむにゃ", dog:"ひみつの かず、わかるかな わん？"},
     seq:{cat:"となりの かずを みるにゃ", dog:"□ の まえと あとを みよう わん"},
-    bigger:{cat:"どっちが おおきいかにゃ？", dog:"よく くらべてね わん"}
+    bigger:{cat:"どっちが おおきいかにゃ？", dog:"よく くらべてね わん"},
+    submiss:{cat:"? に はいる かずは なにかにゃ？", dog:"ひくと いくつ のこるかな わん"},
+    same:{cat:"ひとつずつ けいさん して みるにゃ", dog:"おなじ こたえを さがそう わん"},
+    target:{cat:"ひとつずつ けいさん して みるにゃ", dog:"どの しきかな わん？"},
+    exprcmp:{cat:"りょうほう けいさん して くらべるにゃ", dog:"どっちの こたえが おおきいかな わん"},
+    sign:{cat:"ふえたかにゃ？ へったかにゃ？", dog:"こたえは おおきく なった？ わん"},
+    truefalse:{cat:"じぶんで けいさん して たしかめるにゃ", dog:"あってるかな わん？"},
+    pickexpr:{cat:"ふえる おはなし かにゃ？ へる おはなし かにゃ？", dog:"おはなしを よく よんでね わん"},
+    make:{cat:"いちばん おおきい かずは どこかにゃ？", dog:"かずを おして ならべよう わん"},
+    kaimono:{cat:"はらった あとの のこりは いくつかにゃ？", dog:"おつりを かんがえよう わん"},
+    fix:{cat:"じぶんで けいさん して みるにゃ", dog:"ほんとうの こたえは なにかな わん"}
   };
 
   function renderTrack(){
@@ -1512,6 +1672,44 @@ body.course .ck-ctl .choice{padding:4px 0;font-size:24px}
     chEl.querySelectorAll("button").forEach(b=>{ b.disabled = true; });
   }
 
+  /* しきを つくろう：かずを おすと ひだりの わくから うまる。うまった わくを おすと もどせる。3つ そろったら はんてい */
+  function renderMake(p){
+    chEl.className = "choices order make";
+    const cards = p.make.cards, slot = [null,null,null];   // わくに はいって いる カードの ばんごう
+    const slots = document.createElement("div"); slots.className = "oslots";
+    const tiles = document.createElement("div"); tiles.className = "otiles";
+    const note = document.createElement("div"); note.className = "mnote"; note.textContent = "いれた かずを おすと もどせるよ";
+    const sym = t => { const el=document.createElement("i"); el.className="oarrow osym"; el.textContent=t; return el; };
+    const sb = [0,1,2].map(i=>{
+      const b=document.createElement("button"); b.type="button"; b.className="oslot num";
+      b.addEventListener("click",()=>{ if(current && slot[i]!=null){ slot[i]=null; draw(); } });
+      return b;
+    });
+    const tb = cards.map((v,k)=>{
+      const b=document.createElement("button"); b.type="button"; b.className="choice num"; b.textContent=v; b.dataset.k=k;
+      b.addEventListener("click",()=>{
+        if(!current || slot.includes(k)) return;
+        const i = slot.indexOf(null); if(i<0) return;
+        slot[i]=k; draw();
+        if(!slot.includes(null)) answer(`${cards[slot[0]]} ${opText(p.make.op)} ${cards[slot[1]]} = ${cards[slot[2]]}`, null);
+      });
+      return b;
+    });
+    const draw = () => {
+      sb.forEach((b,i)=>{ const k=slot[i]; b.textContent = k==null ? "" : cards[k]; b.classList.toggle("fill", k!=null); b.disabled = k==null;
+        b.setAttribute("aria-label", k==null ? `${i+1}ばんめの わく` : `${cards[k]}を もどす`); });
+      tb.forEach((b,k)=>{ b.disabled = slot.includes(k); });
+    };
+    slots.append(sb[0], sym(opText(p.make.op)), sb[1], sym("="), sb[2]);
+    tiles.append(...tb);
+    chEl.append(slots, tiles, note);
+    draw();
+  }
+  function markMake(ok){
+    chEl.querySelectorAll(".oslot").forEach(el=>{ if(el.textContent) el.classList.add(ok ? "right" : "wrong"); });
+    chEl.querySelectorAll("button").forEach(b=>{ b.disabled = true; });
+  }
+
   function nextProblem(){
     qIndex++;
     const dueIdx = reviewQueue.findIndex(r=>r.due<=qIndex);
@@ -1531,12 +1729,14 @@ body.course .ck-ctl .choice{padding:4px 0;font-size:24px}
 
     chEl.innerHTML = ""; chEl.className = "choices"; chEl.style.gridTemplateColumns = "";
     if(p.order) renderOrder(p);
+    else if(p.make) renderMake(p);
     else if(p.choices){
       const cs=p.choices;
       chEl.style.gridTemplateColumns = `repeat(${cs.length<=4 ? cs.length : Math.ceil(cs.length/2)},1fr)`;
       cs.forEach((c,i)=>{
         const b=document.createElement("button");
-        b.className="choice " + (c.emoji ? "emoji" : "num"); b.textContent=c.label; b.dataset.v=String(c.v);
+        b.className="choice " + (c.emoji ? "emoji" : "num") + (c.cls ? " "+c.cls : ""); b.textContent=c.label; b.dataset.v=String(c.v);
+        if(c.aria) b.setAttribute("aria-label", c.aria);
         b.addEventListener("click",()=>answer(c.v,b));
         chEl.appendChild(b);
       });
@@ -1609,9 +1809,10 @@ body.course .ck-ctl .choice{padding:4px 0;font-size:24px}
     stopTimer(); $("timer").classList.add("off");
     const timeout = n===null;
     const ms = performance.now()-shownAt;
-    const ok = n===p.ans;
+    const ok = p.check ? p.check(n) : n===p.ans;   // しきを つくろう は せいかいが 2とおり ある
     const slow = ok && ms > slowLimit(p.type);
     if(p.order) markOrder(p, n);
+    else if(p.make) markMake(ok);
     else [...chEl.children].forEach(b=>{
       b.disabled = true;
       if(b.dataset.v===String(p.ans)) b.classList.add("right");
@@ -1629,7 +1830,7 @@ body.course .ck-ctl .choice{padding:4px 0;font-size:24px}
     current = null;
 
     const base = {type:p.type, f:p.f, ans:p.ans, cls:p.cls, html:p.html, parent:p.parent, confuse:p.confuse, explain:p.explain, frame:p.frame,
-                  choices:p.choices, order:p.order, time:p.time};
+                  choices:p.choices, order:p.order, time:p.time, make:p.make, check:p.check, done:p.done};
     if(!ok && p.retry!=="miss") reviewQueue.push({p:base, kind:"miss", due:qIndex+REVIEW_GAP});
     else if(slow && !p.retry) reviewQueue.push({p:base, kind:"slow", due:qIndex+SLOW_GAP});
 
@@ -1644,7 +1845,8 @@ body.course .ck-ctl .choice{padding:4px 0;font-size:24px}
       else if(streak%5===0) say(w, `${streak}もん れんぞく せいかい！${w==="cat"?"すごすぎるにゃ":"すごすぎる わん"}！`);
       else say(w, pick(LINES.ok[w]));
       if(nm) celebrateMaster(nm);
-      setTimeout(afterAnswer, nm ? 1600 : 900);
+      if(p.done) qEl.innerHTML = p.done;   // ただしい しきを みせてから つぎへ
+      setTimeout(afterAnswer, p.done ? 1900 : nm ? 1600 : 900);
     }else{
       streak = 0;
       fbEl.innerHTML = "";
@@ -1690,7 +1892,17 @@ body.course .ck-ctl .choice{padding:4px 0;font-size:24px}
     prevnext:"「ひとつ前」「ひとつ後」は数直線で指さすと分かりやすいです。",
     guess:"ヒントを1つずつ読んで、当てはまらない数を消していく練習がおすすめです。",
     seq:"数の並びの規則（1ずつ・2ずつ）に気づけているか確認するとよさそうです。",
-    bigger:"数の大きさの比較は、数直線でどちらが右にあるかで確認できます。"
+    bigger:"数の大きさの比較は、数直線でどちらが右にあるかで確認できます。",
+    submiss:"ひき算の?は、「はじめの数」と「ひいた数」のどちらを聞かれているかを、10のわくの図で確認するとよさそうです。",
+    same:"式を1つずつ計算して、答えを声に出して比べるとよさそうです。",
+    target:"式を1つずつ計算して確かめる習慣をつけるとよさそうです。",
+    exprcmp:"2つの式をそれぞれ計算してから比べる手順を確認するとよさそうです。",
+    sign:"答えがはじめの数より増えたか減ったかに注目すると、＋と−を選びやすくなります。",
+    truefalse:"式を自分で計算し直して確かめる練習がおすすめです。",
+    pickexpr:"増える話か、減る話か、比べる話かを、一緒に読んで確かめるとよさそうです。",
+    make:"いちばん大きい数が、たし算では答えに、ひき算では最初に来ることに気づけると作りやすくなります。",
+    kaimono:"持っているお金から値段をひく場面を、おはじきなどで再現すると分かりやすいです。",
+    fix:"式を自分で計算し直して確かめる練習がおすすめです。"
   };
 
   function analyze(rs){
