@@ -5,9 +5,9 @@
 <link rel="icon" type="image/png" sizes="64x64" href="favicon.png?v=3">
 <link rel="apple-touch-icon" href="apple-touch-icon.png?v=3">
 <link rel="manifest" href="manifest.json">
-<script src="stickers/stickers.js?v=202610111101"></script>
-<script src="nakama/nakama.js?v=202610111101"></script>
-<script src="clock/clock.js?v=202610111101"></script>
+<script src="stickers/stickers.js?v=202610112112"></script>
+<script src="nakama/nakama.js?v=202610112112"></script>
+<script src="clock/clock.js?v=202610112112"></script>
 <meta name="apple-mobile-web-app-title" content="けいさん">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -364,7 +364,7 @@ details.hist summary{cursor:pointer;font-weight:700;color:var(--muted);font-size
 .mc-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;width:100%}
 .mc-pick{font:inherit;position:relative;display:flex;flex-direction:column;align-items:center;gap:2px;background:var(--bg);border:3px solid transparent;border-radius:16px;padding:6px 2px;cursor:pointer;min-width:0}
 .mc-pick img{width:100%;max-width:72px;aspect-ratio:26/31;object-fit:contain}
-.mc-pick b{font-size:13px;font-weight:900;color:var(--ink);white-space:nowrap}
+.mc-pick b{font-size:clamp(11px,3.3vw,13px);font-weight:900;color:var(--ink);white-space:nowrap}
 .mc-pick i{position:absolute;top:2px;left:50%;transform:translateX(-50%);font-style:normal;font-size:10px;font-weight:900;color:#fff;background:var(--ok);border-radius:999px;padding:0 6px;white-space:nowrap}
 .mc-pick.now{border-color:var(--ok)}
 .mc-pick.sel{border-color:var(--blue);background:color-mix(in srgb,var(--blue) 14%,var(--surface))}
@@ -960,6 +960,12 @@ body.course .ck-ctl .choice{padding:4px 0;font-size:24px}
   const mcData = () => stats.mc || (stats.mc = {id:null, announced:false});
   const mcChar = () => { const id = stats && stats.mc && stats.mc.id; return id ? (window.NAKAMA||[]).find(x=>x.id===id) || null : null; };
   const mcOn = () => !!mcChar();
+  // MCの なまえ：その しゅるいを たびだたせた ときの なまえ（つけて いなければ もとの なまえ）
+  const mcName = sp => {
+    const dex = (stats && stats.nk && stats.nk.dex) || [];
+    for(let i=dex.length-1; i>=0; i--){ const e = dex[i]; if(e.id===sp.id && e.result==="tabidachi") return e.name || sp.name; }
+    return sp.name;
+  };
   // みー と ころ むけの ことば（〜にゃ・〜わん）を ふつうの はなしかたに なおす
   const mcNeutral = t => String(t).replace(/だにゃ/g,"だよ").replace(/かにゃ/g,"かな").replace(/にゃ〜/g,"ね〜").replace(/にゃ/g,"よ")
     .replace(/だわん/g,"だよ").replace(/かな わん/g,"かな").replace(/ ?わん/g,"").replace(/よよ/g,"よ");
@@ -974,7 +980,7 @@ body.course .ck-ctl .choice{padding:4px 0;font-size:24px}
     return l;
   }
   const mcHTML = c => `<div class="pet-face mc" aria-hidden="true">${[["n","n"],["h","h"],["b","h"],["s","s"]]
-    .map(([cl,f])=>`<img class="f-${cl}" src="nakama/${c.id}/adult_${f}.webp" alt="" draggable="false">`).join("")}</div><div class="name">${c.name}</div>`;
+    .map(([cl,f])=>`<img class="f-${cl}" src="nakama/${c.id}/adult_${f}.webp" alt="" draggable="false">`).join("")}</div><div class="name">${mcName(c)}</div>`;
   function applyMc(){
     const c = mcChar();
     catEl.innerHTML = c ? mcHTML(c) : CAT_SVG;
@@ -2592,8 +2598,8 @@ body.course .ck-ctl .choice{padding:4px 0;font-size:24px}
     if(!mcUnlocked()) return;
     mcCand = null;
     const cur = mcData().id;
-    $("mcGrid").innerHTML = NK_LIST.map(sp=>`<button class="mc-pick ${sp.id===cur?"now":""}" data-id="${sp.id}" aria-label="${sp.name}">
-        <img src="nakama/${sp.id}/adult_n.webp" alt="" loading="lazy"><b>${sp.name}</b>${sp.id===cur?'<i>いまの MC</i>':""}</button>`).join("");
+    $("mcGrid").innerHTML = NK_LIST.map(sp=>`<button class="mc-pick ${sp.id===cur?"now":""}" data-id="${sp.id}" aria-label="${mcName(sp)}">
+        <img src="nakama/${sp.id}/adult_n.webp" alt="" loading="lazy"><b>${mcName(sp)}</b>${sp.id===cur?'<i>いまの MC</i>':""}</button>`).join("");
     $("mcPrev").innerHTML = `<p class="mc-hint">${cur ? "あたらしい MCを えらんでね" : "すきな なかまを タップしてね"}</p>`;
     $("mcOk").disabled = true;
     $("mcReset").hidden = !cur;
