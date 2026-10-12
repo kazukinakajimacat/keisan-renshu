@@ -5,10 +5,10 @@
 <link rel="icon" type="image/png" sizes="64x64" href="favicon.png?v=3">
 <link rel="apple-touch-icon" href="apple-touch-icon.png?v=3">
 <link rel="manifest" href="manifest.json">
-<script src="stickers/stickers.js?v=202610121032"></script>
-<script src="nakama/nakama.js?v=202610121032"></script>
-<script src="clock/clock.js?v=202610121032"></script>
-<script src="drill/patterns.js?v=202610121032"></script>
+<script src="stickers/stickers.js?v=202610121035"></script>
+<script src="nakama/nakama.js?v=202610121035"></script>
+<script src="clock/clock.js?v=202610121035"></script>
+<script src="drill/patterns.js?v=202610121035"></script>
 <meta name="apple-mobile-web-app-title" content="けいさん">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -570,7 +570,10 @@ body.course .ck-ctl .choice{padding:4px 0;font-size:24px}
 .ms-it i{font-style:normal;width:100%;aspect-ratio:1;display:grid;place-items:center;font-size:22px;font-weight:900;opacity:.45}
 .ms-it img{width:100%;aspect-ratio:1;border-radius:8px;display:block}
 .ms-it span{font-size:12px;font-weight:900}
-.ms-it.got{border:2px solid var(--yellow);color:var(--ink);cursor:pointer}
+.ms-it{cursor:pointer;touch-action:manipulation}
+.ms-it.got{border:2px solid var(--yellow);color:var(--ink)}
+.ms-q{width:150px;height:150px;border-radius:24px;border:3px dashed var(--line);background:var(--bg);display:grid;place-items:center;font-size:72px;font-weight:900;color:var(--muted)}
+.nk-mcard p b.num{color:var(--ink);font-size:1.2em}
 .nk-mpic.ms{height:auto;padding:0}
 .ms-pic{width:min(100%,300px);aspect-ratio:1;border-radius:18px;display:block;animation:nkPop .6s ease-out}
 .alb small{font-size:11px;color:var(--muted);font-weight:700;white-space:nowrap}
@@ -870,11 +873,11 @@ body.course .ck-ctl .choice{padding:4px 0;font-size:24px}
       <div class="nkdex" id="nkDex"></div>
     </section>
     <section class="zk-panel">
-      <h3>シール ちょう <span id="albCount"></span></h3>
+      <h3>シール ちょう</h3>
       <div class="ms-h">とくべつ シール <span id="msCount"></span></div>
       <div class="ms-note" id="msNote"></div>
       <div class="ms-grid" id="msGrid"></div>
-      <div class="ms-h">まいにちの シール</div>
+      <div class="ms-h">まいにちの シール <span id="albCount"></span></div>
       <div class="album" id="album"></div>
     </section>
     <section class="zk-panel">
@@ -2565,14 +2568,21 @@ body.course .ck-ctl .choice{padding:4px 0;font-size:24px}
       text: again ? (m ? `${m}がつ ${d}にちに もらった とくべつ シールだよ` : "とくべつ シールだよ") : "とくべつ シールを もらったよ。<br>シール ちょうに はって おくね",
       buttons:[{label: again ? "とじる" : "やったー！", onClick:()=>{ if(mode==="zukan") renderMs(); }}]});
   }
+  // まだ もらって いない シール：え は ひみつ の まま、あと なんもんか を おしえる
+  function msHint(n){
+    const left = n - totalOk();
+    nkModal({pic:`<div class="ms-q" aria-hidden="true">？</div>`, title:`${n}もんの とくべつ シール`,
+      text: left>0 ? `${n}もん せいかいで もらえるよ。<br>あと <b class="num">${left}</b>もん！<br>どんな え かは おたのしみ` : "もうすぐ もらえるよ。おたのしみに！",
+      buttons:[{label:"がんばる！"}]});
+  }
   function renderMs(){
     const tot = totalOk(), got = msData().got, next = MS_LIST.find(x=>!got[x] && x>tot);
     $("msCount").textContent = `${MS_LIST.filter(x=>got[x]).length} / ${MS_LIST.length}`;
     $("msNote").innerHTML = `これまでの せいかい <b class="num">${tot}</b>もん` + (next ? `<br>つぎの シールまで あと <b class="num">${next-tot}</b>もん` : "");
     $("msGrid").innerHTML = MS_LIST.map(x=> got[x]
       ? `<button class="ms-it got" data-n="${x}" aria-label="${x}もんの とくべつ シール"><img src="${msImg(x,true)}" alt="" loading="lazy" draggable="false"><span class="num">${x}</span></button>`
-      : `<div class="ms-it" aria-label="${x}もんで もらえる シール"><i>？</i><span class="num">${x}</span></div>`).join("");
-    $("msGrid").querySelectorAll(".ms-it.got").forEach(b=>b.addEventListener("click",()=>msShow(+b.dataset.n, true)));
+      : `<button class="ms-it" data-n="${x}" aria-label="${x}もんで もらえる シール"><i>？</i><span class="num">${x}</span></button>`).join("");
+    $("msGrid").querySelectorAll(".ms-it").forEach(b=>b.addEventListener("click",()=>{ const n=+b.dataset.n; if(got[n]) msShow(n, true); else msHint(n); }));
   }
 
   function renderAlbum(){
@@ -2581,7 +2591,8 @@ body.course .ck-ctl .choice{padding:4px 0;font-size:24px}
     const idOf = {}, nth = {}, seen = new Map();
     for(const k of [...keys].reverse()){ const id = motifFor(k).id; idOf[k] = id; seen.set(id, (seen.get(id)||0)+1); nth[k] = seen.get(id); }
     const kinds = PICK.filter(m=>seen.has(m.id)).length;
-    $("albCount").textContent = `${keys.length}まい・えがら ${kinds} / ${PICK.length}`;
+    // あつめた えがら の かず。2しゅうめ に はいったら まいすう も だす
+    $("albCount").textContent = `${kinds} / ${PICK.length}` + (keys.length>kinds ? `（${keys.length}まい）` : "");
     $("album").innerHTML = keys.length ? keys.map(k=>{
       const a = stats.album[k], [y,m,d] = k.split("-").map(Number);
       const no = nth[k];
@@ -2775,7 +2786,7 @@ body.course .ck-ctl .choice{padding:4px 0;font-size:24px}
   function nkModal({pic, title, text, name, buttons}){
     nkModalOpen = true;
     if(mode==="drill" && current) stopTimer();   // ひらいて いる あいだ は 10びょう タイマーを とめる
-    $("nkMPic").innerHTML = pic || ""; $("nkMPic").classList.toggle("ms", /ms-pic/.test(pic||""));
+    $("nkMPic").innerHTML = pic || ""; $("nkMPic").classList.toggle("ms", /ms-pic|ms-q/.test(pic||""));
     $("nkMTitle").textContent = title; $("nkMText").innerHTML = text || "";
     $("nkMNameWrap").hidden = !name; $("nkMErr").textContent = "";
     if(name){ $("nkMInput").value = name.value || ""; }
