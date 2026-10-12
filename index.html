@@ -160,6 +160,9 @@ details.hist summary{cursor:pointer;font-weight:700;color:var(--muted);font-size
 .tl-gate input{font:inherit;font-size:16px;font-weight:700;width:72px;text-align:center;padding:5px 6px;border-radius:10px;border:2px solid var(--line);background:var(--surface);color:var(--ink)}
 .tl-gate .err{color:var(--ng);font-weight:700}
 .tile.rest{opacity:.45}
+.tl-row{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.tl-row > span{flex:0 0 5.5em;font-weight:900}
+.tl-clock{display:grid;place-items:center;animation:nkPop .6s ease-out}
 .tl-toast{position:fixed;left:50%;top:calc(env(safe-area-inset-top,0px) + 62px);transform:translateX(-50%);z-index:20;max-width:calc(100% - 24px);background:var(--ink);color:var(--bg);font-weight:900;font-size:15px;border-radius:999px;padding:8px 18px;box-shadow:0 6px 18px rgba(0,0,0,.25);white-space:nowrap;pointer-events:none}
 .tl-toast[hidden]{display:none}
 .hist-body{display:flex;flex-direction:column;gap:14px;margin-top:12px}
@@ -3303,25 +3306,38 @@ span.stkw > svg{position:absolute;left:0;top:0;width:100%;height:100%;display:bl
     return p;
   }
 
-  /* ---------- 1にちの じかん（やりすぎ ないように） ----------
-     もんだいの がめん（いろいろ・ます・とけい）を つかった じかんを はかり、きめた じかん（はじめは 30ぷん）で
-     「きょうは ここまで」に する。ホームと ずかんは そのあとも みられる。
+  /* ---------- あそぶ じかん と きゅうけい（やりすぎ ないように） ----------
+     もんだいの がめん（いろいろ・ます・とけい）を つかった じかんを はかる。ホームと ずかんは いつでも みられる。
+       ・1かいの じかん（30ぷん か 45ふん）あそんだら、かならず 30ぷん きゅうけい（とけいの じかんで はかる）
+       ・1にちの ごうけい（おうちの方が きめる。はじめは 60ぷん）に なったら「きょうは ここまで」
        ・かぞえるのは、がめんが みえて いて、さいごに さわってから 1ぷん いない の あいだ だけ
+       ・じぶんで 30ぷん いじょう やすんだ ときは、1かいの じかんを 0から かぞえなおす
        ・とちゅうの もんだいは さいごまで できる（つぎの もんだいに すすむ ときに とめる）
-       ・じかんの ながさと「きょうだけ のばす」は「おうちの方へ」で かえる（かけざんの かくにん つき）
+       ・せっていは「おうちの方へ」で かえる（かけざんの かくにん つき）。きゅうけいは とばせない
      きろくは この たんまつ だけ（「記録と苦手データを消す」では きえない） */
   const TL_KEY = "sansu-drill-limit-v1", TU_KEY = "sansu-drill-time-v1";
-  const TL_CHOICES = [0, 15, 30, 45, 60], TL_EXT = 10, TL_IDLE = 60000;
-  let tlMin = 30;
-  try{ const v = JSON.parse(localStorage.getItem(TL_KEY) || "null"); if(v && TL_CHOICES.includes(v.min)) tlMin = v.min; }catch(e){}
-  let tu = {d:todayKey(), s:0, ext:0};
-  try{ const v = JSON.parse(localStorage.getItem(TU_KEY) || "null"); if(v && v.d===todayKey()) tu = {d:v.d, s:+v.s||0, ext:+v.ext||0}; }catch(e){}
+  const TL_DAY = [0, 30, 45, 60, 90, 120], TL_SES = [30, 45], TL_BREAK = 30, TL_EXT = 10, TL_IDLE = 60000;
+  let tlMin = 60, tlSes = 30;   // 1にちの ごうけい（0＝くぎりなし）／1かいの じかん
+  try{ const v = JSON.parse(localStorage.getItem(TL_KEY) || "null");
+    if(v && TL_DAY.includes(v.min)) tlMin = v.min; if(v && TL_SES.includes(v.ses)) tlSes = v.ses; }catch(e){}
+  const tlSaveCfg = () => { try{ localStorage.setItem(TL_KEY, JSON.stringify({min:tlMin, ses:tlSes})); }catch(e){} };
+  // d：ひづけ／s：きょうの ごうけい（びょう）／ext：きょうだけ のばした ぶん（ふん）
+  // ss：いまの かいの じかん（びょう）／la：さいごに かぞえた とき／brk：きゅうけいが おわる とき
+  let tu = {d:todayKey(), s:0, ext:0, ss:0, la:0, brk:0};
+  try{ const v = JSON.parse(localStorage.getItem(TU_KEY) || "null");
+    if(v){ tu.ss = +v.ss||0; tu.la = +v.la||0; tu.brk = +v.brk||0; if(v.d===todayKey()){ tu.s = +v.s||0; tu.ext = +v.ext||0; } } }catch(e){}
   const tuSave = () => { try{ localStorage.setItem(TU_KEY, JSON.stringify(tu)); }catch(e){} };
-  const tuDay = () => { if(tu.d !== todayKey()){ tu = {d:todayKey(), s:0, ext:0}; tlWarned = {}; tuSave(); tlRefresh(); } };
+  const tuDay = () => { if(tu.d !== todayKey()){ tu.d = todayKey(); tu.s = 0; tu.ext = 0; tlWarned = {}; tuSave(); } };
   const isCourse = m => m==="drill" || m==="grid" || m==="clock";
   const tlLimit = () => (tlMin + tu.ext) * 60;
   const tlOver = () => tlMin > 0 && tu.s >= tlLimit();
-  let tlAct = Date.now(), tlShowing = false, tlWarned = {}, tlToastTimer = null;
+  const tlResting = () => Date.now() < tu.brk;
+  const tlBlock = () => tlOver() ? "day" : tlResting() ? "break" : null;
+  // とけいの よみかた（3じ30ぷん）。きゅうけいが おわる じかんを つたえる
+  const tlClock = ms => { const d = new Date(ms); return {h: d.getHours()%12 || 12, m: d.getMinutes()}; };
+  const tlClockText = ms => { const c = tlClock(ms); return ClockMath.fmt(c.h, c.m); };
+  const tlRestLeft = () => Math.max(1, Math.ceil((tu.brk - Date.now())/60000));
+  let tlAct = Date.now(), tlShowing = false, tlWarned = {}, tlToastTimer = null, tlState = null;
   ["pointerdown","keydown"].forEach(ev=>document.addEventListener(ev, ()=>{ tlAct = Date.now(); }, true));
   function tlToast(text){
     const el = $("tlToast"); el.textContent = text; el.hidden = false;
@@ -3329,53 +3345,81 @@ span.stkw > svg{position:absolute;left:0;top:0;width:100%;height:100%;display:bl
   }
   setInterval(()=>{
     tuDay();
-    if(!tlMin || tlShowing || tlOver() || !isCourse(mode) || document.visibilityState!=="visible" || Date.now()-tlAct > TL_IDLE) return;
-    tu.s++;
+    // じぶんで ながく やすんだ ときは、1かいの じかんを かぞえなおす
+    if(tu.ss > 0 && tu.la && Date.now() - tu.la >= TL_BREAK*60000){ tu.ss = 0; tlWarned = {}; tuSave(); }
+    const st = (tlBlock() || "ok");
+    if(st !== tlState){   // きゅうけいが はじまった・おわった、ひが かわった
+      const first = tlState === null; tlState = st;
+      if(!first){ if(mode==="home" && !tlAsk) renderHome(); else tlRefresh(); }
+    }
+    if(tlShowing || tlBlock() || !isCourse(mode) || document.visibilityState!=="visible" || Date.now()-tlAct > TL_IDLE) return;
+    tu.s++; tu.ss++; tu.la = Date.now();
     if(tu.s % 10 === 0) tuSave();
-    const left = tlLimit() - tu.s;
-    [[300,"あと 5ふんで きょうは おしまい だよ"],[60,"あと 1ぷんで きょうは おしまい だよ"]].forEach(([t,msg])=>{
-      if(left===t && !tlWarned[t]){ tlWarned[t] = true; tlToast(msg); }
+    const dayLeft = tlMin ? tlLimit() - tu.s : Infinity, sesLeft = tlSes*60 - tu.ss;
+    const left = Math.min(dayLeft, sesLeft), what = dayLeft <= sesLeft ? "きょうは おしまい" : "きゅうけい";
+    [[300,"5ふん"],[60,"1ぷん"]].forEach(([t,txt])=>{
+      if(left===t && !tlWarned[t]){ tlWarned[t] = true; tlToast(`あと ${txt}で ${what} だよ`); }
     });
-    if(left<=0) tuSave();
+    // 1かいの じかんに なったら きゅうけい スタート（1にちの ごうけいと どうじの ときも、きゅうけいの とけいは すすめる）
+    if(sesLeft <= 0){ tu.brk = Date.now() + TL_BREAK*60000; tu.ss = 0; tlWarned = {}; }
+    if(dayLeft <= 0 || sesLeft <= 0) tuSave();
   }, 1000);
   document.addEventListener("visibilitychange", ()=>{ if(document.visibilityState==="hidden") tuSave(); });
-  // 「きょうは ここまで」：つぎの もんだいに すすむ ところ・コースに はいる ところで よぶ
-  function tlGate(){ if(!tlOver()) return false; tlShow(); return true; }
+  // つぎの もんだいに すすむ ところ・コースに はいる ところで よぶ
+  function tlGate(){ if(!tlBlock()) return false; tlShow(); return true; }
   function tlShow(){
     if(tlShowing) return;
-    if(nkModalOpen || !$("overlay").hidden){ setTimeout(()=>{ if(tlOver()) tlShow(); }, 800); return; }
+    if(nkModalOpen || !$("overlay").hidden){ setTimeout(()=>{ if(tlBlock()) tlShow(); }, 800); return; }
+    const kind = tlBlock(); if(!kind) return;
     tlShowing = true; stopTimer(); $("tlToast").hidden = true;
-    nkModal({pic:`<img class="nk-mimg pop" src="chars/cheer/cheer01.webp" alt="" draggable="false">`,
-      title:"きょうは ここまで！",
-      text:`${tlMin + tu.ext}ぷん がんばったね。<br>また あした やろうね！`,
-      buttons:[{label:"また あした！", onClick:()=>{ tlShowing = false; if(isCourse(mode)) setMode("home"); else tlRefresh(); }}]});
+    const close = () => { tlShowing = false; if(isCourse(mode)) setMode("home"); else if(mode==="home") renderHome(); else tlRefresh(); };
+    if(kind==="day"){
+      nkModal({pic:`<img class="nk-mimg pop" src="chars/cheer/cheer01.webp" alt="" draggable="false">`,
+        title:"きょうは ここまで！",
+        text:`${tlMin + tu.ext}ぷん がんばったね。<br>また あした やろうね！`,
+        buttons:[{label:"また あした！", onClick:close}]});
+    }else{
+      const c = tlClock(tu.brk);
+      nkModal({pic:`<div class="tl-clock">${clockSVG(c.h, c.m, {size:150})}</div>`,
+        title:"きゅうけい しよう！",
+        text:`たくさん がんばったね。めを やすめよう。<br><b class="num">${ClockMath.fmt(c.h, c.m)}</b>に なったら また できるよ<br>（あと ${tlRestLeft()}ぷん）`,
+        buttons:[{label:"きゅうけい する", onClick:close}]});
+    }
   }
   // ホーム：コースの ボタンを うすく する・おうちの方へ の せってい
   let tlAsk = null;   // かくにん まちの そうさ {label, run, a, b}
   function tlRefresh(){
-    const over = tlOver();
-    document.querySelectorAll(".tile").forEach(b=>b.classList.toggle("rest", over && isCourse(b.dataset.md)));
+    const blk = tlBlock();
+    document.querySelectorAll(".tile").forEach(b=>b.classList.toggle("rest", !!blk && isCourse(b.dataset.md)));
     const box = $("tlBox"); if(!box) return;
-    const used = Math.floor(tu.s/60), lim = tlMin + tu.ext;
-    const state = !tlMin ? `きょう使った時間：${used}分（時間の区切りなし）`
-      : over ? `きょう使った時間：${used}分（${lim}分の区切りに達しました。問題は明日また使えます）`
-      : `きょう使った時間：${used}分（あと${Math.max(1, Math.ceil((tlLimit()-tu.s)/60))}分）`;
-    box.innerHTML = `<h4>1日の時間</h4>
-      <p>問題の画面（いろいろ・ます・とけい）を使った時間が区切りに達すると、「きょうは ここまで」と出て、その日は問題に進めなくなります。ホームと ずかん は見られます。解いている途中の問題は最後まで答えられます。</p>
-      <div class="tl-opts" role="group" aria-label="1日の時間">${TL_CHOICES.map(m=>`<button type="button" data-min="${m}" aria-pressed="${m===tlMin}">${m ? m+"分" : "区切りなし"}</button>`).join("")}</div>
-      <p>${state}</p>
-      ${over ? `<button type="button" class="tl-more" id="tlMore">きょうだけ ${TL_EXT}分 のばす</button>` : ""}
+    const used = Math.floor(tu.s/60), lim = tlMin + tu.ext, ses = Math.floor(tu.ss/60);
+    const dayState = !tlMin ? `きょう使った時間：${used}分（合計の区切りなし）`
+      : blk==="day" ? `きょう使った時間：${used}分（${lim}分に達しました。問題は明日また使えます）`
+      : `きょう使った時間：${used}分（きょうは あと${Math.max(1, Math.ceil((tlLimit()-tu.s)/60))}分）`;
+    const sesState = blk==="day" ? "" : blk==="break" ? `休憩中です。${tlClockText(tu.brk).replace("じ","時").replace(/ぷん|ふん/,"分")}から、また使えます（あと${tlRestLeft()}分）`
+      : `今の回：${ses}分（あと${Math.max(1, Math.ceil((tlSes*60-tu.ss)/60))}分で休憩）`;
+    const opts = (list, cur, attr, lab) => list.map(m=>`<button type="button" data-${attr}="${m}" aria-pressed="${m===cur}">${lab(m)}</button>`).join("");
+    box.innerHTML = `<h4>遊ぶ時間と休憩</h4>
+      <p>問題の画面（いろいろ・ます・とけい）を使った時間を数えます。1回の時間になると、${TL_BREAK}分の休憩に入ります（休憩は飛ばせません）。1日の合計に達すると「きょうは ここまで」と出て、その日は問題に進めなくなります。ホームと ずかん はいつでも見られます。解いている途中の問題は最後まで答えられます。</p>
+      <div class="tl-row"><span>1回の時間</span><div class="tl-opts" role="group" aria-label="1回の時間">${opts(TL_SES, tlSes, "ses", m=>m+"分")}</div></div>
+      <div class="tl-row"><span>1日の合計</span><div class="tl-opts" role="group" aria-label="1日の合計">${opts(TL_DAY, tlMin, "min", m=>m ? m+"分" : "区切りなし")}</div></div>
+      <p>${dayState}${sesState ? "<br>"+sesState : ""}</p>
+      ${blk==="day" ? `<button type="button" class="tl-more" id="tlMore">きょうだけ ${TL_EXT}分 のばす</button>` : ""}
       ${tlAsk ? `<div class="tl-gate"><span>おうちの方の確認：${tlAsk.a} × ${tlAsk.b} ＝</span><input id="tlAns" type="text" inputmode="numeric" maxlength="3" autocomplete="off" aria-label="こたえ"><button type="button" id="tlOk">${tlAsk.label}</button><button type="button" id="tlNo">やめる</button><span class="err" id="tlErr"></span></div>` : ""}`;
     const ask = (label, run) => { tlAsk = {label, run, a:rnd(6,9), b:rnd(6,9)}; tlRefresh(); const i=$("tlAns"); if(i) i.focus(); };
-    box.querySelectorAll(".tl-opts button").forEach(b=>b.addEventListener("click",()=>{
+    box.querySelectorAll("[data-min]").forEach(b=>b.addEventListener("click",()=>{
       const m = +b.dataset.min; if(m===tlMin) return;
-      ask(`${m ? m+"分" : "区切りなし"}に する`, ()=>{ tlMin = m; try{ localStorage.setItem(TL_KEY, JSON.stringify({min:m})); }catch(e){} });
+      ask(`1日の合計を ${m ? m+"分" : "区切りなし"}に する`, ()=>{ tlMin = m; tlSaveCfg(); });
+    }));
+    box.querySelectorAll("[data-ses]").forEach(b=>b.addEventListener("click",()=>{
+      const m = +b.dataset.ses; if(m===tlSes) return;
+      ask(`1回の時間を ${m}分に する`, ()=>{ tlSes = m; tlWarned = {}; tlSaveCfg(); });
     }));
     const more = $("tlMore"); if(more) more.addEventListener("click",()=>ask(`${TL_EXT}分 のばす`, ()=>{ tu.ext += TL_EXT; tlWarned = {}; tuSave(); }));
     if(tlAsk){
       const done = () => {
         if(+$("tlAns").value.trim() !== tlAsk.a * tlAsk.b){ $("tlErr").textContent = "ちがうようです"; $("tlAns").select(); return; }
-        const run = tlAsk.run; tlAsk = null; run(); tlRefresh();
+        const run = tlAsk.run; tlAsk = null; run(); if(mode==="home") renderHome(); else tlRefresh();
       };
       $("tlOk").addEventListener("click", done);
       $("tlAns").addEventListener("keydown", e=>{ if(e.key==="Enter") done(); });
@@ -3391,6 +3435,7 @@ span.stkw > svg{position:absolute;left:0;top:0;width:100%;height:100%;display:bl
     setPets(null,null);
     const w = pick(["cat","dog"]), t = (stats.days[todayKey()]||{});
     if(tlOver()){ say(w, w==="cat" ? "きょうは ここまで だにゃ。また あした やろうね！" : "きょうは ここまで。また あした やろう わん！"); return; }
+    if(tlResting()){ say(w, `いまは きゅうけい ${w==="cat" ? "だにゃ" : "だ わん"}。${tlClockText(tu.brk)}に なったら また できるよ`); return; }
     say(w, mcOn() ? mcLine("greeting") : t.done ? (w==="cat" ? "きょうの めあては クリアずみ だにゃ！" : "きょうも よく がんばったね わん")
       : (w==="cat" ? "きょうは なにを するかにゃ？" : "どれで あそぶ？ わん"));
   }
