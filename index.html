@@ -148,6 +148,20 @@ body{
 /* history */
 details.hist{background:var(--surface);border:2px solid var(--line);border-radius:16px;padding:12px 16px}
 details.hist summary{cursor:pointer;font-weight:700;color:var(--muted);font-size:15px}
+/* 1にちの じかん（やりすぎ ないように） */
+.tl-box{margin-top:12px;border:2px solid var(--line);border-radius:14px;padding:12px;display:flex;flex-direction:column;gap:8px;font-size:14px}
+.tl-box h4{margin:0;font-size:15px;font-weight:900}
+.tl-box p{margin:0;color:var(--muted);line-height:1.6}
+.tl-opts{display:flex;gap:6px;flex-wrap:wrap}
+.tl-opts button,.tl-more,.tl-gate button{font:inherit;font-size:14px;font-weight:700;color:var(--ink);background:var(--btn);border:2px solid var(--line);border-radius:999px;padding:6px 14px;cursor:pointer}
+.tl-opts button[aria-pressed="true"]{border-color:var(--blue);background:var(--frame);color:var(--blue)}
+.tl-more{align-self:flex-start}
+.tl-gate{display:flex;align-items:center;gap:8px;flex-wrap:wrap;background:var(--bg);border-radius:12px;padding:8px 10px}
+.tl-gate input{font:inherit;font-size:16px;font-weight:700;width:72px;text-align:center;padding:5px 6px;border-radius:10px;border:2px solid var(--line);background:var(--surface);color:var(--ink)}
+.tl-gate .err{color:var(--ng);font-weight:700}
+.tile.rest{opacity:.45}
+.tl-toast{position:fixed;left:50%;top:calc(env(safe-area-inset-top,0px) + 62px);transform:translateX(-50%);z-index:20;max-width:calc(100% - 24px);background:var(--ink);color:var(--bg);font-weight:900;font-size:15px;border-radius:999px;padding:8px 18px;box-shadow:0 6px 18px rgba(0,0,0,.25);white-space:nowrap;pointer-events:none}
+.tl-toast[hidden]{display:none}
 .hist-body{display:flex;flex-direction:column;gap:14px;margin-top:12px}
 .trend{background:var(--frame);border:2px solid var(--line);border-radius:14px;padding:12px 14px;display:flex;flex-direction:column;gap:10px}
 .trend .tr-h{font-weight:900;font-size:16px}
@@ -794,6 +808,7 @@ span.stkw > svg{position:absolute;left:0;top:0;width:100%;height:100%;display:bl
     </div>
   <details class="hist" id="hist">
     <summary>おうちの方へ：これまでの記録</summary>
+    <div class="tl-box" id="tlBox"></div>
     <div class="hist-body" id="histBody"></div>
   </details>
   </div>
@@ -891,6 +906,7 @@ span.stkw > svg{position:absolute;left:0;top:0;width:100%;height:100%;display:bl
   </div>
 
   <div class="save-state" id="saveState" aria-live="polite"></div>
+  <div class="tl-toast" id="tlToast" role="status" hidden></div>
 </div>
 
 <div class="overlay" id="overlay" hidden>
@@ -1730,6 +1746,7 @@ span.stkw > svg{position:absolute;left:0;top:0;width:100%;height:100%;display:bl
   }
 
   function nextProblem(){
+    if(tlGate()) return;
     qIndex++;
     const dueIdx = reviewQueue.findIndex(r=>r.due<=qIndex);
     let p;
@@ -2265,6 +2282,7 @@ span.stkw > svg{position:absolute;left:0;top:0;width:100%;height:100%;display:bl
   function setPadEnabled(on){ [...$("gpad").children].forEach(b=>{ b.disabled=!on; b.className="choice num"; }); }
 
   function startGrid(){
+    if(tlGate()) return;
     $("gstartWrap").hidden=true;
     G.running=true; G.start=performance.now(); G.cellAt=G.start;
     G.timer=setInterval(()=>{ $("gtime").textContent=fmtT(performance.now()-G.start); }, 250);
@@ -3000,6 +3018,7 @@ span.stkw > svg{position:absolute;left:0;top:0;width:100%;height:100%;display:bl
     $("ckNo").textContent = Math.min(ckRound.length+1, CK_ROUND); $("ckOk").textContent = ckRound.filter(r=>r.ok).length;
   }
   function ckNext(){
+    if(tlGate()) return;
     clearTimeout(ckNextTimer);
     $("ckPop").hidden = true; $("ckFb").innerHTML = ""; $("ckResult").hidden = true;
     $("clockMain").querySelector(".ck-card").hidden = false;
@@ -3284,17 +3303,99 @@ span.stkw > svg{position:absolute;left:0;top:0;width:100%;height:100%;display:bl
     return p;
   }
 
+  /* ---------- 1にちの じかん（やりすぎ ないように） ----------
+     もんだいの がめん（いろいろ・ます・とけい）を つかった じかんを はかり、きめた じかん（はじめは 30ぷん）で
+     「きょうは ここまで」に する。ホームと ずかんは そのあとも みられる。
+       ・かぞえるのは、がめんが みえて いて、さいごに さわってから 1ぷん いない の あいだ だけ
+       ・とちゅうの もんだいは さいごまで できる（つぎの もんだいに すすむ ときに とめる）
+       ・じかんの ながさと「きょうだけ のばす」は「おうちの方へ」で かえる（かけざんの かくにん つき）
+     きろくは この たんまつ だけ（「記録と苦手データを消す」では きえない） */
+  const TL_KEY = "sansu-drill-limit-v1", TU_KEY = "sansu-drill-time-v1";
+  const TL_CHOICES = [0, 15, 30, 45, 60], TL_EXT = 10, TL_IDLE = 60000;
+  let tlMin = 30;
+  try{ const v = JSON.parse(localStorage.getItem(TL_KEY) || "null"); if(v && TL_CHOICES.includes(v.min)) tlMin = v.min; }catch(e){}
+  let tu = {d:todayKey(), s:0, ext:0};
+  try{ const v = JSON.parse(localStorage.getItem(TU_KEY) || "null"); if(v && v.d===todayKey()) tu = {d:v.d, s:+v.s||0, ext:+v.ext||0}; }catch(e){}
+  const tuSave = () => { try{ localStorage.setItem(TU_KEY, JSON.stringify(tu)); }catch(e){} };
+  const tuDay = () => { if(tu.d !== todayKey()){ tu = {d:todayKey(), s:0, ext:0}; tlWarned = {}; tuSave(); tlRefresh(); } };
+  const isCourse = m => m==="drill" || m==="grid" || m==="clock";
+  const tlLimit = () => (tlMin + tu.ext) * 60;
+  const tlOver = () => tlMin > 0 && tu.s >= tlLimit();
+  let tlAct = Date.now(), tlShowing = false, tlWarned = {}, tlToastTimer = null;
+  ["pointerdown","keydown"].forEach(ev=>document.addEventListener(ev, ()=>{ tlAct = Date.now(); }, true));
+  function tlToast(text){
+    const el = $("tlToast"); el.textContent = text; el.hidden = false;
+    clearTimeout(tlToastTimer); tlToastTimer = setTimeout(()=>{ el.hidden = true; }, 5000);
+  }
+  setInterval(()=>{
+    tuDay();
+    if(!tlMin || tlShowing || tlOver() || !isCourse(mode) || document.visibilityState!=="visible" || Date.now()-tlAct > TL_IDLE) return;
+    tu.s++;
+    if(tu.s % 10 === 0) tuSave();
+    const left = tlLimit() - tu.s;
+    [[300,"あと 5ふんで きょうは おしまい だよ"],[60,"あと 1ぷんで きょうは おしまい だよ"]].forEach(([t,msg])=>{
+      if(left===t && !tlWarned[t]){ tlWarned[t] = true; tlToast(msg); }
+    });
+    if(left<=0) tuSave();
+  }, 1000);
+  document.addEventListener("visibilitychange", ()=>{ if(document.visibilityState==="hidden") tuSave(); });
+  // 「きょうは ここまで」：つぎの もんだいに すすむ ところ・コースに はいる ところで よぶ
+  function tlGate(){ if(!tlOver()) return false; tlShow(); return true; }
+  function tlShow(){
+    if(tlShowing) return;
+    if(nkModalOpen || !$("overlay").hidden){ setTimeout(()=>{ if(tlOver()) tlShow(); }, 800); return; }
+    tlShowing = true; stopTimer(); $("tlToast").hidden = true;
+    nkModal({pic:`<img class="nk-mimg pop" src="chars/cheer/cheer01.webp" alt="" draggable="false">`,
+      title:"きょうは ここまで！",
+      text:`${tlMin + tu.ext}ぷん がんばったね。<br>また あした やろうね！`,
+      buttons:[{label:"また あした！", onClick:()=>{ tlShowing = false; if(isCourse(mode)) setMode("home"); else tlRefresh(); }}]});
+  }
+  // ホーム：コースの ボタンを うすく する・おうちの方へ の せってい
+  let tlAsk = null;   // かくにん まちの そうさ {label, run, a, b}
+  function tlRefresh(){
+    const over = tlOver();
+    document.querySelectorAll(".tile").forEach(b=>b.classList.toggle("rest", over && isCourse(b.dataset.md)));
+    const box = $("tlBox"); if(!box) return;
+    const used = Math.floor(tu.s/60), lim = tlMin + tu.ext;
+    const state = !tlMin ? `きょう使った時間：${used}分（時間の区切りなし）`
+      : over ? `きょう使った時間：${used}分（${lim}分の区切りに達しました。問題は明日また使えます）`
+      : `きょう使った時間：${used}分（あと${Math.max(1, Math.ceil((tlLimit()-tu.s)/60))}分）`;
+    box.innerHTML = `<h4>1日の時間</h4>
+      <p>問題の画面（いろいろ・ます・とけい）を使った時間が区切りに達すると、「きょうは ここまで」と出て、その日は問題に進めなくなります。ホームと ずかん は見られます。解いている途中の問題は最後まで答えられます。</p>
+      <div class="tl-opts" role="group" aria-label="1日の時間">${TL_CHOICES.map(m=>`<button type="button" data-min="${m}" aria-pressed="${m===tlMin}">${m ? m+"分" : "区切りなし"}</button>`).join("")}</div>
+      <p>${state}</p>
+      ${over ? `<button type="button" class="tl-more" id="tlMore">きょうだけ ${TL_EXT}分 のばす</button>` : ""}
+      ${tlAsk ? `<div class="tl-gate"><span>おうちの方の確認：${tlAsk.a} × ${tlAsk.b} ＝</span><input id="tlAns" type="text" inputmode="numeric" maxlength="3" autocomplete="off" aria-label="こたえ"><button type="button" id="tlOk">${tlAsk.label}</button><button type="button" id="tlNo">やめる</button><span class="err" id="tlErr"></span></div>` : ""}`;
+    const ask = (label, run) => { tlAsk = {label, run, a:rnd(6,9), b:rnd(6,9)}; tlRefresh(); const i=$("tlAns"); if(i) i.focus(); };
+    box.querySelectorAll(".tl-opts button").forEach(b=>b.addEventListener("click",()=>{
+      const m = +b.dataset.min; if(m===tlMin) return;
+      ask(`${m ? m+"分" : "区切りなし"}に する`, ()=>{ tlMin = m; try{ localStorage.setItem(TL_KEY, JSON.stringify({min:m})); }catch(e){} });
+    }));
+    const more = $("tlMore"); if(more) more.addEventListener("click",()=>ask(`${TL_EXT}分 のばす`, ()=>{ tu.ext += TL_EXT; tlWarned = {}; tuSave(); }));
+    if(tlAsk){
+      const done = () => {
+        if(+$("tlAns").value.trim() !== tlAsk.a * tlAsk.b){ $("tlErr").textContent = "ちがうようです"; $("tlAns").select(); return; }
+        const run = tlAsk.run; tlAsk = null; run(); tlRefresh();
+      };
+      $("tlOk").addEventListener("click", done);
+      $("tlAns").addEventListener("keydown", e=>{ if(e.key==="Enter") done(); });
+      $("tlNo").addEventListener("click", ()=>{ tlAsk = null; tlRefresh(); });
+    }
+  }
+
   let mode = "home";
   try{ const m=localStorage.getItem(MODE_KEY); /* さいしょは いつも ホームから */ }catch(e){}
   function renderHome(){
-    renderGoal(); renderStickerRow(); renderNk(); renderHistory();
+    renderGoal(); renderStickerRow(); renderNk(); renderHistory(); tlRefresh();
     if(!$("tileClock").firstChild) $("tileClock").innerHTML = clockSVG(3, 0, {size:52});
     setPets(null,null);
     const w = pick(["cat","dog"]), t = (stats.days[todayKey()]||{});
+    if(tlOver()){ say(w, w==="cat" ? "きょうは ここまで だにゃ。また あした やろうね！" : "きょうは ここまで。また あした やろう わん！"); return; }
     say(w, mcOn() ? mcLine("greeting") : t.done ? (w==="cat" ? "きょうの めあては クリアずみ だにゃ！" : "きょうも よく がんばったね わん")
       : (w==="cat" ? "きょうは なにを するかにゃ？" : "どれで あそぶ？ わん"));
   }
   function setMode(m){
+    if(isCourse(m) && tlGate()) return;   // きょうの じかんを つかいきったら、もんだいには はいれない
     mode=m; try{ lsSet(MODE_KEY,m); }catch(e){}
     document.querySelectorAll(".md").forEach(b=>b.setAttribute("aria-pressed", b.dataset.md===m?"true":"false"));
     const g = m==="grid", z = m==="zukan", d = m==="drill", c = m==="clock", h = m==="home";
