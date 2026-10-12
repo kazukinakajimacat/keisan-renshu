@@ -5,10 +5,10 @@
 <link rel="icon" type="image/png" sizes="64x64" href="favicon.png?v=3">
 <link rel="apple-touch-icon" href="apple-touch-icon.png?v=3">
 <link rel="manifest" href="manifest.json">
-<script src="stickers/stickers.js?v=202610121047"></script>
-<script src="nakama/nakama.js?v=202610121047"></script>
-<script src="clock/clock.js?v=202610121047"></script>
-<script src="drill/patterns.js?v=202610121047"></script>
+<script src="stickers/stickers.js?v=202610121052"></script>
+<script src="nakama/nakama.js?v=202610121052"></script>
+<script src="clock/clock.js?v=202610121052"></script>
+<script src="drill/patterns.js?v=202610121052"></script>
 <meta name="apple-mobile-web-app-title" content="けいさん">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -2559,12 +2559,15 @@ span.stkw > svg{position:absolute;left:0;top:0;width:100%;height:100%;display:bl
   /* ---------- とくべつ シール ----------
      これまでの せいかい（いろいろ・ます・とけい ぜんぶ）が 1000もん ふえる ごとに 1まい。10000もん まで。
      せいかいの かずは ひごとの きろく（stats.days[].ok）を たして だす ので、いままでの ぶんも かぞえる */
+  // いまは おやすみ ちゅう（え に まだ あって いない なかま が うつって いる ため）。true に すると もどる
+  const MS_ON = false;
   const MS_LIST = [1000,2000,3000,4000,5000,6000,7000,8000,9000,10000];
   const MS_HOLD = new Set([]);   // え を かくにん ちゅう の もの（まだ わたさない）。いまは なし
   const msData = () => stats.ms || (stats.ms = {got:{}});
   const totalOk = () => Object.values(stats.days||{}).reduce((a,d)=>a+((d&&d.ok)||0), 0);
   const msImg = (n, small) => `milestone/ms_${n}${small ? "_s" : ""}.webp`;
   function msCheck(){
+    if(!MS_ON) return false;
     const tot = totalOk(), got = msData().got; let hit = false;
     MS_LIST.forEach(n=>{ if(tot>=n && !got[n] && !MS_HOLD.has(n)){ got[n] = todayKey(); nkData().queue.push({t:"ms", n}); hit = true; } });
     if(hit){ saveStats(); setTimeout(nkShowQueue, 1600); }
@@ -2585,6 +2588,8 @@ span.stkw > svg{position:absolute;left:0;top:0;width:100%;height:100%;display:bl
       buttons:[{label:"がんばる！"}]});
   }
   function renderMs(){
+    [$("msCount").parentElement, $("msNote"), $("msGrid")].forEach(el=>{ el.style.display = MS_ON ? "" : "none"; });
+    if(!MS_ON) return;
     const tot = totalOk(), got = msData().got, next = MS_LIST.find(x=>!got[x] && x>tot);
     $("msCount").textContent = `${MS_LIST.filter(x=>got[x]).length} / ${MS_LIST.length}`;
     $("msNote").innerHTML = `これまでの せいかい <b class="num">${tot}</b>もん` + (next ? `<br>つぎの シールまで あと <b class="num">${next-tot}</b>もん` : "");
@@ -2846,7 +2851,8 @@ span.stkw > svg{position:absolute;left:0;top:0;width:100%;height:100%;display:bl
         text: ev.stage===5 ? "さいごまで そだったね。つきの おわりに たびだつよ" : "これからも いっしょに がんばろうね",
         buttons:[{label:"やったね！"}]});
     }else if(ev.t==="ms"){
-      msShow(ev.n);
+      // おやすみ ちゅう は みせない。もらった ことも とりけして、さいかい した ときに あらためて わたす
+      if(MS_ON) msShow(ev.n); else { delete msData().got[ev.n]; saveStats(); setTimeout(nkShowQueue, 0); }
     }else if(ev.t==="depart"){
       const e = ev.e, sp = nkSp(e.id), nm = e.name || sp.name;
       const pic = e.stage===0 ? nkPicHTML(nkImgSrc(e.id, 0, "n"), "", 0) : nkPicHTML(`nakama/${e.id}/depart.webp`, "pop");
