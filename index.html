@@ -5,10 +5,10 @@
 <link rel="icon" type="image/png" sizes="64x64" href="favicon.png?v=3">
 <link rel="apple-touch-icon" href="apple-touch-icon.png?v=3">
 <link rel="manifest" href="manifest.json">
-<script src="stickers/stickers.js?v=202610121143"></script>
-<script src="nakama/nakama.js?v=202610121143"></script>
-<script src="clock/clock.js?v=202610121143"></script>
-<script src="drill/patterns.js?v=202610121143"></script>
+<script src="stickers/stickers.js?v=202610121148"></script>
+<script src="nakama/nakama.js?v=202610121148"></script>
+<script src="clock/clock.js?v=202610121148"></script>
+<script src="drill/patterns.js?v=202610121148"></script>
 <meta name="apple-mobile-web-app-title" content="けいさん">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -2568,7 +2568,7 @@ span.stkw > svg{position:absolute;left:0;top:0;width:100%;height:100%;display:bl
     {id:"zk_sub", label:"ひきざん", title:"ひきざん ぜんぶ きらきら！", alt:"ひきざん クリア おめでとう", img:"zk_sub", ok:()=>zkAllKira(ZK_SUB)},
     {id:"zk_all", label:"ぜんぶ", title:"ずかん ぜんぶ きらきら！", alt:"たしざん ひきざん ぜんぶ クリア おめでとう", img:"zk_all", ok:()=>zkAllKira(ZK_ADD) && zkAllKira(ZK_SUB)}
   ];
-  const MS_HOLD = new Set(["zk_all"]);   // え が まだ ない もの（わたさない）。え が とどいたら ここから はずす
+  const MS_HOLD = new Set([]);   // え が まだ ない・かくにん ちゅう の もの の id（わたさない）。いまは なし
   const msById = id => MS_LIST.find(x=>x.id===String(id));
   const msData = () => stats.ms || (stats.ms = {got:{}});
   const totalOk = () => Object.values(stats.days||{}).reduce((a,d)=>a+((d&&d.ok)||0), 0);
