@@ -3426,7 +3426,8 @@ span.stkw > svg{position:absolute;left:0;top:0;width:100%;height:100%;display:bl
     const acc = ns.map((v,i)=> v ? Math.round(oks[i]/v*100) : null);
     const totN = pgSum(keys, pgN), totOk = pgSum(keys, pgOk), studyDays = keys.filter(k=>pgN(k)>0).length;
     const pN = prevKeys ? pgSum(prevKeys, pgN) : null, pOk = prevKeys ? pgSum(prevKeys, pgOk) : null;
-    const pMin = prevKeys && tlogFirst && prevKeys[prevKeys.length-1] >= tlogFirst ? Math.round(pgSum(prevKeys, pgSec)/60) : null;
+    // まえの きかんと くらべるのは、まえの きかんが まるごと きろくの ある ひに はいって いる とき だけ
+    const pMin = prevKeys && tlogFirst && prevKeys[0] >= tlogFirst ? Math.round(pgSum(prevKeys, pgSec)/60) : null;
     // ③ けいさん ごと
     const zk = [...ZK_ADD.flat(), ...ZK_SUB.flat()], inR = d => d && d >= from && d <= to;
     const got = lv => zk.filter(f=>{ const e = stats.facts[fKey(f)]; return e && e.master && inR((e.gd || [e.masterAt])[lv-1]); });
