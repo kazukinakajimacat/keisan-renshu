@@ -181,6 +181,29 @@ details.hist summary{cursor:pointer;font-weight:700;color:var(--muted);font-size
 .tr-chips span{background:var(--ng-soft);color:var(--ink);border-radius:999px;padding:2px 10px;font-size:14px;font-weight:700;font-variant-numeric:tabular-nums}
 .tr-chips.ok span{background:var(--ok-soft)}
 .tr-note{font-size:12px;color:var(--muted)}
+/* おうちの方へ：グラフ */
+.pg-box{margin-top:12px;border:2px solid var(--line);border-radius:14px;padding:12px;display:flex;flex-direction:column;gap:12px;font-size:14px}
+.pg-box h4{margin:0;font-size:15px;font-weight:900}
+.pg-box h5{margin:0;font-size:14px;font-weight:900}
+.pg-box p{margin:0;color:var(--muted);line-height:1.6}
+.pg-range{display:flex;gap:6px;flex-wrap:wrap}
+.pg-range button{font:inherit;font-size:14px;font-weight:700;color:var(--ink);background:var(--btn);border:2px solid var(--line);border-radius:999px;padding:5px 12px;cursor:pointer}
+.pg-range button[aria-pressed="true"]{border-color:var(--blue);background:var(--frame);color:var(--blue)}
+.pg-dates{display:flex;align-items:center;gap:6px;flex-wrap:wrap;color:var(--muted);font-weight:700}
+.pg-dates input{font:inherit;font-size:14px;padding:4px 6px;border-radius:10px;border:2px solid var(--line);background:var(--surface);color:var(--ink)}
+.pg-sec{display:flex;flex-direction:column;gap:6px;border-top:2px solid var(--line);padding-top:10px}
+.pg-chart{width:100%;height:auto;display:block}
+.pg-chart text{font-size:9px;fill:var(--muted);font-weight:700;font-variant-numeric:tabular-nums}
+.pg-chart .gl{stroke:var(--line);stroke-width:1}
+.pg-chart .hit{fill:transparent;cursor:pointer}
+.pg-chart .sel{fill:var(--frame)}
+.pg-tip{min-height:1.5em;font-weight:700;color:var(--ink);font-variant-numeric:tabular-nums}
+.pg-tip.none{color:var(--muted);font-weight:500;font-size:13px}
+.pg-chips{display:flex;flex-wrap:wrap;gap:6px}
+.pg-chips span{background:var(--frame);border-radius:999px;padding:2px 10px;font-weight:700;font-variant-numeric:tabular-nums}
+.pg-chips.ok span{background:var(--ok-soft)}
+.pg-chips.ng span{background:var(--ng-soft)}
+.pg-chips small{color:var(--muted);font-weight:700;margin-left:.3em}
 .hist-item{border-top:1px solid var(--line);padding-top:10px;display:flex;flex-direction:column;gap:6px}
 .hist-item .h{font-weight:900;font-size:15px}
 .hist-item ul{margin:0;padding-left:1.2em;font-size:14px}
@@ -811,6 +834,7 @@ span.stkw > svg{position:absolute;left:0;top:0;width:100%;height:100%;display:bl
     </div>
   <details class="hist" id="hist">
     <summary>おうちの方へ：これまでの記録</summary>
+    <div class="pg-box" id="pgBox"></div>
     <div class="tl-box" id="tlBox"></div>
     <div class="hist-body" id="histBody"></div>
   </details>
@@ -1831,9 +1855,24 @@ span.stkw > svg{position:absolute;left:0;top:0;width:100%;height:100%;display:bl
     else if(slow){ e.score = Math.min(6, e.score+1.5); }
     else { e.score *= 0.5; if(e.score<0.3) e.score=0; }
     typeTally(p.type, ok, slow);
+    logFactDay(k, ok, slow);
     const nm = updateMastery(p.f, ok, slow, ms);
     saveStats();
     return nm;
+  }
+
+  // けいさん ごとの 1にち ぶんの きろく（おうちの方へ の グラフよう）。stats.fl[ひづけ][しき] = [といた かず, まちがい, じかんが かかった]
+  // 10までの たしざん・ひきざん（90こ）だけ。FL_KEEP にち ぶんを のこす
+  const FL_KEEP = 100;
+  function logFactDay(k, ok, slow){
+    if(!ZK_KEYS.has(k)) return;
+    const fl = stats.fl || (stats.fl = {}), d = todayKey();
+    if(!fl[d]){
+      fl[d] = {};
+      const keys = Object.keys(fl).sort(); while(keys.length > FL_KEEP) delete fl[keys.shift()];
+    }
+    const e = fl[d][k] || (fl[d][k] = [0,0,0]);
+    e[0]++; if(!ok) e[1]++; else if(slow) e[2]++;
   }
 
   function typeTally(t, ok, slow){
@@ -1912,6 +1951,11 @@ span.stkw > svg{position:absolute;left:0;top:0;width:100%;height:100%;display:bl
     if(round.length>=ROUND) showSummary();
     else { nextProblem(); if(pendingSticker) showStickerBanner(); }
   }
+
+  // ひごとの あそんだ じかん（びょう）。かくのは「あそぶ じかん と きゅうけい」の ところ
+  const TLOG_KEY = "sansu-drill-timelog-v1";
+  let tlog = {};
+  try{ const v = JSON.parse(localStorage.getItem(TLOG_KEY) || "null"); if(v && typeof v==="object") tlog = v; }catch(e){}
 
   /* ---------- 傾向分析 ---------- */
   function sec(ms){ return (ms/1000).toFixed(1)+"秒"; }
@@ -2080,6 +2124,7 @@ span.stkw > svg{position:absolute;left:0;top:0;width:100%;height:100%;display:bl
       history=[]; stats={facts:{}, types:{}};
       stats.album={}; stats.days={};
       gbest={};   // ます けいさんの さいこう タイムも けす
+      tlog = {}; try{ localStorage.removeItem(TLOG_KEY); }catch(e){}   // あそんだ じかんの グラフも けす（きょうの じかんの くぎりは のこす）
       try{ localStorage.removeItem(STORE); localStorage.removeItem(STATS); localStorage.removeItem(GBEST_KEY); }catch(e){}
       markDirty();
       renderHistory();
@@ -3306,6 +3351,160 @@ span.stkw > svg{position:absolute;left:0;top:0;width:100%;height:100%;display:bl
     return p;
   }
 
+  /* ---------- おうちの方へ：グラフ ----------
+     きかんを えらんで、①あそんだ じかん ②といた かずと せいとうりつ ③すらすら・にがてな けいさん を みる。
+       ・といた かず・せいかい：stats.days（さいしょから ある）
+       ・あそんだ じかん：tlog（2026-10-12 から きろく）
+       ・けいさん ごとの きろく：stats.fl（2026-10-12 から きろく。100にち ぶん）
+       ・すらすら／ぴかぴか／きらきらに なった ひ：stats.facts[].gd（さいしょから ある）
+     46にち いじょうの きかんは 1しゅうかん ごとに まとめる */
+  const PG_PRESETS = [["7","7日"],["30","30日"],["90","90日"],["all","ぜんぶ"]];
+  let pgSel = {preset:"7", from:null, to:null}, pgTip = {};
+  const pgMD = k => { const [y,m,d] = k.split("-").map(Number); return `${m}/${d}`; };
+  const pgFirstDay = () => {
+    const ks = [...Object.keys(stats.days||{}).filter(k=>(stats.days[k].n||0)>0), ...Object.keys(tlog)].sort();
+    return ks[0] || todayKey();
+  };
+  function pgRange(){
+    const T = todayKey();
+    if(pgSel.preset==="custom" && pgSel.from && pgSel.to){
+      let a = pgSel.from, b = pgSel.to; if(a > b) [a, b] = [b, a];
+      if(b > T) b = T; if(a > b) a = b;
+      return {from:a, to:b};
+    }
+    if(pgSel.preset==="all") return {from:pgFirstDay(), to:T};
+    return {from:dkAdd(T, -(+pgSel.preset - 1)), to:T};
+  }
+  const pgKeys = (from, to) => { const out = []; for(let k = from; k <= to; k = dkAdd(k, 1)) out.push(k); return out; };
+  function pgBuckets(keys){
+    if(keys.length <= 45) return keys.map(k=>({keys:[k], label:pgMD(k), name:pgMD(k)}));
+    const out = [];
+    for(let i = 0; i < keys.length; i += 7){ const ks = keys.slice(i, i+7); out.push({keys:ks, label:pgMD(ks[0]), name:`${pgMD(ks[0])}〜${pgMD(ks[ks.length-1])}`}); }
+    return out;
+  }
+  const pgSum = (keys, f) => keys.reduce((a,k)=>a + (f(k)||0), 0);
+  const pgN = k => (stats.days[k]||{}).n, pgOk = k => (stats.days[k]||{}).ok, pgSec = k => tlog[k];
+  const pgNice = v => [5,10,20,30,40,60,80,100,150,200,300,400,600,800,1000,1500,2000,3000,5000].find(x=>x>=v) || Math.ceil(v/1000)*1000;
+  // vals：かず（ない ところは null）。o：{id, color, line, max, unit}
+  function pgChart(B, vals, o){
+    const W = 320, H = 124, L = 30, R = 6, T = 8, Bm = 18, iw = W-L-R, ih = H-T-Bm, n = vals.length;
+    const max = o.max || pgNice(Math.max(1, ...vals.map(v=>v||0)));
+    const x = i => L + iw*(i+0.5)/n, y = v => T + ih*(1 - v/max), cw = iw/n, bw = Math.max(1.5, Math.min(22, cw*0.7));
+    const sel = pgTip[o.id];
+    let g = [0, max/2, max].map(v=>`<line class="gl" x1="${L}" x2="${W-R}" y1="${y(v).toFixed(1)}" y2="${y(v).toFixed(1)}"/><text x="${L-4}" y="${(y(v)+3).toFixed(1)}" text-anchor="end">${Math.round(v)}${o.unit||""}</text>`).join("");
+    if(sel != null && sel < n) g += `<rect class="sel" x="${(L+cw*sel).toFixed(1)}" y="${T}" width="${cw.toFixed(1)}" height="${ih}"/>`;
+    if(o.line){
+      const pts = vals.map((v,i)=> v==null ? null : [x(i), y(v)]).filter(Boolean);
+      if(pts.length > 1) g += `<polyline fill="none" stroke="${o.color}" stroke-width="2" stroke-linejoin="round" points="${pts.map(p=>p[0].toFixed(1)+","+p[1].toFixed(1)).join(" ")}"/>`;
+      g += pts.map(p=>`<circle cx="${p[0].toFixed(1)}" cy="${p[1].toFixed(1)}" r="${n>40 ? 1.8 : 3}" fill="${o.color}"/>`).join("");
+    }else{
+      g += vals.map((v,i)=> v ? `<rect x="${(x(i)-bw/2).toFixed(1)}" y="${y(v).toFixed(1)}" width="${bw.toFixed(1)}" height="${(T+ih-y(v)).toFixed(1)}" rx="${Math.min(3,bw/2).toFixed(1)}" fill="${o.color}"/>` : "").join("");
+    }
+    const lab = [...new Set([0, Math.floor((n-1)/2), n-1])];
+    g += lab.map(i=>`<text x="${x(i).toFixed(1)}" y="${H-5}" text-anchor="${i===0 && n>1 ? "start" : i===n-1 && n>1 ? "end" : "middle"}">${B[i].label}</text>`).join("");
+    g += vals.map((v,i)=>`<rect class="hit" data-c="${o.id}" data-i="${i}" x="${(L+cw*i).toFixed(1)}" y="${T}" width="${cw.toFixed(1)}" height="${ih+Bm}"/>`).join("");
+    return `<svg class="pg-chart" viewBox="0 0 ${W} ${H}" role="img" aria-label="${o.label}">${g}</svg>`;
+  }
+  // o：{len：きかんの にっすう, unit：かずの たんい, dunit：ふえた・へった ぶんの たんい, digits, tone：いろを つけるか}
+  const pgDelta = (now, prev, o) => {
+    if(prev == null) return "";
+    const dg = o.digits || 0, d = +(now - prev).toFixed(dg);
+    const t = d === 0 ? "変わらず" : `${d>0 ? "+" : "−"}${Math.abs(d).toFixed(dg)}${o.dunit || o.unit}`;
+    return `<i class="${!o.tone ? "" : d>0 ? "up" : d<0 ? "down" : ""}">前の${o.len}日間：${prev.toFixed(dg)}${o.unit}（${t}）</i>`;
+  };
+  function renderPg(){
+    const box = $("pgBox"); if(!box) return;
+    const {from, to} = pgRange(), keys = pgKeys(from, to), B = pgBuckets(keys), len = keys.length;
+    const weekly = B.length !== keys.length;
+    const prevKeys = pgSel.preset==="all" ? null : pgKeys(dkAdd(from, -len), dkAdd(from, -1));
+    // ① あそんだ じかん
+    const secs = B.map(b=>pgSum(b.keys, pgSec)), mins = secs.map(v=>v ? Math.max(1, Math.round(v/60)) : 0);
+    const totalMin = Math.round(pgSum(keys, pgSec)/60), playDays = keys.filter(k=>pgSec(k)>0).length;
+    const tlogFirst = Object.keys(tlog).sort()[0];
+    // ② といた かず・せいとうりつ
+    const ns = B.map(b=>pgSum(b.keys, pgN)), oks = B.map(b=>pgSum(b.keys, pgOk));
+    const acc = ns.map((v,i)=> v ? Math.round(oks[i]/v*100) : null);
+    const totN = pgSum(keys, pgN), totOk = pgSum(keys, pgOk), studyDays = keys.filter(k=>pgN(k)>0).length;
+    const pN = prevKeys ? pgSum(prevKeys, pgN) : null, pOk = prevKeys ? pgSum(prevKeys, pgOk) : null;
+    const pMin = prevKeys && tlogFirst && prevKeys[prevKeys.length-1] >= tlogFirst ? Math.round(pgSum(prevKeys, pgSec)/60) : null;
+    // ③ けいさん ごと
+    const zk = [...ZK_ADD.flat(), ...ZK_SUB.flat()], inR = d => d && d >= from && d <= to;
+    const got = lv => zk.filter(f=>{ const e = stats.facts[fKey(f)]; return e && e.master && inR((e.gd || [e.masterAt])[lv-1]); });
+    const g1 = got(1), g2 = got(2), g3 = got(3);
+    const fl = stats.fl || {}, flFirst = Object.keys(fl).sort()[0];
+    const agg = ks => { const m = {}; ks.forEach(k=>{ const d = fl[k]; if(d) for(const key in d){ const a = m[key] || (m[key] = [0,0,0]); a[0]+=d[key][0]; a[1]+=d[key][1]; a[2]+=d[key][2]; } }); return m; };
+    const A = agg(keys), fOf = key => (stats.facts[key]||{}).f, txt = key => { const f = fOf(key); return f ? factText(f) : key; };
+    const rows = Object.entries(A).filter(([k])=>fOf(k));
+    const smooth = rows.filter(([k,a])=>a[0]>=2 && a[1]===0 && a[2]===0).sort((x,y)=>y[1][0]-x[1][0]);
+    const weak = rows.filter(([k,a])=>a[1]>0 || a[2]>=2).sort((x,y)=>(y[1][1]*2+y[1][2])-(x[1][1]*2+x[1][2]));
+    // へんか：きかんの ぜんはん と こうはん を くらべる
+    const half = Math.floor(len/2), A1 = agg(keys.slice(0, half)), A2 = agg(keys.slice(half));
+    const better = Object.keys(A1).filter(k=>fOf(k) && (A1[k][1]>0 || A1[k][2]>0) && A2[k] && A2[k][0]>=1 && A2[k][1]===0 && A2[k][2]===0);
+    const still = Object.keys(A2).filter(k=>fOf(k) && A2[k][1]>0 && A1[k] && A1[k][1]>0);
+    const fresh = Object.keys(A2).filter(k=>fOf(k) && A2[k][1]>0 && A1[k] && A1[k][0]>=2 && A1[k][1]===0);
+    const chips = (list, cls, note) => `<div class="pg-chips ${cls}">${list.slice(0,12).map(k=>`<span>${txt(k)}${note ? `<small>${note(k)}</small>` : ""}</span>`).join("")}${list.length>12 ? `<span>ほか${list.length-12}こ</span>` : ""}</div>`;
+    const fchips = (list, cls) => `<div class="pg-chips ${cls}">${list.slice(0,12).map(f=>`<span>${factText(f)}</span>`).join("")}${list.length>12 ? `<span>ほか${list.length-12}こ</span>` : ""}</div>`;
+    const tip = id => pgTip[id]!=null && pgTip[id] < B.length
+      ? `<div class="pg-tip">${pgTipText(id, pgTip[id], B, {mins, ns, oks, acc})}</div>`
+      : `<div class="pg-tip none">グラフをタップすると、その${weekly ? "週" : "日"}の数字が出ます</div>`;
+    const unitName = weekly ? "1週間ごと" : "1日ごと";
+    box.innerHTML = `<h4>学習のようす</h4>
+      <div class="pg-range" role="group" aria-label="期間">${PG_PRESETS.map(([v,l])=>`<button type="button" data-pg="${v}" aria-pressed="${pgSel.preset===v}">${l}</button>`).join("")}<button type="button" data-pg="custom" aria-pressed="${pgSel.preset==="custom"}">日付で選ぶ</button></div>
+      ${pgSel.preset==="custom" ? `<div class="pg-dates"><input type="date" id="pgFrom" value="${from}" max="${todayKey()}" aria-label="はじめの日"><span>〜</span><input type="date" id="pgTo" value="${to}" max="${todayKey()}" aria-label="おわりの日"></div>` : ""}
+      <p>${pgMD(from)}〜${pgMD(to)}（${len}日間・グラフは${unitName}）</p>
+
+      <div class="pg-sec"><h5>遊んだ時間</h5>
+        <div class="tr-tiles"><div class="tr-tile"><small>合計</small><b>${totalMin}分</b>${pgDelta(totalMin, pMin, {len, unit:"分"})}</div>
+          <div class="tr-tile"><small>遊んだ日の平均</small><b>${playDays ? Math.round(totalMin/playDays) : 0}分</b><i>${playDays}日</i></div></div>
+        ${pgChart(B, mins, {id:"t", color:"var(--blue)", unit:"", label:"遊んだ時間（分）"})}${tip("t")}
+        <p>問題の画面を使った時間（分）です。${tlogFirst ? `${pgMD(tlogFirst)}から記録しています。それより前の日は0分と表示されます。` : "きょうから記録します。"}</p></div>
+
+      <div class="pg-sec"><h5>解いた数</h5>
+        <div class="tr-tiles"><div class="tr-tile"><small>合計</small><b>${totN}問</b>${pgDelta(totN, pN, {len, unit:"問"})}</div>
+          <div class="tr-tile"><small>練習した日の平均</small><b>${studyDays ? Math.round(totN/studyDays) : 0}問</b><i>${studyDays}日</i></div></div>
+        ${pgChart(B, ns, {id:"n", color:"var(--ok)", label:"解いた数（問）"})}${tip("n")}</div>
+
+      <div class="pg-sec"><h5>正答率</h5>
+        <div class="tr-tiles"><div class="tr-tile"><small>期間全体</small><b>${totN ? Math.round(totOk/totN*100)+"%" : "-"}</b>${totN && pN ? pgDelta(totOk/totN*100, pOk/pN*100, {len, unit:"%", dunit:"ポイント", digits:1, tone:true}) : ""}</div>
+          <div class="tr-tile"><small>正解した数</small><b>${totOk}問</b><i>${totN}問中</i></div></div>
+        ${pgChart(B, acc, {id:"a", color:"#E08A00", line:true, max:100, unit:"%", label:"正答率（％）"})}${tip("a")}
+        <p>いろいろ もんだい・ます けいさん・とけい の合計です。</p></div>
+
+      <div class="pg-sec"><h5>すらすら解ける計算・苦手な計算</h5>
+        <div class="tr-tiles"><div class="tr-tile"><small>すらすら になった</small><b>${g1.length}こ</b></div>
+          <div class="tr-tile"><small>ぴかぴか になった</small><b>${g2.length}こ</b></div>
+          <div class="tr-tile"><small>きらきら になった</small><b>${g3.length}こ</b></div></div>
+        ${g1.length ? `<div class="tr-sub">この期間に「すらすら」になった計算</div>${fchips(g1, "ok")}` : ""}
+        ${g3.length ? `<div class="tr-sub">この期間に「きらきら」になった計算</div>${fchips(g3, "ok")}` : ""}
+        ${rows.length ? `
+          <div class="tr-sub">すらすら解けている計算（2回以上解いて、ミスも時間切れもなし）：${smooth.length}こ</div>${smooth.length ? chips(smooth.map(x=>x[0]), "ok", k=>`${A[k][0]}回`) : ""}
+          <div class="tr-sub">苦手な計算（ミスがある・時間がかかる）：${weak.length}こ</div>${weak.length ? chips(weak.map(x=>x[0]), "ng", k=>`${A[k][0]}回中 ${[A[k][1] ? "ミス"+A[k][1]+"回" : "", A[k][2] ? "ゆっくり"+A[k][2]+"回" : ""].filter(Boolean).join("・")}`) : `<p>この期間は、苦手な計算は見つかりませんでした。</p>`}
+          <h5 style="margin-top:6px">変化（期間の前半と後半をくらべる）</h5>
+          ${better.length || still.length || fresh.length ? `
+            ${better.length ? `<div class="tr-sub">よくなった計算（前半はミスや時間がかかったが、後半はすらすら）</div>${chips(better, "ok")}` : ""}
+            ${still.length ? `<div class="tr-sub">まだ苦手な計算（前半も後半もミスがある）</div>${chips(still, "ng")}` : ""}
+            ${fresh.length ? `<div class="tr-sub">後半にミスが出た計算（前半はミスなし）</div>${chips(fresh, "ng")}` : ""}`
+            : `<p>前半と後半の両方で解いた計算が少ないため、まだ変化は出ていません。期間を長くするか、記録がたまると表示されます。</p>`}`
+          : `<p>この期間の、計算ごとの記録はまだありません。</p>`}
+        <p>10までのたし算・ひき算（90こ）が対象です。式・文章題・ます計算など、どの形で解いても数えます。計算ごとの記録は${flFirst ? pgMD(flFirst) : "きょう"}から残しています（${FL_KEEP}日分）。「すらすら」などになった日は、はじめから記録があります。</p></div>`;
+    box.querySelectorAll("[data-pg]").forEach(b=>b.addEventListener("click",()=>{
+      const v = b.dataset.pg;
+      if(v==="custom"){ const r = pgRange(); pgSel = {preset:"custom", from:r.from, to:r.to}; } else pgSel = {preset:v, from:null, to:null};
+      pgTip = {}; renderPg();
+    }));
+    ["pgFrom","pgTo"].forEach(id=>{ const el = $(id); if(el) el.addEventListener("change",()=>{
+      const a = $("pgFrom").value, b2 = $("pgTo").value; if(!a || !b2) return;
+      pgSel = {preset:"custom", from:a, to:b2}; pgTip = {}; renderPg();
+    }); });
+    box.querySelectorAll(".hit").forEach(r=>r.addEventListener("click",()=>{ pgTip[r.dataset.c] = +r.dataset.i; renderPg(); }));
+  }
+  function pgTipText(id, i, B, v){
+    const name = B[i].name;
+    return id==="t" ? `${name}：${v.mins[i]}分`
+      : id==="n" ? `${name}：${v.ns[i]}問`
+      : v.acc[i]==null ? `${name}：解いていません` : `${name}：${v.acc[i]}%（${v.ns[i]}問中${v.oks[i]}問正解）`;
+  }
+
   /* ---------- あそぶ じかん と きゅうけい（やりすぎ ないように） ----------
      もんだいの がめん（いろいろ・ます・とけい）を つかった じかんを はかる。ホームと ずかんは いつでも みられる。
        ・1かいの じかん（30ぷん か 45ふん）あそんだら、かならず 30ぷん きゅうけい（とけいの じかんで はかる）
@@ -3326,7 +3525,15 @@ span.stkw > svg{position:absolute;left:0;top:0;width:100%;height:100%;display:bl
   let tu = {d:todayKey(), s:0, ext:0, ss:0, la:0, brk:0};
   try{ const v = JSON.parse(localStorage.getItem(TU_KEY) || "null");
     if(v){ tu.ss = +v.ss||0; tu.la = +v.la||0; tu.brk = +v.brk||0; if(v.d===todayKey()){ tu.s = +v.s||0; tu.ext = +v.ext||0; } } }catch(e){}
-  const tuSave = () => { try{ localStorage.setItem(TU_KEY, JSON.stringify(tu)); }catch(e){} };
+  // ひごとの あそんだ じかん（びょう）。おうちの方へ の グラフよう
+  const tuSave = () => {
+    try{ localStorage.setItem(TU_KEY, JSON.stringify(tu)); }catch(e){}
+    if(tu.s > 0 && tlog[tu.d] !== tu.s){
+      tlog[tu.d] = tu.s;
+      const keys = Object.keys(tlog).sort(); while(keys.length > 800) delete tlog[keys.shift()];
+      try{ localStorage.setItem(TLOG_KEY, JSON.stringify(tlog)); }catch(e){}
+    }
+  };
   const tuDay = () => { if(tu.d !== todayKey()){ tu.d = todayKey(); tu.s = 0; tu.ext = 0; tlWarned = {}; tuSave(); } };
   const isCourse = m => m==="drill" || m==="grid" || m==="clock";
   const tlLimit = () => (tlMin + tu.ext) * 60;
@@ -3430,7 +3637,7 @@ span.stkw > svg{position:absolute;left:0;top:0;width:100%;height:100%;display:bl
   let mode = "home";
   try{ const m=localStorage.getItem(MODE_KEY); /* さいしょは いつも ホームから */ }catch(e){}
   function renderHome(){
-    renderGoal(); renderStickerRow(); renderNk(); renderHistory(); tlRefresh();
+    renderGoal(); renderStickerRow(); renderNk(); renderHistory(); tlRefresh(); renderPg();
     if(!$("tileClock").firstChild) $("tileClock").innerHTML = clockSVG(3, 0, {size:52});
     setPets(null,null);
     const w = pick(["cat","dog"]), t = (stats.days[todayKey()]||{});
