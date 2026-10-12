@@ -5,10 +5,10 @@
 <link rel="icon" type="image/png" sizes="64x64" href="favicon.png?v=3">
 <link rel="apple-touch-icon" href="apple-touch-icon.png?v=3">
 <link rel="manifest" href="manifest.json">
-<script src="stickers/stickers.js?v=202610121026"></script>
-<script src="nakama/nakama.js?v=202610121026"></script>
-<script src="clock/clock.js?v=202610121026"></script>
-<script src="drill/patterns.js?v=202610121026"></script>
+<script src="stickers/stickers.js?v=202610121032"></script>
+<script src="nakama/nakama.js?v=202610121032"></script>
+<script src="clock/clock.js?v=202610121032"></script>
+<script src="drill/patterns.js?v=202610121032"></script>
 <meta name="apple-mobile-web-app-title" content="けいさん">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -2548,7 +2548,7 @@ body.course .ck-ctl .choice{padding:4px 0;font-size:24px}
      これまでの せいかい（いろいろ・ます・とけい ぜんぶ）が 1000もん ふえる ごとに 1まい。10000もん まで。
      せいかいの かずは ひごとの きろく（stats.days[].ok）を たして だす ので、いままでの ぶんも かぞえる */
   const MS_LIST = [1000,2000,3000,4000,5000,6000,7000,8000,9000,10000];
-  const MS_HOLD = new Set([3000]);   // え を かくにん ちゅう の もの（まだ わたさない）
+  const MS_HOLD = new Set([]);   // え を かくにん ちゅう の もの（まだ わたさない）。いまは なし
   const msData = () => stats.ms || (stats.ms = {got:{}});
   const totalOk = () => Object.values(stats.days||{}).reduce((a,d)=>a+((d&&d.ok)||0), 0);
   const msImg = (n, small) => `milestone/ms_${n}${small ? "_s" : ""}.webp`;
