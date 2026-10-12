@@ -5,10 +5,10 @@
 <link rel="icon" type="image/png" sizes="64x64" href="favicon.png?v=3">
 <link rel="apple-touch-icon" href="apple-touch-icon.png?v=3">
 <link rel="manifest" href="manifest.json">
-<script src="stickers/stickers.js?v=202610121120"></script>
-<script src="nakama/nakama.js?v=202610121120"></script>
-<script src="clock/clock.js?v=202610121120"></script>
-<script src="drill/patterns.js?v=202610121120"></script>
+<script src="stickers/stickers.js?v=202610121129"></script>
+<script src="nakama/nakama.js?v=202610121129"></script>
+<script src="clock/clock.js?v=202610121129"></script>
+<script src="drill/patterns.js?v=202610121129"></script>
 <meta name="apple-mobile-web-app-title" content="けいさん">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -567,16 +567,12 @@ span.stkw > svg{position:absolute;left:0;top:0;width:100%;height:100%;display:bl
 /* とくべつ シール（せいかいが 1000もん ふえる ごとに 1まい） */
 .ms-h{display:flex;justify-content:space-between;font-size:14px;font-weight:900;margin:2px 0 6px}
 .ms-h span{color:var(--muted);font-weight:700}
-.ms-note{font-size:14px;font-weight:700;color:var(--muted);margin-bottom:8px;line-height:1.6;word-break:keep-all;overflow-wrap:anywhere}
-.ms-note b{color:var(--ink);font-size:17px;font-weight:900}
 .ms-grid{display:grid;grid-template-columns:repeat(5,1fr);gap:6px;margin-bottom:16px}
 .ms-it{font:inherit;display:flex;flex-direction:column;align-items:center;gap:1px;background:var(--bg);border:2px dashed var(--line);border-radius:12px;padding:4px 3px 2px;color:var(--muted);min-width:0}
-.ms-it i{font-style:normal;width:100%;aspect-ratio:1;display:grid;place-items:center;font-size:22px;font-weight:900;opacity:.45}
 .ms-it img{width:100%;aspect-ratio:1;border-radius:8px;display:block}
-.ms-it span{font-size:12px;font-weight:900}
+.ms-it span{font-size:12px;font-weight:900;white-space:nowrap}
 .ms-it{cursor:pointer;touch-action:manipulation}
 .ms-it.got{border:2px solid var(--yellow);color:var(--ink)}
-.ms-q{width:150px;height:150px;border-radius:24px;border:3px dashed var(--line);background:var(--bg);display:grid;place-items:center;font-size:72px;font-weight:900;color:var(--muted)}
 .nk-mcard p b.num{color:var(--ink);font-size:1.2em}
 .nk-mpic.ms{height:auto;padding:0}
 .ms-pic{width:min(100%,300px);aspect-ratio:1;border-radius:18px;display:block;animation:nkPop .6s ease-out}
@@ -879,7 +875,6 @@ span.stkw > svg{position:absolute;left:0;top:0;width:100%;height:100%;display:bl
     <section class="zk-panel">
       <h3>シール ちょう</h3>
       <div class="ms-h">とくべつ シール <span id="msCount"></span></div>
-      <div class="ms-note" id="msNote"></div>
       <div class="ms-grid" id="msGrid"></div>
       <div class="ms-h">まいにちの シール <span id="albCount"></span></div>
       <div class="album" id="album"></div>
@@ -2557,46 +2552,51 @@ span.stkw > svg{position:absolute;left:0;top:0;width:100%;height:100%;display:bl
   }
 
   /* ---------- とくべつ シール ----------
-     これまでの せいかい（いろいろ・ます・とけい ぜんぶ）が 1000もん ふえる ごとに 1まい。10000もん まで。
-     せいかいの かずは ひごとの きろく（stats.days[].ok）を たして だす ので、いままでの ぶんも かぞえる */
-  // え に うつるのは みー と ころ だけ（まだ あって いない なかま を さきに みせない ため）。false に すると おやすみ
-  const MS_ON = true;
-  const MS_LIST = [1000,2000,3000,4000,5000,6000,7000,8000,9000,10000];
-  const MS_HOLD = new Set([]);   // え を かくにん ちゅう の もの（まだ わたさない）。いまは なし
+     なにかを たっせい した ときに もらえる シール。もらって はじめて シール ちょうに でる
+     （まだの ぶんは みせない。なんまい あるかも みせない）。いまは つぎの 2しゅるい：
+       ・これまでの せいかい（いろいろ・ます・とけい ぜんぶ）が 1000もん ふえる ごとに 1まい（10000もん まで）
+       ・すらすら ずかんが ぜんぶ きらきらに なった とき（たしざん／ひきざん／りょうほう）
+     あたらしい しゅるいは MS_LIST に たす。id は いちど きめたら かえない（もらった きろくに つかう）
+     え は milestone/<img>.webp（おおきい）と <img>_s.webp（ちいさい）。みー と ころ だけを かく
+     （まだ あって いない なかま を さきに みせない ため） */
+  const MS_ON = true;   // false に すると ぜんぶ おやすみ
+  const zkAllKira = rows => { const l = rows.flat(); return masterCount(l, 3) === l.length; };
+  const MS_LIST = [
+    ...[1000,2000,3000,4000,5000,6000,7000,8000,9000,10000].map(n=>({id:String(n), label:String(n), title:`${n}もん せいかい！`,
+      alt:`${n}もん せいかい おめでとう`, img:`ms_${n}`, ok:()=>totalOk()>=n})),
+    {id:"zk_add", label:"たしざん", title:"たしざん ぜんぶ きらきら！", alt:"たしざん クリア おめでとう", img:"zk_add", ok:()=>zkAllKira(ZK_ADD)},
+    {id:"zk_sub", label:"ひきざん", title:"ひきざん ぜんぶ きらきら！", alt:"ひきざん クリア おめでとう", img:"zk_sub", ok:()=>zkAllKira(ZK_SUB)},
+    {id:"zk_all", label:"ぜんぶ", title:"ずかん ぜんぶ きらきら！", alt:"たしざん ひきざん ぜんぶ クリア おめでとう", img:"zk_all", ok:()=>zkAllKira(ZK_ADD) && zkAllKira(ZK_SUB)}
+  ];
+  const MS_HOLD = new Set(["zk_add","zk_sub","zk_all"]);   // え が まだ ない もの（わたさない）。え が とどいたら ここから はずす
+  const msById = id => MS_LIST.find(x=>x.id===String(id));
   const msData = () => stats.ms || (stats.ms = {got:{}});
   const totalOk = () => Object.values(stats.days||{}).reduce((a,d)=>a+((d&&d.ok)||0), 0);
-  const msImg = (n, small) => `milestone/ms_${n}${small ? "_s" : ""}.webp?v=2`;   // v=2：みー と ころ だけの え に さしかえ
+  const msImg = (it, small) => `milestone/${it.img}${small ? "_s" : ""}.webp?v=2`;   // v=2：みー と ころ だけの え に さしかえ
   function msCheck(){
     if(!MS_ON) return false;
-    const tot = totalOk(), got = msData().got; let hit = false;
-    MS_LIST.forEach(n=>{ if(tot>=n && !got[n] && !MS_HOLD.has(n)){ got[n] = todayKey(); nkData().queue.push({t:"ms", n}); hit = true; } });
+    const got = msData().got; let hit = false;
+    MS_LIST.forEach(it=>{ if(!got[it.id] && !MS_HOLD.has(it.id) && it.ok()){ got[it.id] = todayKey(); nkData().queue.push({t:"ms", n:it.id}); hit = true; } });
     if(hit){ saveStats(); setTimeout(nkShowQueue, 1600); }
     return hit;
   }
-  function msShow(n, again){
-    const [y,m,d] = String(msData().got[n]||"").split("-").map(Number);
-    nkModal({pic:`<img class="ms-pic" src="${msImg(n)}" alt="${n}もん せいかい おめでとう" draggable="false">`,
-      title:`${n}もん せいかい！`,
+  function msShow(id, again){
+    const it = msById(id); if(!it) return;
+    const [y,m,d] = String(msData().got[it.id]||"").split("-").map(Number);
+    nkModal({pic:`<img class="ms-pic" src="${msImg(it)}" alt="${it.alt}" draggable="false">`,
+      title: it.title,
       text: again ? (m ? `${m}がつ ${d}にちに もらった とくべつ シールだよ` : "とくべつ シールだよ") : "とくべつ シールを もらったよ。<br>シール ちょうに はって おくね",
       buttons:[{label: again ? "とじる" : "やったー！", onClick:()=>{ if(mode==="zukan") renderMs(); }}]});
   }
-  // まだ もらって いない シール：え は ひみつ の まま、あと なんもんか を おしえる
-  function msHint(n){
-    const left = n - totalOk();
-    nkModal({pic:`<div class="ms-q" aria-hidden="true">？</div>`, title:`${n}もんの とくべつ シール`,
-      text: left>0 ? `${n}もん せいかいで もらえるよ。<br>あと <b class="num">${left}</b>もん！<br>どんな え かは おたのしみ` : "もうすぐ もらえるよ。おたのしみに！",
-      buttons:[{label:"がんばる！"}]});
-  }
   function renderMs(){
-    [$("msCount").parentElement, $("msNote"), $("msGrid")].forEach(el=>{ el.style.display = MS_ON ? "" : "none"; });
-    if(!MS_ON) return;
-    const tot = totalOk(), got = msData().got, next = MS_LIST.find(x=>!got[x] && x>tot);
-    $("msCount").textContent = `${MS_LIST.filter(x=>got[x]).length} / ${MS_LIST.length}`;
-    $("msNote").innerHTML = `これまでの せいかい <b class="num">${tot}</b>もん` + (next ? `<br>つぎの シールまで あと <b class="num">${next-tot}</b>もん` : "");
-    $("msGrid").innerHTML = MS_LIST.map(x=> got[x]
-      ? `<button class="ms-it got" data-n="${x}" aria-label="${x}もんの とくべつ シール"><img src="${msImg(x,true)}" alt="" loading="lazy" draggable="false"><span class="num">${x}</span></button>`
-      : `<button class="ms-it" data-n="${x}" aria-label="${x}もんで もらえる シール"><i>？</i><span class="num">${x}</span></button>`).join("");
-    $("msGrid").querySelectorAll(".ms-it").forEach(b=>b.addEventListener("click",()=>{ const n=+b.dataset.n; if(got[n]) msShow(n, true); else msHint(n); }));
+    const got = msData().got;
+    // もらった じゅん（おなじ ひ なら MS_LIST の じゅん）
+    const have = MS_ON ? MS_LIST.filter(it=>got[it.id] && !MS_HOLD.has(it.id)).sort((a,b)=>String(got[a.id]).localeCompare(String(got[b.id]))) : [];
+    [$("msCount").parentElement, $("msGrid")].forEach(el=>{ el.style.display = have.length ? "" : "none"; });
+    if(!have.length){ $("msGrid").innerHTML = ""; return; }
+    $("msCount").textContent = `${have.length}まい`;
+    $("msGrid").innerHTML = have.map(it=>`<button class="ms-it got" data-id="${it.id}" aria-label="${it.alt}"><img src="${msImg(it,true)}" alt="" loading="lazy" draggable="false"><span class="num">${it.label}</span></button>`).join("");
+    $("msGrid").querySelectorAll(".ms-it").forEach(b=>b.addEventListener("click",()=>msShow(b.dataset.id, true)));
   }
 
   function renderAlbum(){
@@ -2800,7 +2800,7 @@ span.stkw > svg{position:absolute;left:0;top:0;width:100%;height:100%;display:bl
   function nkModal({pic, title, text, name, buttons}){
     nkModalOpen = true;
     if(mode==="drill" && current) stopTimer();   // ひらいて いる あいだ は 10びょう タイマーを とめる
-    $("nkMPic").innerHTML = pic || ""; $("nkMPic").classList.toggle("ms", /ms-pic|ms-q/.test(pic||""));
+    $("nkMPic").innerHTML = pic || ""; $("nkMPic").classList.toggle("ms", /ms-pic/.test(pic||""));
     $("nkMTitle").textContent = title; $("nkMText").innerHTML = text || "";
     $("nkMNameWrap").hidden = !name; $("nkMErr").textContent = "";
     if(name){ $("nkMInput").value = name.value || ""; }
