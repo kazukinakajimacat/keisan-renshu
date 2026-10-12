@@ -5,10 +5,10 @@
 <link rel="icon" type="image/png" sizes="64x64" href="favicon.png?v=3">
 <link rel="apple-touch-icon" href="apple-touch-icon.png?v=3">
 <link rel="manifest" href="manifest.json">
-<script src="stickers/stickers.js?v=202610121238"></script>
-<script src="nakama/nakama.js?v=202610121238"></script>
-<script src="clock/clock.js?v=202610121238"></script>
-<script src="drill/patterns.js?v=202610121238"></script>
+<script src="stickers/stickers.js?v=202610121309"></script>
+<script src="nakama/nakama.js?v=202610121309"></script>
+<script src="clock/clock.js?v=202610121309"></script>
+<script src="drill/patterns.js?v=202610121309"></script>
 <meta name="apple-mobile-web-app-title" content="けいさん">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -189,10 +189,9 @@ details.hist summary{cursor:pointer;font-weight:700;color:var(--muted);font-size
 .pg-dates{display:flex;align-items:center;gap:6px;flex-wrap:wrap;color:var(--muted);font-weight:700}
 .pg-dates input{font:inherit;font-size:14px;padding:4px 6px;border-radius:10px;border:2px solid var(--line);background:var(--surface);color:var(--ink)}
 .pg-sec{display:flex;flex-direction:column;gap:6px;border-top:2px solid var(--line);padding-top:10px}
-.pg-chart{width:100%;height:auto;display:block}
+.pg-chart{width:100%;height:auto;display:block;touch-action:pan-y;cursor:crosshair;-webkit-tap-highlight-color:transparent}
 .pg-chart text{font-size:9px;fill:var(--muted);font-weight:700;font-variant-numeric:tabular-nums}
 .pg-chart .gl{stroke:var(--line);stroke-width:1}
-.pg-chart .hit{fill:transparent;cursor:pointer}
 .pg-chart .sel{fill:var(--frame)}
 .pg-tip{min-height:1.5em;font-weight:700;color:var(--ink);font-variant-numeric:tabular-nums}
 .pg-tip.none{color:var(--muted);font-weight:500;font-size:13px}
@@ -3285,7 +3284,8 @@ span.stkw > svg{position:absolute;left:0;top:0;width:100%;height:100%;display:bl
        ・すらすら／ぴかぴか／きらきらに なった ひ：stats.facts[].gd（さいしょから ある）
      46にち いじょうの きかんは 1しゅうかん ごとに まとめる */
   const PG_PRESETS = [["7","7日"],["30","30日"],["90","90日"],["all","ぜんぶ"]];
-  let pgSel = {preset:"7", from:null, to:null}, pgTip = {};
+  let pgSel = {preset:"7", from:null, to:null}, pgTipI = null;   // pgTipI：グラフで えらんで いる ばしょ（3つの グラフ きょうつう）
+  const PG_W = 320, PG_L = 30, PG_R = 6;   // グラフの はば・ひだりと みぎの よはく
   const pgMD = k => { const [y,m,d] = k.split("-").map(Number); return `${m}/${d}`; };
   const pgFirstDay = () => {
     const ks = [...Object.keys(stats.days||{}).filter(k=>(stats.days[k].n||0)>0), ...Object.keys(tlog)].sort();
@@ -3313,12 +3313,12 @@ span.stkw > svg{position:absolute;left:0;top:0;width:100%;height:100%;display:bl
   const pgNice = v => [5,10,20,30,40,60,80,100,150,200,300,400,600,800,1000,1500,2000,3000,5000].find(x=>x>=v) || Math.ceil(v/1000)*1000;
   // vals：かず（ない ところは null）。o：{id, color, line, max, unit}
   function pgChart(B, vals, o){
-    const W = 320, H = 124, L = 30, R = 6, T = 8, Bm = 18, iw = W-L-R, ih = H-T-Bm, n = vals.length;
+    const W = PG_W, H = 124, L = PG_L, R = PG_R, T = 8, Bm = 18, iw = W-L-R, ih = H-T-Bm, n = vals.length;
     const max = o.max || pgNice(Math.max(1, ...vals.map(v=>v||0)));
     const x = i => L + iw*(i+0.5)/n, y = v => T + ih*(1 - v/max), cw = iw/n, bw = Math.max(1.5, Math.min(22, cw*0.7));
-    const sel = pgTip[o.id];
+    const sel = pgTipI != null && pgTipI < n ? pgTipI : null;
     let g = [0, max/2, max].map(v=>`<line class="gl" x1="${L}" x2="${W-R}" y1="${y(v).toFixed(1)}" y2="${y(v).toFixed(1)}"/><text x="${L-4}" y="${(y(v)+3).toFixed(1)}" text-anchor="end">${Math.round(v)}${o.unit||""}</text>`).join("");
-    if(sel != null && sel < n) g += `<rect class="sel" x="${(L+cw*sel).toFixed(1)}" y="${T}" width="${cw.toFixed(1)}" height="${ih}"/>`;
+    g += `<rect class="sel" x="${(L+cw*(sel||0)).toFixed(1)}" y="${T}" width="${cw.toFixed(1)}" height="${ih}"${sel==null ? ' style="display:none"' : ""}/>`;
     if(o.line){
       const pts = vals.map((v,i)=> v==null ? null : [x(i), y(v)]).filter(Boolean);
       if(pts.length > 1) g += `<polyline fill="none" stroke="${o.color}" stroke-width="2" stroke-linejoin="round" points="${pts.map(p=>p[0].toFixed(1)+","+p[1].toFixed(1)).join(" ")}"/>`;
@@ -3332,7 +3332,6 @@ span.stkw > svg{position:absolute;left:0;top:0;width:100%;height:100%;display:bl
     g += lab.map(i=> n > 7 && i === n-1
       ? `<text x="${(W-R).toFixed(1)}" y="${H-5}" text-anchor="end">${B[i].label}</text>`
       : `<text x="${x(i).toFixed(1)}" y="${H-5}" text-anchor="middle">${B[i].label}</text>`).join("");
-    g += vals.map((v,i)=>`<rect class="hit" data-c="${o.id}" data-i="${i}" x="${(L+cw*i).toFixed(1)}" y="${T}" width="${cw.toFixed(1)}" height="${ih+Bm}"/>`).join("");
     return `<svg class="pg-chart" viewBox="0 0 ${W} ${H}" role="img" aria-label="${o.label}">${g}</svg>`;
   }
   // o：{len：きかんの にっすう, unit：かずの たんい, dunit：ふえた・へった ぶんの たんい, digits, tone：いろを つけるか}
@@ -3380,9 +3379,9 @@ span.stkw > svg{position:absolute;left:0;top:0;width:100%;height:100%;display:bl
     const overcame = allF.filter(e=>(e.miss||0)>0 && (e.score||0)===0 && e.master).sort((x,y)=>(y.miss||0)-(x.miss||0)).map(e=>e.f);
     const chips = (list, cls, note) => `<div class="pg-chips ${cls}">${list.slice(0,12).map(k=>`<span>${txt(k)}${note ? `<small>${note(k)}</small>` : ""}</span>`).join("")}${list.length>12 ? `<span>ほか${list.length-12}こ</span>` : ""}</div>`;
     const fchips = (list, cls) => `<div class="pg-chips ${cls}">${list.slice(0,12).map(f=>`<span>${factText(f)}</span>`).join("")}${list.length>12 ? `<span>ほか${list.length-12}こ</span>` : ""}</div>`;
-    const tip = id => pgTip[id]!=null && pgTip[id] < B.length
-      ? `<div class="pg-tip">${pgTipText(id, pgTip[id], B, {mins, ns, oks, acc})}</div>`
-      : `<div class="pg-tip none">グラフをタップすると、その${weekly ? "週" : "日"}の数字が出ます</div>`;
+    const tip = id => pgTipI != null && pgTipI < B.length
+      ? `<div class="pg-tip" data-tip="${id}">${pgTipText(id, pgTipI, B, {mins, ns, oks, acc})}</div>`
+      : `<div class="pg-tip none" data-tip="${id}">グラフにカーソルを合わせるか、指で触れると、その${weekly ? "週" : "日"}の数字が出ます</div>`;
     const unitName = weekly ? "1週間ごと" : "1日ごと";
     box.innerHTML = `<h4>学習のようす</h4>
       <div class="pg-range" role="group" aria-label="期間">${PG_PRESETS.map(([v,l])=>`<button type="button" data-pg="${v}" aria-pressed="${pgSel.preset===v}">${l}</button>`).join("")}<button type="button" data-pg="custom" aria-pressed="${pgSel.preset==="custom"}">日付で選ぶ</button></div>
@@ -3429,13 +3428,25 @@ span.stkw > svg{position:absolute;left:0;top:0;width:100%;height:100%;display:bl
     box.querySelectorAll("[data-pg]").forEach(b=>b.addEventListener("click",()=>{
       const v = b.dataset.pg;
       if(v==="custom"){ const r = pgRange(); pgSel = {preset:"custom", from:r.from, to:r.to}; } else pgSel = {preset:v, from:null, to:null};
-      pgTip = {}; renderPg();
+      pgTipI = null; renderPg();
     }));
     ["pgFrom","pgTo"].forEach(id=>{ const el = $(id); if(el) el.addEventListener("change",()=>{
       const a = $("pgFrom").value, b2 = $("pgTo").value; if(!a || !b2) return;
-      pgSel = {preset:"custom", from:a, to:b2}; pgTip = {}; renderPg();
+      pgSel = {preset:"custom", from:a, to:b2}; pgTipI = null; renderPg();
     }); });
-    box.querySelectorAll(".hit").forEach(r=>r.addEventListener("click",()=>{ pgTip[r.dataset.c] = +r.dataset.i; renderPg(); }));
+    // グラフに カーソルを のせる・ゆびで ふれる と、その ひ（しゅう）の かずを 3つの グラフ ぜんぶに だす。
+    // かきなおさずに、いろの おびと したの もじ だけ を その ばで かえる（かきなおすと カーソルの したの え が きえて ちらつく）
+    const nB = B.length, cwB = (PG_W - PG_L - PG_R) / nB, V = {mins, ns, oks, acc};
+    const pgShow = i => {
+      if(i === pgTipI) return; pgTipI = i;
+      box.querySelectorAll("svg.pg-chart .sel").forEach(r=>{ r.setAttribute("x", (PG_L + cwB*i).toFixed(1)); r.style.display = ""; });
+      box.querySelectorAll("[data-tip]").forEach(el=>{ el.className = "pg-tip"; el.textContent = pgTipText(el.dataset.tip, i, B, V); });
+    };
+    box.querySelectorAll("svg.pg-chart").forEach(svg=>{
+      const at = e => { const r = svg.getBoundingClientRect(); if(!r.width) return;
+        pgShow(Math.max(0, Math.min(nB-1, Math.floor(((e.clientX - r.left)/r.width*PG_W - PG_L)/cwB)))); };
+      svg.addEventListener("pointermove", at); svg.addEventListener("pointerdown", at);
+    });
   }
   function pgTipText(id, i, B, v){
     const name = B[i].name;
