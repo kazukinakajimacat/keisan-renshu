@@ -5,10 +5,10 @@
 <link rel="icon" type="image/png" sizes="64x64" href="favicon.png?v=3">
 <link rel="apple-touch-icon" href="apple-touch-icon.png?v=3">
 <link rel="manifest" href="manifest.json">
-<script src="stickers/stickers.js?v=202610121035"></script>
-<script src="nakama/nakama.js?v=202610121035"></script>
-<script src="clock/clock.js?v=202610121035"></script>
-<script src="drill/patterns.js?v=202610121035"></script>
+<script src="stickers/stickers.js?v=202610121047"></script>
+<script src="nakama/nakama.js?v=202610121047"></script>
+<script src="clock/clock.js?v=202610121047"></script>
+<script src="drill/patterns.js?v=202610121047"></script>
 <meta name="apple-mobile-web-app-title" content="けいさん">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -299,7 +299,7 @@ button.oslot:disabled{cursor:default}
 .goal-dots i.on{background:var(--ok)}
 .gbanner{background:var(--surface);border:3px solid var(--ok);border-radius:20px;padding:16px;display:flex;flex-direction:column;align-items:center;gap:8px;text-align:center;animation:pop .3s ease-out}
 .gb-stamp{width:64px;height:64px;color:var(--red);transform:rotate(-12deg)}
-.gb-stamp svg{width:100%;height:100%}
+.gb-stamp svg,.gb-stamp .stkw{width:100%;height:100%}
 .gb-t{font-size:24px;font-weight:900;color:var(--ok)}
 .gb-s{font-size:15px;font-weight:700;color:var(--muted);word-break:keep-all}
 .gb-btns{display:flex;gap:10px;flex-wrap:wrap;justify-content:center}
@@ -544,13 +544,17 @@ body.course .ck-ctl .choice{padding:4px 0;font-size:24px}
 .stk-pips i.on:nth-child(2){background:#AEB9C5}
 .stk-pips i.on:nth-child(3){background:#F5C518}
 .stk-pips i.on:nth-child(4){background:linear-gradient(90deg,#FF7A7A,#FFC44D,#7EDC6B,#5BC0F0,#9B7BF0)}
-.ring-ultra{animation:hue 4s linear infinite;transform-origin:50% 50%}
-.stk .shine{animation:shine 2.8s ease-in-out infinite;transform:translateX(0) skewX(-22deg)}
+.stkw{position:relative;display:inline-block;width:var(--s);height:var(--s);flex:none;vertical-align:middle}
+span.stkw > svg{position:absolute;left:0;top:0;width:100%;height:100%;display:block;transform:none}
+.stkw > .stk-fx{pointer-events:none}
+.stk-ring{animation:stkspin 9s linear infinite}
+@keyframes stkspin{to{transform:rotate(360deg)}}
+.stk-fx .shine{animation:shine 2.8s ease-in-out infinite;transform:translateX(0) skewX(-22deg)}
 @keyframes shine{0%{transform:translateX(0) skewX(-22deg)}45%,100%{transform:translateX(150px) skewX(-22deg)}}
-.stk .kiran{transform-box:fill-box;transform-origin:center;animation:kiran 2.8s ease-out infinite}
+.stk-fx .kiran{transform-box:fill-box;transform-origin:center;animation:kiran 2.8s ease-out infinite}
 @keyframes kiran{0%,30%{transform:scale(0) rotate(0);opacity:0}40%{transform:scale(1.35) rotate(45deg);opacity:1}55%{transform:scale(1) rotate(90deg);opacity:1}75%,100%{transform:scale(0) rotate(135deg);opacity:0}}
-.stk .twinkle path{transform-box:fill-box;transform-origin:center;animation:twinkle 1.4s ease-in-out infinite}
-.stk .twinkle path:nth-child(2){animation-delay:.7s}
+.stk-fx .twinkle path{transform-box:fill-box;transform-origin:center;animation:twinkle 1.4s ease-in-out infinite}
+.stk-fx .twinkle path:nth-child(2){animation-delay:.7s}
 @keyframes twinkle{0%,100%{transform:scale(.6);opacity:.6}50%{transform:scale(1.2);opacity:1}}
 @keyframes hue{to{filter:hue-rotate(360deg)}}
 .sum-stk{display:flex;flex-direction:column;align-items:center;gap:6px;padding-top:6px}
@@ -578,7 +582,7 @@ body.course .ck-ctl .choice{padding:4px 0;font-size:24px}
 .ms-pic{width:min(100%,300px);aspect-ratio:1;border-radius:18px;display:block;animation:nkPop .6s ease-out}
 .alb small{font-size:11px;color:var(--muted);font-weight:700;white-space:nowrap}
 .alb:focus-visible{outline:3px solid var(--blue);outline-offset:1px}
-.cd.stk-day svg.stk{position:absolute;left:auto;right:2px;bottom:2px;top:auto;width:62%;height:62%;transform:none}
+.cd.stk-day > svg.stk,.cd.stk-day > .stkw{position:absolute;left:auto;right:2px;bottom:2px;top:auto;width:62%;height:62%;transform:none}
 .save-state{font-size:12px;color:var(--muted);text-align:center}
 .save-state[data-st="saved"]::before{content:"✓ ";color:var(--ok);font-weight:900}
 .save-state[data-st="error"]{color:var(--ng)}
@@ -2448,7 +2452,7 @@ body.course .ck-ctl .choice{padding:4px 0;font-size:24px}
       normal:`<circle cx="50" cy="50" r="45" fill="#fff" stroke="${K}" stroke-width="2"/>`,
       rare:`<linearGradient id="${uid}" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#F4F7FA"/><stop offset=".5" stop-color="#AEB9C5"/><stop offset="1" stop-color="#7F8C99"/></linearGradient><circle cx="50" cy="50" r="46" fill="url(#${uid})" stroke="${K}" stroke-width="2"/>`,
       super:`<linearGradient id="${uid}" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#FFF1B0"/><stop offset=".5" stop-color="#F5C518"/><stop offset="1" stop-color="#C98E00"/></linearGradient><circle cx="50" cy="50" r="47" fill="url(#${uid})" stroke="${K}" stroke-width="2"/>`,
-      ultra:`<linearGradient id="${uid}" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#FF7A7A"/><stop offset=".2" stop-color="#FFC44D"/><stop offset=".4" stop-color="#7EDC6B"/><stop offset=".6" stop-color="#5BC0F0"/><stop offset=".8" stop-color="#9B7BF0"/><stop offset="1" stop-color="#F07AC8"/></linearGradient><circle class="ring-ultra" cx="50" cy="50" r="48" fill="url(#${uid})" stroke="${K}" stroke-width="2"/>`
+      ultra:`<linearGradient id="${uid}" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#FF7A7A"/><stop offset=".2" stop-color="#FFC44D"/><stop offset=".4" stop-color="#7EDC6B"/><stop offset=".6" stop-color="#5BC0F0"/><stop offset=".8" stop-color="#9B7BF0"/><stop offset="1" stop-color="#F07AC8"/></linearGradient><circle cx="50" cy="50" r="48" fill="url(#${uid})" stroke="${K}" stroke-width="2"/>`
     }[tier];
     const star = (x,y)=>`<path d="M${x} ${y-5.5} L${x+1.7} ${y-1.7} L${x+5.5} ${y-1.3} L${x+2.6} ${y+1.5} L${x+3.5} ${y+5.5} L${x} ${y+3.3} L${x-3.5} ${y+5.5} L${x-2.6} ${y+1.5} L${x-5.5} ${y-1.3} L${x-1.7} ${y-1.7} Z" fill="#fff" stroke="${K}" stroke-width="1.2" stroke-linejoin="round"/>`;
     const stars = {normal:[], rare:[[50,10]], super:[[38,11],[62,11]], ultra:[[50,8],[31,14],[69,14]]}[tier];
@@ -2458,8 +2462,13 @@ body.course .ck-ctl .choice{padding:4px 0;font-size:24px}
       <g clip-path="url(#c${uid})"><rect class="shine" x="-30" y="-20" width="22" height="140" fill="url(#s${uid})"/></g>
       <g class="kiran"><path d="M78 20 L80.5 27.5 L88 30 L80.5 32.5 L78 40 L75.5 32.5 L68 30 L75.5 27.5 Z" fill="#fff" stroke="#F5C518" stroke-width="1.2" stroke-linejoin="round"/></g>` : "";
     const spark = tier==="super"||tier==="ultra" ? `<g class="${tier==="ultra"?"twinkle":""}" fill="#fff" stroke="${K}" stroke-width=".8"><path d="M10 52 l2 5 5 2 -5 2 -2 5 -2 -5 -5 -2 5 -2z"/><path d="M88 60 l1.6 4 4 1.6 -4 1.6 -1.6 4 -1.6 -4 -4 -1.6 4 -1.6z"/></g>` : "";
-    return `<svg class="stk" viewBox="0 0 100 100" width="${size}" height="${size}" role="img" aria-label="${mo.name}の シール ${tierByKey(tier).label}">${ring}
-      ${mo.round ? "" : `<circle cx="50" cy="50" r="38" fill="${bg}" stroke="${K}" stroke-width="2"/>`}${motifArt(mo)}${stars.map(([x,y])=>star(x,y)).join("")}${spark}${shine}</svg>`;
+    const art = `${mo.round ? "" : `<circle cx="50" cy="50" r="38" fill="${bg}" stroke="${K}" stroke-width="2"/>`}${motifArt(mo)}${stars.map(([x,y])=>star(x,y)).join("")}`;
+    const label = `${mo.name}の シール ${tierByKey(tier).label}`;
+    if(tier!=="ultra") return `<svg class="stk" viewBox="0 0 100 100" width="${size}" height="${size}" role="img" aria-label="${label}">${ring}
+      ${art}${spark}</svg>`;
+    // ウルトラレア：うごく ぶぶん（にじの わ・ひかり）と え を べつの まいに かさねる。
+    // え と おなじ まいで うごかすと、ブラウザに よっては え が ぼやけて（くもって）みえる ため
+    return `<span class="stkw" style="--s:${size}px" role="img" aria-label="${label}"><svg class="stk-ring" viewBox="0 0 100 100" aria-hidden="true">${ring}</svg><svg class="stk" viewBox="0 0 100 100" aria-hidden="true">${art}</svg><svg class="stk-fx" viewBox="0 0 100 100" aria-hidden="true">${spark}${shine}</svg></span>`;
   }
   function stickerPreview(dk, size){
     const mo = motifFor(dk);
