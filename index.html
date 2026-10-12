@@ -5,10 +5,10 @@
 <link rel="icon" type="image/png" sizes="64x64" href="favicon.png?v=3">
 <link rel="apple-touch-icon" href="apple-touch-icon.png?v=3">
 <link rel="manifest" href="manifest.json">
-<script src="stickers/stickers.js?v=202610121148"></script>
-<script src="nakama/nakama.js?v=202610121148"></script>
-<script src="clock/clock.js?v=202610121148"></script>
-<script src="drill/patterns.js?v=202610121148"></script>
+<script src="stickers/stickers.js?v=202610121200"></script>
+<script src="nakama/nakama.js?v=202610121200"></script>
+<script src="clock/clock.js?v=202610121200"></script>
+<script src="drill/patterns.js?v=202610121200"></script>
 <meta name="apple-mobile-web-app-title" content="けいさん">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -902,7 +902,7 @@ span.stkw > svg{position:absolute;left:0;top:0;width:100%;height:100%;display:bl
       </div>
       <div class="cal" id="cal"></div>
     </section>
-    <p class="zk-note">おうちの方へ：すらすら＝続けて2回、時間内に正解した計算です（式・文章題・ます計算など形は問いません）。そのあと別の日にも時間内に正解すると「ぴかぴか」、さらに別の日に3秒以内で正解すると「きらきら」に進化します（日をまたいで覚えているかを見ています）。一度付いたシールは消しません。その後に間違えた計算は、苦手データ側で多めに出します。めあては1日10問で、達成するとカレンダーにスタンプが押されます。シールは、その日に30問解くとノーマル、60問でレア、100問でスーパーレア、200問でウルトラレアに進化します（ます計算は1枚やりきったら正解したますの数を足し、新記録なら+5問）。絵柄は日替わりで、毎日0問から数え直します。もらったシールはシールちょうに残ります。</p>
+    <p class="zk-note">おうちの方へ：すらすら＝続けて2回、時間内に正解した計算です（式・文章題・ます計算など形は問いません）。そのあと別の日にも時間内に正解すると「ぴかぴか」、さらに別の日に3秒以内で正解すると「きらきら」に進化します（日をまたいで覚えているかを見ています）。一度付いたシールは消しません。その後に間違えた計算は、苦手データ側で多めに出します。めあては1日10問で、達成するとカレンダーにスタンプが押されます。シールは、その日に20問解くとノーマル、50問でレア、75問でスーパーレア、150問でウルトラレアに進化します（ます計算は1枚やりきったら正解したますの数を足し、新記録なら+5問）。絵柄は日替わりで、毎日0問から数え直します。もらったシールはシールちょうに残ります。</p>
   </div>
 
   <div class="save-state" id="saveState" aria-live="polite"></div>
@@ -2402,10 +2402,10 @@ span.stkw > svg{position:absolute;left:0;top:0;width:100%;height:100%;display:bl
   }
   /* ---------- きょうの シール（まいにち かわる・とけた かずで しんか） ---------- */
   const STK_TIERS = [
-    {n:30,  key:"normal", label:"ノーマル"},
-    {n:60,  key:"rare",   label:"レア"},
-    {n:100, key:"super",  label:"スーパーレア"},
-    {n:200, key:"ultra",  label:"ウルトラレア"}
+    {n:20,  key:"normal", label:"ノーマル"},
+    {n:50,  key:"rare",   label:"レア"},
+    {n:75,  key:"super",  label:"スーパーレア"},
+    {n:150, key:"ultra",  label:"ウルトラレア"}
   ];
   const tierByKey = k => STK_TIERS.find(t=>t.key===k);
   const K = "#3B2F2A";
@@ -2629,7 +2629,7 @@ span.stkw > svg{position:absolute;left:0;top:0;width:100%;height:100%;display:bl
       const a = stats.album[k], [y,m,d] = k.split("-").map(Number);
       const no = nth[k];
       return `<button class="alb" data-k="${k}">${stickerSVG(k, a.tier, 64)}<span class="num">${m}/${d}</span><small>${tierByKey(a.tier).label}${no>=2 ? `・${no}まいめ` : ""}</small></button>`;
-    }).join("") : `<div class="empty">いろいろ もんだいや ます けいさんで 30もん とくと、さいしょの シールが もらえるよ</div>`;
+    }).join("") : `<div class="empty">いろいろ もんだいや ます けいさんで ${STK_TIERS[0].n}もん とくと、さいしょの シールが もらえるよ</div>`;
     document.querySelectorAll(".alb").forEach(b=>b.addEventListener("click",()=>{
       const k=b.dataset.k, a=stats.album[k], [y,m,d]=k.split("-").map(Number);
       say(pick(["cat","dog"]), `${m}がつ ${d}にちの ${motifFor(k).name}の シール（${tierByKey(a.tier).label}）だよ`);
