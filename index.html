@@ -166,8 +166,6 @@ details.hist summary{cursor:pointer;font-weight:700;color:var(--muted);font-size
 .tl-toast{position:fixed;left:50%;top:calc(env(safe-area-inset-top,0px) + 62px);transform:translateX(-50%);z-index:20;max-width:calc(100% - 24px);background:var(--ink);color:var(--bg);font-weight:900;font-size:15px;border-radius:999px;padding:8px 18px;box-shadow:0 6px 18px rgba(0,0,0,.25);white-space:nowrap;pointer-events:none}
 .tl-toast[hidden]{display:none}
 .hist-body{display:flex;flex-direction:column;gap:14px;margin-top:12px}
-.trend{background:var(--frame);border:2px solid var(--line);border-radius:14px;padding:12px 14px;display:flex;flex-direction:column;gap:10px}
-.trend .tr-h{font-weight:900;font-size:16px}
 .tr-tiles{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:8px}
 .tr-tile{background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:8px 10px;display:flex;flex-direction:column;gap:2px}
 .tr-tile small{font-size:12px;color:var(--muted);font-weight:700}
@@ -175,7 +173,6 @@ details.hist summary{cursor:pointer;font-weight:700;color:var(--muted);font-size
 .tr-tile i{font-style:normal;font-size:12px;font-weight:700;color:var(--muted)}
 .tr-tile i.up{color:var(--ok)}
 .tr-tile i.down{color:var(--ng)}
-.trend ul{margin:0;padding-left:1.2em;font-size:14px;line-height:1.7}
 .tr-sub{font-size:13px;font-weight:900;color:var(--muted)}
 .tr-chips{display:flex;flex-wrap:wrap;gap:6px}
 .tr-chips span{background:var(--ng-soft);color:var(--ink);border-radius:999px;padding:2px 10px;font-size:14px;font-weight:700;font-variant-numeric:tabular-nums}
@@ -2113,7 +2110,7 @@ span.stkw > svg{position:absolute;left:0;top:0;width:100%;height:100%;display:bl
       body.innerHTML = note + `<div class="empty">20問ごとに、正解数とミスの傾向がここに残ります。</div>`;
       return;
     }
-    body.innerHTML = note + trendHTML() + history.map(h=>`
+    body.innerHTML = note + history.map(h=>`
       <div class="hist-item">
         <div class="h num">${h.at}　${h.lv?`【${h.lv}】`:""}${h.ok}/${h.total||20}問正解　<span style="font-weight:500;color:var(--muted)">${h.clock ? `とけい・平均 ${h.avg}` : h.total===25 ? `タイム ${h.avg}` : `たし算 ${h.add}・ひき算 ${h.sub}・平均 ${h.avg}`}</span></div>
         <ul>${h.findings.map(x=>`<li>${x}</li>`).join("")}</ul>
@@ -2135,8 +2132,9 @@ span.stkw > svg{position:absolute;left:0;top:0;width:100%;height:100%;display:bl
     });
   }
 
-  /* ---------- これまでの けいこう（おうちの方へ） ----------
-     1かいごとの けっかを かずで のこして、さいしょの ころと さいきんを くらべる */
+  /* ---------- 1かいごとの けっかの きろく ----------
+     20もん・ます1まい ごとの けっかを かずで のこす（stats.sess）。
+     がめんの「これまでの傾向」は やめて、「学習のようす」（グラフ）に まとめた（2026-10-12） */
   function logSession(e){
     if(!stats.sess) stats.sess = [];
     stats.sess.push({d:todayKey(), ...e});
@@ -2164,79 +2162,7 @@ span.stkw > svg{position:absolute;left:0;top:0;width:100%;height:100%;display:bl
     });
     stats.sess = out;
   }
-  const pct = (a,b) => b ? Math.round(a/b*100) : 0;
-  const sum2 = (xs, f) => xs.reduce((acc,x)=>{ const v=f(x)||[0,0]; return [acc[0]+v[0], acc[1]+v[1]]; }, [0,0]);
   const factText = g => `${g.a} ${opText(g.op)} ${g.b}`;
-  function trendHTML(){
-    backfillSessions();
-    const S = stats.sess || [];
-    const D = S.filter(x=>x.k==="drill"), Gs = S.filter(x=>x.k==="grid");
-    if(D.length + Gs.length < 2) return "";
-    const tiles = [], f = [];
-
-    // いろいろ もんだい：さいしょの ころ（3かい）と さいきん（3かい）
-    if(D.length>=2){
-      const k = Math.min(3, Math.floor(D.length/2)), early = D.slice(0,k), late = D.slice(-k);
-      const accE = pct(...sum2(early, x=>[x.ok,x.n])), accL = pct(...sum2(late, x=>[x.ok,x.n]));
-      const msOf = xs => { const v = xs.filter(x=>x.ms); return v.length ? v.reduce((a,x)=>a+x.ms,0)/v.length : 0; };
-      const msE = msOf(early), msL = msOf(late);
-      tiles.push(`<div class="tr-tile"><small>正答率</small><b>${accE}% → ${accL}%</b><i class="${accL>accE?"up":accL<accE?"down":""}">${accL===accE?"変わらず":(accL>accE?"+":"")+(accL-accE)+"ポイント"}</i></div>`);
-      if(msE && msL) tiles.push(`<div class="tr-tile"><small>1問の平均時間</small><b>${(msE/1000).toFixed(1)}秒 → ${(msL/1000).toFixed(1)}秒</b><i class="${msL<msE*0.95?"up":msL>msE*1.05?"down":""}">${msL<msE*0.95?"速くなった":msL>msE*1.05?"ゆっくり":"変わらず"}</i></div>`);
-      if(accL-accE>=5) f.push(`いろいろもんだいの正答率が、はじめの${k}回（${accE}%）から最近の${k}回（${accL}%）へ上がっています。`);
-      else if(accE-accL>=10) f.push(`最近の正答率（${accL}%）が、はじめの頃（${accE}%）より下がっています。むずかしさを上げた直後や、新しいパターンが増えた影響のこともあります。`);
-      if(msE && msL && msL < msE*0.85) f.push(`1問あたりの時間が${(msE/1000).toFixed(1)}秒から${(msL/1000).toFixed(1)}秒に短くなり、考えずに答えられる計算が増えてきています。`);
-      // たし算・ひき算
-      const aE=sum2(early,x=>x.add), aL=sum2(late,x=>x.add), sE=sum2(early,x=>x.sub), sL=sum2(late,x=>x.sub);
-      if(sE[1]>=3 && sL[1]>=3 && pct(...sL)-pct(...sE)>=10) f.push(`ひき算の正答率が${pct(...sE)}%から${pct(...sL)}%に伸びています。`);
-      if(aE[1]>=3 && aL[1]>=3 && pct(...aL)-pct(...aE)>=10) f.push(`たし算の正答率が${pct(...aE)}%から${pct(...aL)}%に伸びています。`);
-      // パターン別（かずで のこした かいだけ）
-      const withTy = D.filter(x=>x.ty);
-      if(withTy.length>=2){
-        const recent = withTy.slice(-5), agg = {};
-        recent.forEach(x=>Object.entries(x.ty).forEach(([t,[o,n]])=>{ const a=agg[t]||(agg[t]=[0,0]); a[0]+=o; a[1]+=n; }));
-        const weak = Object.entries(agg).filter(([t,[o,n]])=>n>=3 && o/n<0.8).sort((x,y)=>x[1][0]/x[1][1]-y[1][0]/y[1][1])[0];
-        const strong = Object.entries(agg).filter(([t,[o,n]])=>n>=4 && o===n).map(([t])=>TYPES[t] ? TYPES[t].name : t);
-        if(weak && TYPES[weak[0]]) f.push(`最近5回のパターン別では、${TYPES[weak[0]].name}がまだ不安定です（${weak[1][1]}問中${weak[1][0]}問正解）。`);
-        if(strong.length) f.push(`最近ミスがないパターン：${strong.slice(0,4).join("、")}。`);
-      }
-      // むずかしさの へんか
-      const lvRankOf = l => ({easy:0, normal:1, hard:2, super:3})[l];
-      const lvE = early.map(x=>x.lv).filter(Boolean)[0], lvL = late.map(x=>x.lv).filter(Boolean).pop();
-      if(lvE && lvL && lvRankOf(lvL) > lvRankOf(lvE)) f.push(`むずかしさは「${LEVELS[lvE].label}」から「${LEVELS[lvL].label}」に上がっています。`);
-    }
-
-    // ます けいさん：はじめの タイムと さいこう タイム
-    Object.keys(GKINDS).forEach(gk=>{
-      const xs = Gs.filter(x=>x.gk===gk && x.ok===x.n && x.t);
-      if(xs.length>=2){
-        const first = xs[0].t, best = Math.min(...xs.map(x=>x.t));
-        if(best < first) f.push(`ます計算（${GKINDS[gk].label}）の全問正解タイムが、はじめの${fmtT(first)}から最高${fmtT(best)}に縮まっています（${xs.length}回）。`);
-      }
-    });
-
-    // れんしゅう した 日
-    const dayKeys = Object.keys(stats.days||{}).filter(k=>(stats.days[k].n||0)>0);
-    if(dayKeys.length){
-      const wk = new Date(); wk.setDate(wk.getDate()-6); const wkKey = dayKey(wk);
-      const w = dayKeys.filter(k=>k>=wkKey).length;
-      tiles.push(`<div class="tr-tile"><small>練習した日</small><b>${dayKeys.length}日</b><i>この1週間で${w}日</i></div>`);
-    }
-
-    // すらすら ずかん：できるように なった けいさん と まだ にがて
-    const zk = [...ZK_ADD.flat(), ...ZK_SUB.flat()];
-    const lv1 = masterCount(zk,1), lv2 = masterCount(zk,2), lv3 = masterCount(zk,3);
-    tiles.push(`<div class="tr-tile"><small>すらすら（ぴかぴか・きらきら）</small><b>${lv1} / ${ZK_TOTAL}</b><i>ぴかぴか${lv2}・きらきら${lv3}</i></div>`);
-    const facts = Object.values(stats.facts||{}).filter(e=>e && e.f && !e.f.three && !e.f.x);
-    const overcame = facts.filter(e=>(e.miss||0)>0 && (e.score||0)===0 && e.master).sort((x,y)=>(y.miss||0)-(x.miss||0)).slice(0,8).map(e=>factText(e.f));
-    const weakNow = facts.filter(e=>(e.score||0)>=1).sort((x,y)=>y.score-x.score).slice(0,8).map(e=>factText(e.f));
-
-    let h = `<div class="trend"><div class="tr-h">これまでの傾向</div><div class="tr-tiles">${tiles.join("")}</div>`;
-    if(f.length) h += `<ul>${f.map(x=>`<li>${x}</li>`).join("")}</ul>`;
-    if(overcame.length) h += `<div class="tr-sub">前は間違えていたけれど、今はすらすら解ける計算</div><div class="tr-chips ok">${overcame.map(x=>`<span>${x}</span>`).join("")}</div>`;
-    if(weakNow.length) h += `<div class="tr-sub">いま苦手として多めに出している計算</div><div class="tr-chips">${weakNow.map(x=>`<span>${x}</span>`).join("")}</div>`;
-    h += `<div class="tr-note">はじめの頃と最近を比べています（各最大3回分）。回数が少ないうちは目安です。</div></div>`;
-    return h;
-  }
 
 
   /* ---------- ます けいさん ---------- */
@@ -3443,6 +3369,10 @@ span.stkw > svg{position:absolute;left:0;top:0;width:100%;height:100%;display:bl
     const better = Object.keys(A1).filter(k=>fOf(k) && (A1[k][1]>0 || A1[k][2]>0) && A2[k] && A2[k][0]>=1 && A2[k][1]===0 && A2[k][2]===0);
     const still = Object.keys(A2).filter(k=>fOf(k) && A2[k][1]>0 && A1[k] && A1[k][1]>0);
     const fresh = Object.keys(A2).filter(k=>fOf(k) && A2[k][1]>0 && A1[k] && A1[k][0]>=2 && A1[k][1]===0);
+    // きかんに かんけい なく、いままで ぜんたいで みた もの（アプリが いま にがてと みて いる けいさん など）
+    const allF = Object.values(stats.facts||{}).filter(e=>e && e.f && !e.f.three && !e.f.x);
+    const weakNow = allF.filter(e=>(e.score||0)>=1).sort((x,y)=>y.score-x.score).map(e=>e.f);
+    const overcame = allF.filter(e=>(e.miss||0)>0 && (e.score||0)===0 && e.master).sort((x,y)=>(y.miss||0)-(x.miss||0)).map(e=>e.f);
     const chips = (list, cls, note) => `<div class="pg-chips ${cls}">${list.slice(0,12).map(k=>`<span>${txt(k)}${note ? `<small>${note(k)}</small>` : ""}</span>`).join("")}${list.length>12 ? `<span>ほか${list.length-12}こ</span>` : ""}</div>`;
     const fchips = (list, cls) => `<div class="pg-chips ${cls}">${list.slice(0,12).map(f=>`<span>${factText(f)}</span>`).join("")}${list.length>12 ? `<span>ほか${list.length-12}こ</span>` : ""}</div>`;
     const tip = id => pgTip[id]!=null && pgTip[id] < B.length
@@ -3487,6 +3417,9 @@ span.stkw > svg{position:absolute;left:0;top:0;width:100%;height:100%;display:bl
             ${fresh.length ? `<div class="tr-sub">後半にミスが出た計算（前半はミスなし）</div>${chips(fresh, "ng")}` : ""}`
             : `<p>前半と後半の両方で解いた計算が少ないため、まだ変化は出ていません。期間を長くするか、記録がたまると表示されます。</p>`}`
           : `<p>この期間の、計算ごとの記録はまだありません。</p>`}
+        <h5 style="margin-top:6px">いまの状態（期間に関係なく、これまで全体）</h5>
+        <div class="tr-sub">いま苦手として多めに出している計算：${weakNow.length}こ</div>${weakNow.length ? fchips(weakNow, "ng") : `<p>いま、多めに出している計算はありません。</p>`}
+        ${overcame.length ? `<div class="tr-sub">前は間違えていたけれど、今はすらすら解ける計算：${overcame.length}こ</div>${fchips(overcame, "ok")}` : ""}
         <p>10までのたし算・ひき算（90こ）が対象です。式・文章題・ます計算など、どの形で解いても数えます。計算ごとの記録は${flFirst ? pgMD(flFirst) : "きょう"}から残しています（${FL_KEEP}日分）。「すらすら」などになった日は、はじめから記録があります。</p></div>`;
     box.querySelectorAll("[data-pg]").forEach(b=>b.addEventListener("click",()=>{
       const v = b.dataset.pg;
