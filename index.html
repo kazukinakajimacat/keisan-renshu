@@ -120,6 +120,7 @@ body{
   border:0;border-radius:999px;padding:12px 44px;cursor:pointer;box-shadow:0 5px 0 color-mix(in srgb,var(--blue) 60%,#000);
 }
 .next:active{transform:translateY(3px);box-shadow:0 2px 0 color-mix(in srgb,var(--blue) 60%,#000)}
+.next:disabled{opacity:.55;cursor:default;transform:none}
 .next:focus-visible{outline:4px solid var(--yellow);outline-offset:3px}
 
 /* summary overlay */
@@ -1885,6 +1886,7 @@ span.stkw > svg{position:absolute;left:0;top:0;width:100%;height:100%;display:bl
     const ms = performance.now()-shownAt;
     const ok = p.check ? p.check(n) : n===p.ans;   // しきを つくろう は せいかいが 2とおり ある
     const slow = ok && ms > slowLimit(p.type);
+    calmNote(ok, ms, {timeout});
     if(p.order) markOrder(p, n);
     else if(p.make) markMake(ok);
     else [...chEl.children].forEach(b=>{
@@ -1943,7 +1945,40 @@ span.stkw > svg{position:absolute;left:0;top:0;width:100%;height:100%;display:bl
     }
   }
 
+  /* ---------- いったん おちつこう（あてずっぽうで かず だけ ふやさない ように） ----------
+     ・5もん つづけて まちがえた とき
+     ・1びょう より はやく こたえるのが 3もん つづいた とき（せいかい でも まちがい でも）
+     いろいろ もんだい・とけい で かぞえる。ます けいさん は はやさを きそう れんしゅう なので、まちがい だけ かぞえる。
+     じかんぎれ は かぞえない。おしらせ の あとと コースを かえた ときは 0から かぞえなおす。
+     おしらせは すぐ とじられない ように、5びょう まってから ボタンが おせる */
+  const CALM_MISS = 5, CALM_FAST = 3, CALM_FAST_MS = 1000, CALM_WAIT = 5;
+  let calmMiss = 0, calmFast = 0, calmPending = null;
+  function calmReset(){ calmMiss = 0; calmFast = 0; calmPending = null; }
+  function calmNote(ok, ms, opt={}){
+    if(opt.timeout) return;
+    calmMiss = ok ? 0 : calmMiss + 1;
+    if(!opt.noFast) calmFast = ms < CALM_FAST_MS ? calmFast + 1 : 0;
+    if(calmMiss >= CALM_MISS) calmPending = "miss";
+    else if(!opt.noFast && calmFast >= CALM_FAST) calmPending = "fast";
+  }
+  // つぎに すすむ まえに よぶ。おしらせを だした ときは true を かえし、とじたら next() を よぶ
+  function calmGate(next){
+    if(!calmPending) return false;
+    const kind = calmPending; calmReset();
+    const msg = kind==="miss"
+      ? {title:"いったん おちつこう", text:"5もん つづけて まちがえちゃったね。<br>しんこきゅう して、もんだいを よく よんでから こたえよう"}
+      : {title:"ゆっくりで だいじょうぶ", text:"こたえるのが はやすぎるよ。<br>もんだいを よく よんでから こたえよう"};
+    nkModal({pic:`<img class="nk-mimg pop" src="chars/mii_normal.webp" alt="" draggable="false">`, title:msg.title, text:msg.text,
+      buttons:[{label:"わかった", onClick:()=>{ setTimeout(next, 0); }}]});
+    const b = $("nkMBtns").firstChild; let left = CALM_WAIT;
+    const show = () => { b.textContent = left > 0 ? `わかった（${left}）` : "わかった"; b.disabled = left > 0; };
+    show();
+    const t = setInterval(()=>{ left--; show(); if(left <= 0){ clearInterval(t); b.focus({preventScroll:true}); } }, 1000);
+    return true;
+  }
+
   function afterAnswer(){
+    if(calmGate(afterAnswer)) return;
     if(round.length>=ROUND) showSummary();
     else { nextProblem(); if(pendingSticker) showStickerBanner(); }
   }
@@ -2271,6 +2306,7 @@ span.stkw > svg{position:absolute;left:0;top:0;width:100%;height:100%;display:bl
     if(cell.ok){ const ts=typeStat("grid").times; ts.push(cell.ms); if(ts.length>30) ts.shift(); }
     const nm = updateFact({type:"grid", f:{a:cell.a, op:cell.op, b:cell.b, ans:cell.ans}}, cell.ok, slow, cell.ms);
     onAnswered(cell.ok);
+    calmNote(cell.ok, cell.ms, {noFast:true});
     G.idx++;
     if(cell.ok){
       if(Math.random()<0.25){ setPets("happy","happy"); const w=pick(["cat","dog"]); say(w, mcOn() ? mcLine("correct") : pick(LINES.ok[w])); }
@@ -2282,6 +2318,13 @@ span.stkw > svg{position:absolute;left:0;top:0;width:100%;height:100%;display:bl
     if(nm) celebrateMaster(nm);
     renderGrid();
     if(G.idx>=G.cells.length) finishGrid();
+    else if(calmPending){
+      const p0 = performance.now(); setPadEnabled(false); clearInterval(G.timer);
+      calmGate(()=>{
+        const d = performance.now() - p0; G.start += d; G.cellAt += d;   // おしらせ を みて いた じかんは タイムに いれない
+        setPadEnabled(true); G.timer = setInterval(()=>{ $("gtime").textContent=fmtT(performance.now()-G.start); }, 250);
+      });
+    }
   }
 
   function finishGrid(){
@@ -3044,6 +3087,7 @@ span.stkw > svg{position:absolute;left:0;top:0;width:100%;height:100%;display:bl
   function ckAnswer(a){
     const p = ckCur; if(!p) return; ckCur = null;
     const ok = CM.same(a, p.ans), ms = performance.now() - ckShownAt;
+    calmNote(ok, ms);
     $("ckAns").querySelectorAll("button").forEach(b=>b.disabled = true);
     ckRound.push({type:p.type, ok, ms, q:p, a});
     onAnswered(ok); stickerStep();
@@ -3074,6 +3118,7 @@ span.stkw > svg{position:absolute;left:0;top:0;width:100%;height:100%;display:bl
   }
   function ckAfter(){
     clearTimeout(ckNextTimer);
+    if(calmGate(ckAfter)) return;
     if(ckRound.length >= CK_ROUND){ ckFinish(); return; }
     ckNext(); if(pendingSticker) showStickerBanner();
   }
@@ -3606,6 +3651,7 @@ span.stkw > svg{position:absolute;left:0;top:0;width:100%;height:100%;display:bl
   }
   function setMode(m){
     if(isCourse(m) && tlGate()) return;   // きょうの じかんを つかいきったら、もんだいには はいれない
+    if(m !== mode) calmReset();
     mode=m; try{ lsSet(MODE_KEY,m); }catch(e){}
     document.querySelectorAll(".md").forEach(b=>b.setAttribute("aria-pressed", b.dataset.md===m?"true":"false"));
     const g = m==="grid", z = m==="zukan", d = m==="drill", c = m==="clock", h = m==="home";
