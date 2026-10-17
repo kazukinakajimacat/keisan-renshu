@@ -5,10 +5,10 @@
 <link rel="icon" type="image/png" sizes="64x64" href="favicon.png?v=3">
 <link rel="apple-touch-icon" href="apple-touch-icon.png?v=3">
 <link rel="manifest" href="manifest.json">
-<script src="stickers/stickers.js?v=202610170016"></script>
-<script src="nakama/nakama.js?v=202610170016"></script>
-<script src="clock/clock.js?v=202610170016"></script>
-<script src="drill/patterns.js?v=202610170016"></script>
+<script src="stickers/stickers.js?v=202610171807"></script>
+<script src="nakama/nakama.js?v=202610171807"></script>
+<script src="clock/clock.js?v=202610171807"></script>
+<script src="drill/patterns.js?v=202610171807"></script>
 <meta name="apple-mobile-web-app-title" content="けいさん">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -374,6 +374,8 @@ button.oslot:disabled{cursor:default}
 /* なかま */
 .nkrow{display:flex;align-items:center;gap:12px;background:var(--surface);border:2px solid var(--line);border-radius:16px;padding:8px 12px}
 .nk-pic{flex:0 0 84px;height:100px;border:0;background:radial-gradient(circle at 50% 50%,color-mix(in srgb,var(--ok) 18%,transparent),transparent 70%);padding:0;cursor:pointer;display:flex;align-items:flex-end;justify-content:center;border-radius:12px}
+.nkrow.wait .nk-pic{cursor:default;background:none;align-items:center}
+.nkrow.wait .nk-pic::before{content:"";width:56px;height:70px;border:3px dashed var(--line);border-radius:50% 50% 46% 46%/58% 58% 42% 42%}
 .nk-img{width:84px;height:100px;object-fit:contain;transform-origin:50% 100%;user-select:none;-webkit-user-select:none}
 .nk-img.idle{animation:nkIdle 2.8s ease-in-out infinite}
 .nk-img.egg{animation:nkWobble 3.2s ease-in-out infinite}
@@ -2678,8 +2680,10 @@ span.stkw > svg{position:absolute;left:0;top:0;width:100%;height:100%;display:bl
   const dkDiff = (a, b) => Math.round((dkDate(b)-dkDate(a))/86400000);   // b − a（にち）
   const dkMonthEndNext = k => { const d=dkDate(k); return dayKey(new Date(d.getFullYear(), d.getMonth()+1, 1)); };
   function nkData(){ return stats.nk || (stats.nk = {cur:null, dex:[], nextEgg:null, queue:[]}); }
-  // つきの とちゅうから はじまった たまごは、のこりの ひかずに あわせて ひつような ひかずを ちぢめる
+  // そだつ のに ひつような ひかず。2026-10-17 から の たまご（full）は ちぢめない。
+  // それより まえに とどいた たまごは、まえの きまり（つきの とちゅう から なら のこりの ひかずに あわせて ちぢめる）の まま
   function nkThresholds(cur){
+    if(cur.full) return [...NK_BASE];
     const d0=dkDate(cur.start), dim=new Date(d0.getFullYear(), d0.getMonth()+1, 0).getDate();
     const avail = dim - d0.getDate() + 1, f = Math.min(1, avail/(dim-7));
     let prev = 0;
@@ -2700,7 +2704,17 @@ span.stkw > svg{position:absolute;left:0;top:0;width:100%;height:100%;display:bl
     // まだ あつめて いない こ から さきに うまれる（ぜんぶ あつめたら また ぜんぶから）
     const got = nkCollected(), fresh = NK_LIST.filter(sp=>!got.has(sp.id));
     const sp = pick(fresh.length ? fresh : NK_LIST);
-    return {id:sp.id, start:T, days:[], name:"", born:false};
+    return {id:sp.id, start:T, days:[], name:"", born:false, full:true};
+  }
+  // その ひに たまごが とどいたら、つきの おわり までに おとな（NK_BASE[4] にち）に なれるか
+  const nkEggOk = k => { const d = dkDate(k), dim = new Date(d.getFullYear(), d.getMonth()+1, 0).getDate(); return dim - d.getDate() + 1 >= NK_BASE[4]; };
+  // つぎの たまごが いつ とどくか（ことば）
+  function nkNextEggText(){
+    const ne = (stats.nk || {}).nextEgg, T = todayKey();
+    const k = !ne ? dkAdd(T, 1) : nkEggOk(ne) ? ne : dkMonthEndNext(ne);
+    if(k === dkAdd(T, 1)) return "あした あたらしい たまごが とどくよ";
+    const [y,m,d] = k.split("-").map(Number);
+    return `つぎの たまごは ${m}がつ ${d}にちに とどくよ`;
   }
   function nkTick(){
     if(!NK_LIST.length) return;
@@ -2721,6 +2735,8 @@ span.stkw > svg{position:absolute;left:0;top:0;width:100%;height:100%;display:bl
     // 12しゅるい ぜんぶ あつめたら そだては おしまい（あたらしい たまごは こない）
     if(!nk.cur && mcUnlocked()){ nk.nextEgg = null; saveStats(); return; }
     if(!nk.cur && (!nk.nextEgg || nk.nextEgg <= T)){
+      // つきの おわり までに おとな に なれない ひ は とどけない（らいげつ 1にち に とどく）
+      if(!nkEggOk(T)){ nk.nextEgg = dkMonthEndNext(T); saveStats(); return; }
       nk.cur = nkNewEgg(T); nk.nextEgg = null;
       nk.queue.push({t:"egg"});
     }
@@ -2738,7 +2754,18 @@ span.stkw > svg{position:absolute;left:0;top:0;width:100%;height:100%;display:bl
   let nkCheerTimer = null;
   function renderNk(){
     const row = $("nkRow"), nk = stats.nk;
+    if(NK_LIST.length && nk && !nk.cur && nk.nextEgg && !mcUnlocked()){
+      // つぎの たまご まち（いえでの あと や、つきの おわりに ちかい とき）
+      const [y,m,d] = nk.nextEgg.split("-").map(Number);
+      row.hidden = false; row.classList.add("wait");
+      $("nkImg").hidden = true; $("nkStage").hidden = true; $("nkBar").parentElement.hidden = true;
+      $("nkName").textContent = "つぎの たまご";
+      $("nkNext").textContent = nk.nextEgg === dkAdd(todayKey(), 1) ? "あした とどくよ" : `${m}がつ ${d}にちに とどくよ`;
+      $("nkMood").textContent = "それまで めあてを クリアして まっててね"; $("nkMood").className = "nk-mood";
+      return;
+    }
     if(!NK_LIST.length || !nk || !nk.cur){ row.hidden = true; return; }
+    row.classList.remove("wait"); $("nkImg").hidden = false; $("nkStage").hidden = false; $("nkBar").parentElement.hidden = false;
     const c = nk.cur, sp = nkSp(c.id), st = nkStage(c), T = todayKey();
     const doneToday = c.days.includes(T), miss = doneToday ? 0 : nkMissed(c, T);
     const mood = doneToday ? "h" : miss>=2 ? "s" : "n";
@@ -2905,7 +2932,7 @@ span.stkw > svg{position:absolute;left:0;top:0;width:100%;height:100%;display:bl
     }else if(ev.t==="iede"){
       const e = ev.e, nm = e.stage===0 ? "たまご" : (e.name || nkSp(e.id).name);
       nkModal({pic:nkPicHTML(`nakama/${e.id}/letter.webp`, "pop", 3).replace("<img ", `<img onerror="this.onerror=null;this.src='nakama/letter.webp'" `), title:"おてがみが おいてあるよ…",
-        text:`「さみしくなって たびに でるね。また どこかで あおうね。」<br>${nm}は いえでしちゃった。<br>あした あたらしい たまごが とどくよ`,
+        text:`「さみしくなって たびに でるね。また どこかで あおうね。」<br>${nm}は いえでしちゃった。<br>${nkNextEggText()}`,
         buttons:[{label:"また あおうね"}]});
     }else setTimeout(nkShowQueue, 0);
   }
