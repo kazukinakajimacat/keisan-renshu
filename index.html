@@ -5,10 +5,10 @@
 <link rel="icon" type="image/png" sizes="64x64" href="favicon.png?v=3">
 <link rel="apple-touch-icon" href="apple-touch-icon.png?v=3">
 <link rel="manifest" href="manifest.json">
-<script src="stickers/stickers.js?v=202610171811"></script>
-<script src="nakama/nakama.js?v=202610171811"></script>
-<script src="clock/clock.js?v=202610171811"></script>
-<script src="drill/patterns.js?v=202610171811"></script>
+<script src="stickers/stickers.js?v=202610171818"></script>
+<script src="nakama/nakama.js?v=202610171818"></script>
+<script src="clock/clock.js?v=202610171818"></script>
+<script src="drill/patterns.js?v=202610171818"></script>
 <meta name="apple-mobile-web-app-title" content="けいさん">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -2684,14 +2684,25 @@ span.stkw > svg{position:absolute;left:0;top:0;width:100%;height:100%;display:bl
   function nkData(){ return stats.nk || (stats.nk = {cur:null, dex:[], nextEgg:null, queue:[]}); }
   // そだつ のに ひつような ひかず。2026-10-17 から の たまご（full）は ちぢめない。
   // それより まえに とどいた たまごは、まえの きまり（つきの とちゅう から なら のこりの ひかずに あわせて ちぢめる）の まま
-  function nkThresholds(cur){
-    if(cur.full) return [...NK_BASE];
+  function nkThresholds(cur, base=NK_BASE){
+    if(cur.full) return [...base];
     const d0=dkDate(cur.start), dim=new Date(d0.getFullYear(), d0.getMonth()+1, 0).getDate();
     const avail = dim - d0.getDate() + 1, f = Math.min(1, avail/(dim-7));
     let prev = 0;
-    return NK_BASE.map((t,i)=>{ if(!i) return 0; const v = Math.max(prev+1, Math.round(t*f)); prev = v; return v; });
+    return base.map((t,i)=>{ if(!i) return 0; const v = Math.max(prev+1, Math.round(t*f)); prev = v; return v; });
   }
-  function nkStage(cur){ const th=nkThresholds(cur), n=cur.days.length; let s=0; th.forEach((t,i)=>{ if(n>=t) s=i; }); return s; }
+  const nkRawStage = (cur, base) => { const th=nkThresholds(cur, base), n=cur.days.length; let s=0; th.forEach((t,i)=>{ if(n>=t) s=i; }); return s; };
+  // だんかい。cap が ある ときは、つぎに めあてを クリアする まで それより うえに しない（かってに おおきく ならない ように）
+  function nkStage(cur){ const s = nkRawStage(cur); return cur.cap != null ? Math.min(cur.cap, s) : s; }
+  // 2026-10-17 18:11 に そだつ ひかずを へらした（まえは 0,2,6,11,17,23）。そのまえ から いる こ は、
+  // まえの きまりで いた だんかい で いったん とめて、つぎに クリアした ひ に あたらしい だんかい まで あげる
+  const NK_BASE_OLD = [0, 2, 6, 11, 17, 23];
+  function nkCapInit(c){
+    if(!c || c.capInit) return;
+    c.capInit = true;
+    const old = nkRawStage(c, NK_BASE_OLD);
+    if(nkRawStage(c) > old) c.cap = old;
+  }
   // さいごに めあてを クリアした ひ から、なんにち やすんで いるか（つきの おわりまでで かぞえる）
   function nkMissed(cur, today){
     const last = cur.days.length ? cur.days[cur.days.length-1] : dkAdd(cur.start, -1);
@@ -2721,6 +2732,7 @@ span.stkw > svg{position:absolute;left:0;top:0;width:100%;height:100%;display:bl
   function nkTick(){
     if(!NK_LIST.length) return;
     const nk = nkData(), T = todayKey();
+    nkCapInit(nk.cur);
     if(nk.cur && nkMissed(nk.cur, T) >= 3){
       const c = nk.cur, e = {id:c.id, name:c.name, stage:nkStage(c), month:c.start.slice(0,7), result:"iede", at:T};
       nk.dex.push(e); nk.cur = null;
@@ -2739,7 +2751,7 @@ span.stkw > svg{position:absolute;left:0;top:0;width:100%;height:100%;display:bl
     if(!nk.cur && (!nk.nextEgg || nk.nextEgg <= T)){
       // つきの おわり までに おとな に なれない ひ は とどけない（らいげつ 1にち に とどく）
       if(!nkEggOk(T)){ nk.nextEgg = dkMonthEndNext(T); saveStats(); return; }
-      nk.cur = nkNewEgg(T); nk.nextEgg = null;
+      nk.cur = nkNewEgg(T); nk.cur.capInit = true; nk.nextEgg = null;
       nk.queue.push({t:"egg"});
     }
     saveStats();
@@ -2747,7 +2759,7 @@ span.stkw > svg{position:absolute;left:0;top:0;width:100%;height:100%;display:bl
   function nkGoalDay(){
     const nk = nkData(); nkTick(); const c = nk.cur, T = todayKey();
     if(!c || c.days.includes(T)) return;
-    const before = nkStage(c); c.days.push(T); const after = nkStage(c);
+    const before = nkStage(c); c.days.push(T); delete c.cap; const after = nkStage(c);
     if(after > before) nk.queue.push({t: before===0 ? "hatch" : "grow", stage:after});
     saveStats(); renderNk();
     setTimeout(nkShowQueue, 2200);
@@ -2784,8 +2796,10 @@ span.stkw > svg{position:absolute;left:0;top:0;width:100%;height:100%;display:bl
     $("nkStage").textContent = nkLabel(sp, st);
     if(st < 5){
       const left = th[st+1] - n;
-      $("nkNext").textContent = st===0 ? `うまれるまで あと ${left}にち` : `${nkLabel(sp, st+1)}まで あと ${left}にち`;
-      $("nkBar").style.width = Math.round((n - th[st]) / (th[st+1] - th[st]) * 100) + "%";
+      $("nkNext").textContent = left <= 0
+        ? (st===0 ? "つぎに めあてを クリアすると うまれるよ！" : `つぎに めあてを クリアすると ${nkLabel(sp, st+1)}に なるよ！`)
+        : st===0 ? `うまれるまで あと ${left}にち` : `${nkLabel(sp, st+1)}まで あと ${left}にち`;
+      $("nkBar").style.width = Math.min(100, Math.round((n - th[st]) / (th[st+1] - th[st]) * 100)) + "%";
     }else{ $("nkNext").textContent = "さいごまで そだったよ！"; $("nkBar").style.width = "100%"; }
     $("nkMood").textContent = doneToday ? "きょうも あえて うれしいな"
       : miss===1 ? "さみしいな…"
