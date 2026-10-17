@@ -129,9 +129,11 @@
     let t = null;
     this.sc.addEventListener("scroll", () => { this.mark(); clearTimeout(t); t = setTimeout(() => this.settle(), 110); }, { passive: true });
     this.items.forEach(it => it.addEventListener("click", () => this.scrollToIndex(+it.dataset.i, true)));
+    // ↑↓：キーボードは すぐ うごかす（なめらかに うごかすと、つづけて おした とき に とちゅうで もどされる ことが ある）
     this.sc.addEventListener("keydown", e => {
-      if(e.key === "ArrowUp"){ e.preventDefault(); this.scrollToIndex(this.idx - 1, true); }
-      if(e.key === "ArrowDown"){ e.preventDefault(); this.scrollToIndex(this.idx + 1, true); }
+      if(e.key !== "ArrowUp" && e.key !== "ArrowDown") return;
+      e.preventDefault();
+      this.scrollToIndex(this.idx + (e.key === "ArrowUp" ? -1 : 1), false);
     });
   }
   Wheel.prototype.centerIndex = function(){ return Math.round(this.sc.scrollTop / this.itemH); };

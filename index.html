@@ -90,6 +90,7 @@ body{
 .choice.right{background:var(--ok-soft);border-color:var(--ok);color:var(--ok)}
 .choice.wrong{background:var(--ng-soft);border-color:var(--ng);color:var(--ng)}
 .choice.dim{opacity:.45}
+.choice.kb-wait{border-color:var(--blue);background:var(--frame)}
 
 /* まちがえた ときの ポップアップ（したから でる） */
 .miss-pop{position:fixed;left:0;right:0;bottom:0;z-index:9;display:flex;justify-content:center;padding:12px 12px calc(env(safe-area-inset-bottom,0px) + 14px);background:linear-gradient(to top,color-mix(in srgb,var(--bg) 85%,transparent),transparent);pointer-events:none}
@@ -448,6 +449,7 @@ img,svg{-webkit-touch-callout:none;-webkit-user-select:none;user-select:none;-we
 .wh{position:relative;width:96px;height:calc(var(--wh,46px)*3 + 6px);border:3px solid var(--blue);border-radius:18px;background:var(--surface);overflow:hidden}
 .wh-scroll{height:100%;overflow-y:scroll;scroll-snap-type:y mandatory;scrollbar-width:none;-webkit-overflow-scrolling:touch;overscroll-behavior:contain}
 .wh-scroll::-webkit-scrollbar{display:none}
+.wh-scroll:focus-visible{outline:3px solid var(--blue);outline-offset:-3px;border-radius:12px}
 .wh-pad{height:var(--wh,46px)}
 .wh-item{height:var(--wh,46px);display:flex;align-items:center;justify-content:center;scroll-snap-align:center;font-size:24px;font-weight:900;color:var(--blue);opacity:.7;cursor:pointer;user-select:none;-webkit-user-select:none;font-variant-numeric:tabular-nums;transition:opacity .1s,font-size .1s}
 .wh-item.on{opacity:1;font-size:34px;color:var(--ink)}
@@ -3036,6 +3038,7 @@ span.stkw > svg{position:absolute;left:0;top:0;width:100%;height:100%;display:bl
   const CK_ROUND = 10, CK_KEY = "sansu-drill-clocklv-v1";
   let ckLevel = "easy"; try{ const l = localStorage.getItem(CK_KEY); if(CK_LEVELS[l]) ckLevel = l; }catch(e){}
   let ckRound = [], ckCur = null, ckRecent = [], ckSel = {h:null, m:null}, ckLive = null, ckShownAt = 0, ckNextTimer = null;
+  let kbWheelI = 0;   // キーボードで うごかす とけいの ドラム：0＝じ、1＝ふん
   const CM = window.ClockMath, fmtCk = t => CM.fmt(t.h, t.m);
   const CK_LINES = {
     read:{cat:"みじかい はりが「じ」、ながい はりが「ふん」だにゃ", dog:"みじかい はりから みてみよう わん"},
@@ -3082,7 +3085,7 @@ span.stkw > svg{position:absolute;left:0;top:0;width:100%;height:100%;display:bl
     clearTimeout(ckNextTimer);
     $("ckPop").hidden = true; $("ckFb").innerHTML = ""; $("ckResult").hidden = true;
     $("clockMain").querySelector(".ck-card").hidden = false;
-    const p = ckCur = ckMake(); ckSel = {h:null, m:null}; ckLive = null;
+    const p = ckCur = ckMake(); ckSel = {h:null, m:null}; ckLive = null; kbWheelI = 0;
     $("ckTag").textContent = p.type==="fwd" ? `${p.d}ぷん あと` : p.type==="back" ? `${p.d}ぷん まえ` : CK_TYPES[p.type].label;
     const box = $("ckBox"), q = $("ckQ"), ans = $("ckAns");
     if(p.type==="set"){
@@ -3808,6 +3811,98 @@ span.stkw > svg{position:absolute;left:0;top:0;width:100%;height:100%;display:bl
     setSaveState("local");
     try{ if(navigator.storage && navigator.storage.persist) await navigator.storage.persist(); }catch(e){}
   }
+
+  /* ---------- キーボード（パソコン） ----------
+     ・すうじキー：その かずの ボタンを おす。10 は「1」→「0」と つづけて おす（「0」だけ でも 10）
+       「1」を おした ときは、10 が ある もんだい だけ 0.6びょう まって「0」が くるか みる
+     ・すうじ いがいの ボタン（えもじ・しき）：1・2・3… で まえから じゅんばんに えらぶ。＋かな？−かな？ は ＋・−、あってる？ は O・X でも よい
+     ・ならべかえ・しきを つくろう：すうじキーで カードを えらぶ。Backspace で ひとつ もどす
+     ・とけい：↑↓ で じ、←→ で ふん（ドラムは ←→ で じ と ふん を きりかえ、↑↓ で うごかす）
+     ・Enter：つぎへ・こたえる・スタート・もういちど
+     もじを いれる らん（なまえ・おうちの方の かくにん）では つかわない。おしらせ が でて いる ときは、ボタンに Enter */
+  let kbOne = null;   // 「1」を おした あと「0」を まって いる あいだ
+  const kbOn = el => !!el && !el.disabled && el.getClientRects().length > 0;
+  const kbBtn = id => { const b = $(id); return kbOn(b) ? b : null; };
+  function kbWaitEnd(){ if(!kbOne) return null; clearTimeout(kbOne.t); kbOne.b.classList.remove("kb-wait"); const one = kbOne; kbOne = null; return one; }
+  // find(v)：その かずの ボタン（なければ null）
+  function kbDigit(d, find){
+    const one = kbWaitEnd();
+    if(one){ if(d === 0){ const b = find(10); if(b) b.click(); return; } one.b.click(); }
+    if(d === 1 && find(10) && find(1)){
+      const b = find(1); b.classList.add("kb-wait");
+      kbOne = {b, t:setTimeout(()=>{ kbWaitEnd(); if(kbOn(b)) b.click(); }, 600)};
+      return;
+    }
+    const b = find(d === 0 ? 10 : d); if(b) b.click();
+  }
+  document.addEventListener("keydown", e=>{
+    if(e.ctrlKey || e.metaKey || e.altKey) return;
+    const t = e.target, k = e.key;
+    if(t && (t.tagName === "INPUT" || t.tagName === "TEXTAREA" || t.isContentEditable)) return;
+    if(!$("nkModal").hidden || !$("mcModal").hidden || !$("overlay").hidden) return;
+    if(k === "Enter"){
+      if(t && t.tagName === "BUTTON") return;   // フォーカス して いる ボタンは ブラウザが おす
+      const b = kbBtn("nextBtn") || kbBtn("ckPopNext")
+        || (mode === "grid" ? (kbBtn("gstart") || kbBtn("gagain")) : null)
+        || (mode === "clock" ? (kbBtn("ckGo") || kbBtn("ckAgain")) : null);
+      if(b){ e.preventDefault(); b.click(); }
+      return;
+    }
+    const d = /^[0-9]$/.test(k) ? +k : null;
+    if(d !== null && e.repeat) return;   // おしっぱなし では こたえない
+    // いろいろ もんだい
+    if(mode === "drill" && current && !kbOn($("nextBtn"))){
+      const p = current;
+      if(p.order || p.make){
+        if(k === "Backspace"){
+          e.preventDefault();
+          if(p.order){ const u = chEl.querySelector(".oundo"); if(kbOn(u)) u.click(); }
+          else { const f = [...chEl.querySelectorAll(".oslot.fill")].pop(); if(f) f.click(); }
+          return;
+        }
+        if(d !== null) kbDigit(d, v => [...chEl.querySelectorAll(".otiles button")].find(b => kbOn(b) && b.textContent === String(v)) || null);
+        return;
+      }
+      if(p.choices){
+        const bs = [...chEl.querySelectorAll("button")].filter(kbOn);
+        const sym = {"+":"＋", "-":"−", "o":"○", "O":"○", "x":"×", "X":"×"}[k];
+        if(sym){ const b = bs.find(x => x.textContent === sym); if(b){ e.preventDefault(); b.click(); } return; }
+        if(d === null) return;
+        const numeric = bs.length && bs.every(b => /^\d+$/.test(b.textContent));
+        kbDigit(d, v => numeric ? (bs.find(b => b.textContent === String(v)) || null) : (bs[v-1] || null));
+        return;
+      }
+      if(d !== null) kbDigit(d, v => kbBtn("c" + v));
+      return;
+    }
+    // ます けいさん
+    if(mode === "grid" && G && G.running){
+      if(d !== null) kbDigit(d, v => kbBtn("g" + v));
+      return;
+    }
+    // とけい
+    if(mode === "clock" && ckCur && kbOn($("ckGo")) && /^Arrow/.test(k)){
+      if(ckLive){   // とけいを あわせよう：↑↓ で じ、←→ で ふん
+        const ctl = {ArrowUp:"h+", ArrowDown:"h-", ArrowRight:"m+", ArrowLeft:"m-"}[k];
+        const b = ctl && $("ckAns").querySelector(`[data-ctl="${ctl}"]`);
+        if(b){ e.preventDefault(); b.click(); }
+        return;
+      }
+      const ws = [...$("ckAns").querySelectorAll(".wh-scroll")];
+      if(!ws.length) return;
+      if(k === "ArrowLeft" || k === "ArrowRight"){
+        e.preventDefault();
+        kbWheelI = Math.max(0, Math.min(ws.length-1, kbWheelI + (k === "ArrowRight" ? 1 : -1)));
+        ws[kbWheelI].focus({preventScroll:true});
+        return;
+      }
+      if(ws.includes(t)) return;   // ドラムに フォーカス して いる ときは ドラムが うごかす
+      e.preventDefault();
+      kbWheelI = Math.min(kbWheelI, ws.length-1);
+      ws[kbWheelI].focus({preventScroll:true});
+      ws[kbWheelI].dispatchEvent(new KeyboardEvent("keydown", {key:k}));
+    }
+  });
 
   backfillSessions();   // まえの きろくを かずに して ひきつぐ（1かい だけ）
   nkTick(); renderNk(); msCheck(); setTimeout(nkShowQueue, 900);
