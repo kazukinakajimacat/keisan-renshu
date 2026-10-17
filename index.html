@@ -5,10 +5,10 @@
 <link rel="icon" type="image/png" sizes="64x64" href="favicon.png?v=3">
 <link rel="apple-touch-icon" href="apple-touch-icon.png?v=3">
 <link rel="manifest" href="manifest.json">
-<script src="stickers/stickers.js?v=202610171807"></script>
-<script src="nakama/nakama.js?v=202610171807"></script>
-<script src="clock/clock.js?v=202610171807"></script>
-<script src="drill/patterns.js?v=202610171807"></script>
+<script src="stickers/stickers.js?v=202610171811"></script>
+<script src="nakama/nakama.js?v=202610171811"></script>
+<script src="clock/clock.js?v=202610171811"></script>
+<script src="drill/patterns.js?v=202610171811"></script>
 <meta name="apple-mobile-web-app-title" content="けいさん">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -2668,7 +2668,9 @@ span.stkw > svg{position:absolute;left:0;top:0;width:100%;height:100%;display:bl
      つきが かわると たびだって、なかま ずかんに のる。きろくは この たんまつ だけ。 */
   const NK_LIST = window.NAKAMA || [];
   const NK_STAGES = ["egg","baby","child","young","adult","elder"];
-  const NK_BASE = [0, 2, 6, 11, 17, 23];          // 1かげつ まるごとの とき、その だんかいに なる ひかず
+  // その だんかいに なる のに ひつような、めあてを クリアした ひの かず（ごうけい）。
+  // いる きかん：たまご2・あかちゃん3・こども4・わかもの4・おとな10・おとしより（たびだつ まで）。2026-10-17 に かえた（まえは 0,2,6,11,17,23）
+  const NK_BASE = [0, 2, 5, 9, 13, 23];
   const nkLabel = (sp, i) => ["たまご","あかちゃん","こども", (sp&&sp.young)||"わかもの","おとな","おとしより"][i];
   const nkSp = id => NK_LIST.find(x=>x.id===id) || NK_LIST[0];
   // ちいさい だんかいは すこし おおきく みせる（そだって いる かんじは のこす）
