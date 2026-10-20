@@ -75,6 +75,19 @@ body{
 .q{font-size:clamp(56px,17vw,88px);font-weight:900;line-height:1.1;letter-spacing:.02em;white-space:nowrap}
 .q .op{color:var(--muted);font-weight:700;margin:0 .12em}
 .q .blank{display:inline-block;min-width:1.1em;border-bottom:6px solid var(--yellow);color:var(--muted)}
+.idk-row{display:flex;justify-content:center}
+.idk-btn{font:inherit;font-size:15px;font-weight:700;color:var(--muted);background:none;border:2px dashed var(--line);border-radius:999px;padding:5px 16px;cursor:pointer;touch-action:manipulation}
+.idk-btn:disabled{visibility:hidden}
+body.course .idk-btn{font-size:14px;padding:3px 14px}
+.msg.idk{color:var(--blue)}
+.miss-card.idk{border-color:var(--blue)}
+.sets{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.set-btn{font:inherit;display:flex;flex-direction:column;align-items:center;gap:2px;background:var(--surface);border:2px solid var(--line);border-radius:16px;padding:10px 6px;cursor:pointer;color:var(--ink)}
+.set-btn b{font-size:15px;font-weight:900;text-align:center;line-height:1.35}
+.set-btn b i{font-style:normal;display:inline-block}
+.set-btn span{font-size:13px;font-weight:700;color:var(--muted)}
+.set-btn:disabled{opacity:.45;cursor:default}
+body.drill-set #drillTop .levels,body.drill-set #superNote,body.drill-set #drillTop .round-label,body.drill-set #track{display:none!important}
 .again{display:inline-block;margin-bottom:8px;font-size:14px;font-weight:700;color:var(--blue);background:var(--frame);border-radius:999px;padding:2px 12px}
 
 .choices{display:grid;grid-template-columns:repeat(5,1fr);gap:10px}
@@ -834,6 +847,10 @@ span.stkw > svg{position:absolute;left:0;top:0;width:100%;height:100%;display:bl
       <button class="md tile" data-md="clock" id="md-clock"><span class="ti ti-clock" id="tileClock"></span><b>とけい</b></button>
       <button class="md tile" data-md="zukan" id="md-zukan"><span class="ti ti-zukan">★</span><b>ずかん</b></button>
     </div>
+    <div class="sets" id="setRow" hidden>
+      <button type="button" class="set-btn" id="setIdk"><b><i>わからなかった</i> <i>もんだい</i></b><span id="setIdkN"></span></button>
+      <button type="button" class="set-btn" id="setWeak"><b><i>にがて</i> <i>もんだい</i></b><span id="setWeakN"></span></button>
+    </div>
   <details class="hist" id="hist">
     <summary>おうちの方へ：これまでの記録</summary>
     <div class="pg-box" id="pgBox"></div>
@@ -850,6 +867,7 @@ span.stkw > svg{position:absolute;left:0;top:0;width:100%;height:100%;display:bl
 
   <div class="timer" id="timer" hidden aria-hidden="true"><i></i></div>
   <div class="choices" id="choices"></div>
+  <div class="idk-row"><button type="button" class="idk-btn" id="idkBtn">？ わからない</button></div>
 
   <div class="fb" id="fb" aria-live="polite"></div>
   <div class="miss-pop" id="missPop" hidden></div>
@@ -1779,7 +1797,11 @@ span.stkw > svg{position:absolute;left:0;top:0;width:100%;height:100%;display:bl
     qIndex++;
     const dueIdx = reviewQueue.findIndex(r=>r.due<=qIndex);
     let p;
-    if(missRun>=2 && !LEVELS[level].hardFacts){ p = easyWin(); p.retry = null; missRun = 0; reviewQueue.forEach(r=>{ if(r.due<=qIndex) r.due = qIndex+2; }); }
+    if(drillSet){
+      if(drillSet.i >= drillSet.list.length){ current = null; $("idkBtn").disabled = true; finishSet(); return; }
+      p = drillSet.list[drillSet.i++]; p.retry = null;
+    }
+    else if(missRun>=2 && !LEVELS[level].hardFacts){ p = easyWin(); p.retry = null; missRun = 0; reviewQueue.forEach(r=>{ if(r.due<=qIndex) r.due = qIndex+2; }); }
     else if(dueIdx>=0){ const r=reviewQueue.splice(dueIdx,1)[0]; p = {...r.p, retry:r.kind}; }
     else { p = makeProblem(); p.retry = null; }
     current = p; lastKey = fKey(p.f);
@@ -1787,8 +1809,10 @@ span.stkw > svg{position:absolute;left:0;top:0;width:100%;height:100%;display:bl
 
     $("ptag").textContent = TYPES[p.type].label;
     const ag=$("againTag");
-    ag.hidden = !p.retry;
-    ag.textContent = p.retry==="miss" ? "もういちど ちょうせん" : "こんどは はやく とけるかな？";
+    ag.hidden = !p.retry && !drillSet;
+    ag.textContent = drillSet ? `${drillSet.kind==="idk" ? "わからなかった もんだい" : "にがて もんだい"} ${drillSet.i} / ${drillSet.n}`
+      : p.retry==="miss" ? "もういちど ちょうせん" : "こんどは はやく とけるかな？";
+    $("idkBtn").disabled = false;
     qEl.className = "q num " + (p.cls||"");
     qEl.innerHTML = p.html;
 
@@ -1890,6 +1914,11 @@ span.stkw > svg{position:absolute;left:0;top:0;width:100%;height:100%;display:bl
     const timeout = n===null;
     const ms = performance.now()-shownAt;
     const ok = p.check ? p.check(n) : n===p.ans;   // しきを つくろう は せいかいが 2とおり ある
+    $("idkBtn").disabled = true;
+    if(drillSet){
+      if(ok) drillSet.ok++;
+      if(ok && p.idkKey){ const L = idkList(), j = L.findIndex(x=>x.key===p.idkKey); if(j>=0){ L.splice(j,1); saveStats(); } }   // せいかい したら リスト から けす
+    }
     const slow = ok && ms > slowLimit(p.type);
     calmNote(ok, ms, {timeout});
     if(p.order) markOrder(p, n);
@@ -1984,9 +2013,99 @@ span.stkw > svg{position:absolute;left:0;top:0;width:100%;height:100%;display:bl
 
   function afterAnswer(){
     if(calmGate(afterAnswer)) return;
+    if(drillSet){ nextProblem(); if(pendingSticker) showStickerBanner(); return; }   // ちょうせん コーナーは 20もんの まとめ を ださない
     if(round.length>=ROUND) showSummary();
     else { nextProblem(); if(pendingSticker) showStickerBanner(); }
   }
+
+
+  /* ---------- わからない ボタン・わからなかった もんだい・にがて もんだい ----------
+     ・いろいろ もんだい の「わからない」：こたえを 図で みせて、あとで もういちど だす。せいかい にも まちがい にも かぞえない
+       （シール・めあて・20もん にも はいらない）。その もんだいは「わからなかった もんだい」に のこる
+     ・わからなかった もんだい：のこった もんだいに もういちど ちょうせん。せいかい したら リストから けす
+     ・にがて もんだい：これまでに 2かい いじょう といて、せいかいが 半分 より すくない けいさん（10までの たしざん・ひきざん・3つの かず）
+     どちらも 1かい 10もん まで。ふつうの もんだい と おなじく シール・めあて に かぞえる */
+  const IDK_MAX = 60, SET_N = 10;
+  let drillSet = null;   // {kind, list, i, ok, n}
+  const idkList = () => stats.idk || (stats.idk = []);
+  const PKEYS = ["type","f","ans","cls","html","parent","confuse","explain","frame","choices","order","make","time","done"];
+  const pSave = p => { const o = {}; PKEYS.forEach(k=>{ if(p[k] !== undefined) o[k] = p[k]; }); return JSON.parse(JSON.stringify(o)); };
+  // しまって おいた もんだい を もどす（しきを つくろう の はんていは かたち から つくりなおす）
+  const pLoad = o => {
+    const p = JSON.parse(JSON.stringify(o));
+    if(p.make){ const op = p.make.op; p.check = v => { const a = (String(v||"").match(/\d+/g)||[]).map(Number); return a.length===3 && (op==="+" ? a[0]+a[1]===a[2] : a[0]-a[1]===a[2]); }; }
+    return p;
+  };
+  const pKey = p => p.type + ":" + fKey(p.f);
+  function idkAdd(p){
+    const L = idkList(), k = pKey(p), e = L.find(x=>x.key===k);
+    if(e){ e.n++; e.at = todayKey(); }
+    else { L.push({key:k, p:pSave(p), n:1, at:todayKey()}); while(L.length > IDK_MAX) L.shift(); }
+    saveStats();
+  }
+  function weakList(){
+    return Object.entries(stats.facts||{}).filter(([k,e])=>e && e.f && !e.f.x && (e.seen||0) >= 2 && (e.seen - (e.miss||0)) / e.seen < 0.5)
+      .sort((a,b)=>(b[1].miss/b[1].seen) - (a[1].miss/a[1].seen)).map(([k,e])=>e.f);
+  }
+  function weakProblem(f){
+    if(f.three) return build("three", f);
+    const types = shuffle(["plain","missing","word","decomp","pic"]);
+    for(const t of types){ const p = build(t, f); if(p) return p; }
+    return build("plain", f);
+  }
+  function renderSets(){
+    const ni = idkList().length, nw = weakList().length;
+    $("setRow").hidden = !ni && !nw;
+    $("setIdkN").textContent = ni ? `${ni}もん` : "いまは ないよ"; $("setIdk").disabled = !ni;
+    $("setWeakN").textContent = nw ? `${nw}もん` : "いまは ないよ"; $("setWeak").disabled = !nw;
+  }
+  function startSet(kind){
+    const list = kind==="idk" ? shuffle(idkList()).slice(0, SET_N).map(e=>({...pLoad(e.p), idkKey:e.key}))
+      : shuffle(weakList()).slice(0, SET_N).map(weakProblem).filter(Boolean);
+    if(!list.length) return;
+    drillSet = {kind, list, i:0, ok:0, n:list.length};
+    round = []; reviewQueue = []; current = null;
+    document.body.classList.add("drill-set");
+    if(mode !== "drill") setMode("drill", true); else nextProblem();
+  }
+  function endSet(toHome){
+    if(!drillSet) return;
+    drillSet = null; round = []; current = null;
+    document.body.classList.remove("drill-set");
+    if(toHome) setMode("home");
+  }
+  function finishSet(){
+    const d = drillSet, left = d.kind==="idk" ? idkList().length : weakList().length;
+    const name = d.kind==="idk" ? "わからなかった もんだい" : "にがて もんだい";
+    nkModal({pic:`<img class="nk-mimg pop wide" src="${d.ok===d.n ? pickCheer() : "chars/acc/t70.webp"}" alt="" draggable="false">`,
+      title:"ちょうせん おわり！",
+      text:`${d.n}もん ちゅう ${d.ok}もん せいかい！<br>` + (left ? `${name}は あと ${left}もん` : `${name}は ぜんぶ なくなったよ！`),
+      buttons:[{label:"ホームに もどる", onClick:()=>{ setTimeout(()=>endSet(true), 0); }}]});
+  }
+  $("setIdk").addEventListener("click", ()=>startSet("idk"));
+  $("setWeak").addEventListener("click", ()=>startSet("weak"));
+  // わからない
+  $("idkBtn").addEventListener("click", ()=>{
+    const p = current; if(!p || mode!=="drill") return;
+    stopTimer(); $("timer").classList.add("off"); current = null;
+    $("idkBtn").disabled = true;
+    idkAdd(p);
+    if(!drillSet) reviewQueue.push({p:{...p, retry:undefined}, kind:"miss", due:qIndex+REVIEW_GAP});
+    if(!p.order && !p.make) [...chEl.children].forEach(b=>{ b.disabled = true; if(b.dataset.v===String(p.ans)) b.classList.add("right"); else b.classList.add("dim"); });
+    else chEl.querySelectorAll("button").forEach(b=>{ b.disabled = true; });
+    const pop = $("missPop");
+    pop.innerHTML = `<div class="miss-card idk" role="dialog" aria-modal="true" aria-labelledby="missTitle">
+        <div class="msg idk" id="missTitle">いっしょに みてみよう</div>
+        <div class="explain"><div class="say">${p.explain}</div>${p.f.x ? (p.frame||"") : (p.frame||frameHTML(p.f.a,p.f.op,p.f.b))}</div>
+      </div>`;
+    const nb = document.createElement("button"); nb.className = "next"; nb.textContent = "つぎへ"; nb.id = "nextBtn";
+    nb.addEventListener("click", ()=>{ pop.hidden = true; pop.innerHTML = ""; nextProblem(); if(pendingSticker) showStickerBanner(); });
+    pop.firstElementChild.appendChild(nb);
+    pop.hidden = false;
+    const w = pick(["cat","dog"]);
+    say(w, w==="cat" ? "わからない って いえて えらいにゃ。いっしょに みよう" : "だいじょうぶ わん！ あとで もういちど でるよ");
+    nb.focus({preventScroll:true});
+  });
 
   // ひごとの あそんだ じかん（びょう）。かくのは「あそぶ じかん と きゅうけい」の ところ
   const TLOG_KEY = "sansu-drill-timelog-v1";
@@ -3737,7 +3856,7 @@ span.stkw > svg{position:absolute;left:0;top:0;width:100%;height:100%;display:bl
   let mode = "home";
   try{ const m=localStorage.getItem(MODE_KEY); /* さいしょは いつも ホームから */ }catch(e){}
   function renderHome(){
-    renderGoal(); renderStickerRow(); renderNk(); renderHistory(); tlRefresh(); renderPg();
+    renderGoal(); renderStickerRow(); renderNk(); renderHistory(); tlRefresh(); renderPg(); renderSets();
     if(!$("tileClock").firstChild) $("tileClock").innerHTML = clockSVG(3, 0, {size:52});
     setPets(null,null);
     const w = pick(["cat","dog"]), t = (stats.days[todayKey()]||{});
@@ -3746,8 +3865,9 @@ span.stkw > svg{position:absolute;left:0;top:0;width:100%;height:100%;display:bl
     say(w, mcOn() ? mcLine("greeting") : t.done ? (w==="cat" ? "きょうの めあては クリアずみ だにゃ！" : "きょうも よく がんばったね わん")
       : (w==="cat" ? "きょうは なにを するかにゃ？" : "どれで あそぶ？ わん"));
   }
-  function setMode(m){
+  function setMode(m, keepSet){
     if(isCourse(m) && tlGate()) return;   // きょうの じかんを つかいきったら、もんだいには はいれない
+    if(drillSet && !keepSet && m !== mode) endSet(false);
     if(m !== mode) calmReset();
     mode=m; try{ lsSet(MODE_KEY,m); }catch(e){}
     document.querySelectorAll(".md").forEach(b=>b.setAttribute("aria-pressed", b.dataset.md===m?"true":"false"));
