@@ -2068,7 +2068,7 @@ span.stkw > svg{position:absolute;left:0;top:0;width:100%;height:100%;display:bl
       text:`「${t}」は 3かい つづけて せいかい！<br>にがて もんだい から そつぎょう だよ`,
       buttons:[{label:"やったー！"}]});
   }
-  let drillSet = null;   // {kind, list, i, ok, n}
+  let drillSet = null, setLv0 = null;   // {kind, list, i, ok, n}
   const idkList = () => stats.idk || (stats.idk = []);
   const PKEYS = ["type","f","ans","cls","html","parent","confuse","explain","frame","choices","order","make","time","done"];
   const pSave = p => { const o = {}; PKEYS.forEach(k=>{ if(p[k] !== undefined) o[k] = p[k]; }); return JSON.parse(JSON.stringify(o)); };
@@ -2101,18 +2101,23 @@ span.stkw > svg{position:absolute;left:0;top:0;width:100%;height:100%;display:bl
     $("setIdkN").textContent = ni ? `${ni}もん` : "いまは ないよ"; $("setIdk").disabled = !ni;
     $("setWeakN").textContent = nw ? `${nw}もん` : "いまは ないよ"; $("setWeak").disabled = !nw;
   }
+  // ちょうせん コーナー は えらんで いた むずかしさ に かかわらず「ふつう」で だす（じかんせいげん なし・ゆっくり とける）。
+  // level は おぼえて おく ところ（localStorage）は かえず、おわったら もとに もどす
+  const SET_LV = "normal";
   function startSet(kind){
+    setLv0 = level;
+    level = SET_LV; stopTimer(); $("timer").hidden = true;
     const list = kind==="idk" ? shuffle(idkList()).slice(0, SET_N).map(e=>({...pLoad(e.p), idkKey:e.key}))
       : shuffle(weakList()).slice(0, SET_N).map(weakProblem).filter(Boolean);
-    if(!list.length) return;
-    drillSet = {kind, list, i:0, ok:0, n:list.length};
+    if(!list.length){ level = setLv0; return; }
+    drillSet = {kind, list, i:0, ok:0, n:list.length, lv0:setLv0};
     round = []; reviewQueue = []; current = null;
     document.body.classList.add("drill-set");
     if(mode !== "drill") setMode("drill", true); else nextProblem();
   }
   function endSet(toHome){
     if(!drillSet) return;
-    drillSet = null; round = []; current = null;
+    level = drillSet.lv0; drillSet = null; round = []; current = null;
     document.body.classList.remove("drill-set");
     if(toHome) setMode("home");
   }
@@ -3956,7 +3961,7 @@ span.stkw > svg{position:absolute;left:0;top:0;width:100%;height:100%;display:bl
   function setMode(m, keepSet){
     if(isCourse(m) && tlGate()) return;   // きょうの じかんを つかいきったら、もんだいには はいれない
     if(drillSet && !keepSet && m !== mode) endSet(false);
-    if(m !== mode) calmReset();
+    if(m !== mode){ calmReset(); const mp = $("missPop"); mp.hidden = true; mp.innerHTML = ""; }
     mode=m; try{ lsSet(MODE_KEY,m); }catch(e){}
     document.querySelectorAll(".md").forEach(b=>b.setAttribute("aria-pressed", b.dataset.md===m?"true":"false"));
     const g = m==="grid", z = m==="zukan", d = m==="drill", c = m==="clock", h = m==="home";
