@@ -1810,7 +1810,7 @@ span.stkw > svg{position:absolute;left:0;top:0;width:100%;height:100%;display:bl
     $("ptag").textContent = TYPES[p.type].label;
     const ag=$("againTag");
     ag.hidden = !p.retry && !drillSet;
-    ag.textContent = drillSet ? `${drillSet.kind==="idk" ? "わからなかった もんだい" : "にがて もんだい"} ${drillSet.i} / ${drillSet.n}・せいかいで 2ばい`
+    ag.textContent = drillSet ? `${drillSet.kind==="idk" ? "わからなかった もんだい" : "にがて もんだい"} ${drillSet.i} / ${drillSet.n}`
       : p.retry==="miss" ? "もういちど ちょうせん" : "こんどは はやく とけるかな？";
     $("idkBtn").disabled = false;
     qEl.className = "q num " + (p.cls||"");
@@ -1939,11 +1939,7 @@ span.stkw > svg{position:absolute;left:0;top:0;width:100%;height:100%;display:bl
     if(!ok){ errType = timeout ? "timeout" : (typeof n==="number" && typeof p.ans==="number" && Math.abs(n-p.ans)===1) ? "off1" : (p.confuse.includes(n) ? "confuse" : "other"); }
     if(ok){ const ts=typeStat(p.type).times; ts.push(ms); if(ts.length>30) ts.shift(); }
     const nm = updateFact(p, ok, slow, ms);
-    // ちょうせん コーナー：せいかい は 2ばい（めあて・シール・せいかいの かず）、まちがい は かぞえない
-    const w = drillSet ? (ok ? 2 : 0) : 1;
-    if(w){ onAnswered(ok, w); stickerAdd(w); }
-    else { const t = stats.days[todayKey()] || (stats.days[todayKey()] = {n:0, done:false}); t.cw = (t.cw||0) + 1; saveStats(); }   // おうちの方へ の きろく には いれる
-    recordAcc(ok);
+    onAnswered(ok); recordAcc(ok); stickerStep();
     round.push({type:p.type, parent:p.parent, op:p.f.three?"mix":p.f.op, ans:p.ans, chosen:n, ok, ms, slow,
                 errType, retry:p.retry, focus:!!p.focus, adj:p.adj||null, tags:factTags(p.f)});
     current = null;
@@ -1955,7 +1951,7 @@ span.stkw > svg{position:absolute;left:0;top:0;width:100%;height:100%;display:bl
 
     if(ok){
       streak++;
-      fbEl.innerHTML = `<div class="msg ok pop">せいかい！${drillSet ? " 2ばい！" : ""}</div>`;
+      fbEl.innerHTML = `<div class="msg ok pop">せいかい！</div>`;
       renderTrack();
       if(streak%5===0) setPets("wow","wow"); else setPets("happy","happy");
       nkCheer();
@@ -2744,26 +2740,20 @@ span.stkw > svg{position:absolute;left:0;top:0;width:100%;height:100%;display:bl
     const T = todayKey(), y = dkAdd(T, -1), d = (stats.days||{})[y];
     if(stats.accSeen === T) return;
     stats.accSeen = T; saveStats();
-    if(dayN(d) > 0) nkData().queue.push({t:"acc", when:"yday", ok:dayOk(d), n:dayN(d)});
+    if(d && d.n > 0) nkData().queue.push({t:"acc", when:"yday", ok:d.ok||0, n:d.n});
   }
 
-  // w：なんもん ぶんに かぞえるか（ちょうせん コーナーの せいかい は 2）。ふえた ぶん は t.bonus に のこす
-  // めあて・とくべつ シール（せいかいの かず）は bonus こみ。グラフ・せいかいの わりあい は ほんとうに といた かず（dayN・dayOk）
-  // cw：ちょうせん コーナーで まちがえた かず（めあて・シール には かぞえないが、ほんとうに といた かず には いれる）
-  const dayN = d => (d && d.n || 0) - (d && d.bonus || 0) + (d && d.cw || 0), dayOk = d => (d && d.ok || 0) - (d && d.bonus || 0);
-  function onAnswered(ok, w=1){
+  function onAnswered(ok){
     const k = todayKey();
     const t = stats.days[k] || (stats.days[k] = {n:0, done:false});
     // この しくみ を いれる まえ から かぞえて いた ひ は、いま から くぎりを かぞえる（さいしょの くぎりは 50もん より すくない）
-    if(t.bN === undefined){ t.bN = dayN(t); t.bOk = dayOk(t); }
-    t.n += w; t.ok = (t.ok||0) + (ok ? w : 0);
-    if(w > 1) t.bonus = (t.bonus||0) + (w - 1);
+    if(t.bN === undefined){ t.bN = t.n; t.bOk = t.ok || 0; }
+    t.n++; t.ok = (t.ok||0) + (ok?1:0);
     if(ok) msCheck();
     // 50もん ごと：その くぎりの けっか で ひとこと（ます けいさん の とちゅう なら おわって から でる）
-    const rn = dayN(t), rok = dayOk(t);
-    if(rn - t.bN >= ACC_BLOCK){
-      const bn = rn - t.bN, bok = rok - t.bOk; t.bN = rn; t.bOk = rok;
-      nkData().queue.push({t:"acc", when:"today", ok:bok, n:bn, total:rn}); setTimeout(nkShowQueue, 1500);
+    if(t.n % ACC_BLOCK === 0){
+      const bn = t.n - t.bN, bok = t.ok - t.bOk; t.bN = t.n; t.bOk = t.ok;
+      if(bn > 0){ nkData().queue.push({t:"acc", when:"today", ok:bok, n:bn, total:t.n}); setTimeout(nkShowQueue, 1500); }
     }
     let goal = false;
     if(!t.done && t.n>=GOAL){ t.done = true; goal = true; }
@@ -3606,7 +3596,7 @@ span.stkw > svg{position:absolute;left:0;top:0;width:100%;height:100%;display:bl
     return out;
   }
   const pgSum = (keys, f) => keys.reduce((a,k)=>a + (f(k)||0), 0);
-  const pgN = k => dayN(stats.days[k]), pgOk = k => dayOk(stats.days[k]), pgSec = k => tlog[k];
+  const pgN = k => (stats.days[k]||{}).n, pgOk = k => (stats.days[k]||{}).ok, pgSec = k => tlog[k];
   const pgNice = v => [5,10,20,30,40,60,80,100,150,200,300,400,600,800,1000,1500,2000,3000,5000].find(x=>x>=v) || Math.ceil(v/1000)*1000;
   // vals：かず（ない ところは null）。o：{id, color, line, max, unit}
   function pgChart(B, vals, o){
