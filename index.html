@@ -2055,7 +2055,7 @@ span.stkw > svg{position:absolute;left:0;top:0;width:100%;height:100%;display:bl
   }
   function renderSets(){
     const ni = idkList().length, nw = weakList().length;
-    $("setRow").hidden = !ni && !nw;
+    $("setRow").hidden = false;   // 0もん でも ボタンは だして おく（あることが わかる ように）
     $("setIdkN").textContent = ni ? `${ni}もん` : "いまは ないよ"; $("setIdk").disabled = !ni;
     $("setWeakN").textContent = nw ? `${nw}もん` : "いまは ないよ"; $("setWeak").disabled = !nw;
   }
