@@ -216,6 +216,23 @@ details.hist summary{cursor:pointer;font-weight:700;color:var(--muted);font-size
 .pg-chips.ok span{background:var(--ok-soft)}
 .pg-chips.ng span{background:var(--ng-soft)}
 .pg-chips small{color:var(--muted);font-weight:700;margin-left:.3em}
+.hc{display:flex;flex-direction:column;gap:8px}
+.hc-nav{display:flex;align-items:center;justify-content:space-between;gap:8px}
+.hc-nav b{font-size:16px;font-weight:900}
+.hc-nav button{font:inherit;font-size:16px;font-weight:900;color:var(--ink);background:var(--btn);border:2px solid var(--line);border-radius:999px;width:38px;height:34px;cursor:pointer}
+.hc-nav button:disabled{opacity:.3;cursor:default}
+.hc-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:4px}
+.hc-grid .wd{text-align:center;font-size:12px;font-weight:900;color:var(--muted)}
+.hc-grid .wd.sun{color:var(--ng)}
+.hc-grid .wd.sat{color:var(--blue)}
+.hc-day{font:inherit;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:1px;min-height:44px;padding:2px 0;border-radius:10px;border:2px solid transparent;background:none;color:var(--muted);font-size:14px;font-weight:700;font-variant-numeric:tabular-nums}
+.hc-day.has{background:var(--frame);border-color:var(--line);color:var(--ink);cursor:pointer}
+.hc-day.has i{font-style:normal;font-size:11px;font-weight:900;color:var(--blue)}
+.hc-day.today{box-shadow:inset 0 0 0 2px var(--yellow)}
+.hc-day[aria-pressed="true"]{border-color:var(--blue);background:var(--blue);color:#fff}
+.hc-day[aria-pressed="true"] i{color:#fff}
+.hc-day:disabled{cursor:default}
+.hc-title{font-weight:900;font-size:15px;margin-top:4px}
 .hist-item{border-top:1px solid var(--line);padding-top:10px;display:flex;flex-direction:column;gap:6px}
 .hist-item .h{font-weight:900;font-size:15px}
 .hist-item ul{margin:0;padding-left:1.2em;font-size:14px}
@@ -1013,6 +1030,7 @@ span.stkw > svg{position:absolute;left:0;top:0;width:100%;height:100%;display:bl
   let recent = [];           // 最近出した計算（しばらく同じものを出さない）
   const RECENT_N = 10;
   let history = [];
+  const HIST_MAX = 400;   // おうちの方へ の きろく（20もん・ます1まい・とけい ごと）。カレンダーで さかのぼれる ように 多めに のこす
 
   try{ history = JSON.parse(localStorage.getItem(STORE) || "[]") || []; }catch(e){ history = []; }
 
@@ -2268,11 +2286,11 @@ span.stkw > svg{position:absolute;left:0;top:0;width:100%;height:100%;display:bl
     $("sWeak").innerHTML = s.weakTop.map(x=>`<li>${x}</li>`).join("");
 
     const d=new Date();
-    history.unshift({
+    history.unshift({d:dayKey(d),
       at:`${d.getMonth()+1}/${d.getDate()} ${d.getHours()}:${String(d.getMinutes()).padStart(2,"0")}`,
       lv:LEVELS[level].label, ok:s.ok, add:s.add, sub:s.sub, avg:s.avg, findings:s.findings
     });
-    history = history.slice(0,30);
+    history = history.slice(0,HIST_MAX);
     try{ lsSet(STORE, JSON.stringify(history)); }catch(e){}
     const ty = {};
     round.forEach(r=>{ const x = ty[r.type] || (ty[r.type]=[0,0]); x[1]++; if(r.ok) x[0]++; });
@@ -2293,6 +2311,14 @@ span.stkw > svg{position:absolute;left:0;top:0;width:100%;height:100%;display:bl
     window.scrollTo({top:0});
   });
 
+  // おうちの方へ の きろく は カレンダー で ひ を えらんで みる（えらんだ ひ・みている つき は この がめん の あいだ だけ おぼえる）
+  let histSel = null, histMon = null;
+  function histDay(h){
+    if(h.d) return h.d;
+    const m = String(h.at||"").match(/^(\d+)\/(\d+)/); if(!m) return null;
+    const now = new Date(); let y = now.getFullYear(); if(+m[1] > now.getMonth()+1) y--;
+    return `${y}-${String(m[1]).padStart(2,"0")}-${String(m[2]).padStart(2,"0")}`;
+  }
   function renderHistory(){
     const body=$("histBody");
     const note = `<div class="empty">間違えた問題と時間がかかった問題は、数問後にもう一度出すほか、次回以降も多めに出します。解くたびに早く正解できた問題は、出る回数が元に戻ります（この端末のブラウザにのみ保存）。</div>`;
@@ -2300,15 +2326,43 @@ span.stkw > svg{position:absolute;left:0;top:0;width:100%;height:100%;display:bl
       body.innerHTML = note + `<div class="empty">20問ごとに、正解数とミスの傾向がここに残ります。</div>`;
       return;
     }
-    body.innerHTML = note + history.map(h=>`
+    // ひ ごとに まとめる（まえの きろく は ひづけ が「10/20 21:39」だけ なので、年 を おぎなう）
+    const byDay = {};
+    history.forEach(h=>{ const k = histDay(h); if(k) (byDay[k] || (byDay[k] = [])).push(h); });
+    const days = Object.keys(byDay).sort();
+    if(!histSel || !byDay[histSel]) histSel = days[days.length-1];
+    if(!histMon) histMon = histSel.slice(0,7);
+    const first = days[0].slice(0,7), last = todayKey().slice(0,7) > days[days.length-1].slice(0,7) ? todayKey().slice(0,7) : days[days.length-1].slice(0,7);
+    if(histMon < first) histMon = first;
+    if(histMon > last) histMon = last;
+    const [y, m] = histMon.split("-").map(Number);
+    const start = new Date(y, m-1, 1).getDay(), dim = new Date(y, m, 0).getDate(), tk = todayKey();
+    let cells = "";
+    for(let i=0;i<start;i++) cells += `<span></span>`;
+    for(let dd=1; dd<=dim; dd++){
+      const k = `${histMon}-${String(dd).padStart(2,"0")}`, n = (byDay[k]||[]).length;
+      cells += `<button type="button" class="hc-day${n?" has":""}${k===tk?" today":""}" data-k="${k}"${n?` aria-pressed="${k===histSel}" aria-label="${m}月${dd}日 ${n}件"`:" disabled"}>${dd}${n?`<i>${n}件</i>`:""}</button>`;
+    }
+    const WD = ["日","月","火","水","木","金","土"];
+    const sel = byDay[histSel] || [], sd = histSel.split("-").map(Number), sw = WD[new Date(sd[0], sd[1]-1, sd[2]).getDay()];
+    body.innerHTML = note + `
+      <div class="hc">
+        <div class="hc-nav"><button type="button" id="hcPrev" aria-label="前の月"${histMon<=first?" disabled":""}>‹</button><b>${y}年${m}月</b><button type="button" id="hcNext" aria-label="次の月"${histMon>=last?" disabled":""}>›</button></div>
+        <div class="hc-grid">${WD.map((w,i)=>`<span class="wd${i===0?" sun":i===6?" sat":""}">${w}</span>`).join("")}${cells}</div>
+        <div class="hc-title">${sd[1]}月${sd[2]}日（${sw}）の記録　${sel.length}件</div>
+      </div>` + sel.map(h=>`
       <div class="hist-item">
         <div class="h num">${h.at}　${h.lv?`【${h.lv}】`:""}${h.ok}/${h.total||20}問正解　<span style="font-weight:500;color:var(--muted)">${h.clock ? `とけい・平均 ${h.avg}` : h.total===25 ? `タイム ${h.avg}` : `たし算 ${h.add}・ひき算 ${h.sub}・平均 ${h.avg}`}</span></div>
         <ul>${h.findings.map(x=>`<li>${x}</li>`).join("")}</ul>
       </div>`).join("") + `<button class="clear" id="clearBtn">記録と苦手データを消す</button>`;
+    const shift = dm => { const t = new Date(y, m-1+dm, 1); histMon = `${t.getFullYear()}-${String(t.getMonth()+1).padStart(2,"0")}`; renderHistory(); };
+    $("hcPrev").addEventListener("click", ()=>shift(-1));
+    $("hcNext").addEventListener("click", ()=>shift(1));
+    body.querySelectorAll(".hc-day.has").forEach(b=>b.addEventListener("click", ()=>{ histSel = b.dataset.k; renderHistory(); }));
     const cb=$("clearBtn"); let armed=false;
     cb.addEventListener("click",()=>{
       if(!armed){ armed=true; cb.classList.add("arm"); cb.textContent="もう一度押すと消えます"; return; }
-      history=[]; stats={facts:{}, types:{}};
+      history=[]; stats={facts:{}, types:{}}; histSel = histMon = null;
       stats.album={}; stats.days={};
       gbest={};   // ます けいさんの さいこう タイムも けす
       tlog = {}; try{ localStorage.removeItem(TLOG_KEY); }catch(e){}   // あそんだ じかんの グラフも けす（きょうの じかんの くぎりは のこす）
@@ -2519,9 +2573,9 @@ span.stkw > svg{position:absolute;left:0;top:0;width:100%;height:100%;display:bl
     $("gresult").hidden=false;
 
     const d=new Date();
-    history.unshift({at:`${d.getMonth()+1}/${d.getDate()} ${d.getHours()}:${String(d.getMinutes()).padStart(2,"0")}`,
+    history.unshift({d:dayKey(d), at:`${d.getMonth()+1}/${d.getDate()} ${d.getHours()}:${String(d.getMinutes()).padStart(2,"0")}`,
       lv:`ます・${GKINDS[gkind].label}`, ok:okN, total:25, add:"-", sub:"-", avg:fmtT(total), findings:f});
-    history=history.slice(0,30);
+    history=history.slice(0,HIST_MAX);
     try{ lsSet(STORE, JSON.stringify(history)); }catch(e){}
     logSession({k:"grid", gk:gkind, n:G.cells.length, ok:okN, t:Math.round(total), ms:Math.round(total/G.cells.length)});
     renderHistory();
@@ -3393,9 +3447,9 @@ span.stkw > svg{position:absolute;left:0;top:0;width:100%;height:100%;display:bl
     $("ckResult").hidden = false;
     setPets("happy","happy"); say("cat", mcOn() ? mcLine("finish") : "とけい もんだい おつかれさまにゃ！");
     const d=new Date(), avg = ckRound.reduce((a,r)=>a+r.ms,0)/ckRound.length;
-    history.unshift({at:`${d.getMonth()+1}/${d.getDate()} ${d.getHours()}:${String(d.getMinutes()).padStart(2,"0")}`,
+    history.unshift({d:dayKey(d), at:`${d.getMonth()+1}/${d.getDate()} ${d.getHours()}:${String(d.getMinutes()).padStart(2,"0")}`,
       lv:`とけい・${CK_LEVELS[ckLevel].label}`, ok:okN, total:CK_ROUND, clock:true, avg:sec(avg), findings:f});
-    history = history.slice(0,30); try{ lsSet(STORE, JSON.stringify(history)); }catch(e){}
+    history = history.slice(0,HIST_MAX); try{ lsSet(STORE, JSON.stringify(history)); }catch(e){}
     logSession({k:"clock", lv:ckLevel, n:CK_ROUND, ok:okN, ms:Math.round(avg)});
     renderHistory();
     if(pendingSticker) setTimeout(showStickerBanner, 600);
