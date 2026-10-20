@@ -2568,28 +2568,29 @@ span.stkw > svg{position:absolute;left:0;top:0;width:100%;height:100%;display:bl
     const r = n ? ok / n : 0, pct = Math.floor(r * 100);   // きりすて（69.5% を 70% と みせて わけかた と ずれない ように）
     const band = ok === n ? 0 : r >= 0.7 ? 1 : r >= 0.5 ? 2 : 3;
     const y = when === "yday";
-    const title = [
-      "すごい！！ つづけよう！",
-      y ? "よく がんばったね！" : "よく がんばってるね！",
-      y ? "きのうは おつかれさま" : "いい ちょうし！",
-      y ? "むずかしかったかな？" : "むずかしいかな？"
-    ][band];
-    const tail = [
-      "",
-      "",
-      y ? "きょうは せいかいを ふやして いこう" : "ここから せいかいを ふやして いこう",
-      "たくさん やるのも だいじだけど、<br>せいかいを めざして がんばろう"
-    ][band];
-    const head = y ? `きのうは ${n}もん といて、<br>${ok}もん せいかい（${pct}%）` : `きょう ${total}もん といたよ。<br>さいごの ${n}もんは ${ok}もん せいかい（${pct}%）`;
+    // ことば：[みだし, あとの ひとこと, ボタン]。まえの ひ（あさの あいさつ）と きょう の とちゅう で ぜんぶ べつ
+    const W = y ? [
+      ["きのうは ぜんぶ せいかい！", "すごい！ きょうも この ちょうしで いこう", "きょうも がんばる！"],
+      ["きのうも よく がんばったね！", "きょうも いっしょに がんばろう", "がんばる！"],
+      ["きのうは おつかれさま", "きょうは せいかいを ひとつでも ふやそう", "ふやすぞ！"],
+      ["きのうは むずかしかったかな？", "たくさん やるのも だいじだけど、<br>きょうは せいかいを めざそう", "めざす！"]
+    ] : [
+      ["ぜんぶ せいかい！ すごすぎる！", "この ちょうしで つづけよう！", "やったー！"],
+      ["その ちょうし！", "よく がんばってるね", "つづける！"],
+      ["あと すこし！", "ここから せいかいを ふやして いこう", "よし！"],
+      ["いそがなくて いいよ", "1もんずつ よく よんで こたえよう", "ゆっくり やる！"]
+    ];
+    const [title, tail, btn] = W[band];
+    const head = y ? `${n}もん といて、<br>${ok}もん せいかい（${pct}%）` : `きょう ${total}もん といたよ。<br>さいごの ${n}もんは ${ok}もん せいかい（${pct}%）`;
     // え：まえの ひ（あさの たいよう と ノート）と、きょう の とちゅう（はちまき と えんぴつ）で べつ
     const img = `chars/acc/${y ? "y" : "t"}${["100","70","50","0"][band]}.webp`;
-    return {band, title, text: head + (tail ? `<br>${tail}` : ""), img};
+    return {band, title, text: head + (tail ? `<br>${tail}` : ""), img, btn};
   }
   function accShow(ev){
     const m = accMsg(ev.ok, ev.n, ev.when, ev.total);
     nkModal({pic:`<img class="nk-mimg pop wide" src="${m.img}" alt="" draggable="false">`,
       title: m.title, text: m.text,
-      buttons:[{label: m.band <= 1 ? "やったー！" : "がんばる！"}]});
+      buttons:[{label: m.btn}]});
   }
   // その日 はじめて ひらいた とき：きのうの けっか を おしらせ に いれる
   function accYday(){
