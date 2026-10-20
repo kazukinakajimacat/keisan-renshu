@@ -2038,8 +2038,8 @@ span.stkw > svg{position:absolute;left:0;top:0;width:100%;height:100%;display:bl
   // にがて：weak が ある こ は それを つかう。まだ ない こ（まえの きろく）は「2かい いじょう といて せいかいが 半分 より すくない」
   const GRAD_RUN = 3;
   function weakNow(e){ return e.weak != null ? e.weak : ((e.seen||0) >= 2 && (e.seen - (e.miss||0)) / e.seen < 0.5); }
-  // そつぎょう の え（chars/grad/grad01〜）。え が とどく まで は 0 で、みー と ころ の よろこぶ え を つかう
-  const GRAD_N = 0, GRAD_KEY = "sansu-drill-grad-v1";
+  // そつぎょう の え（chars/grad/grad01〜10）から ランダム。0 に すると みー と ころ の よろこぶ え を つかう
+  const GRAD_N = 10, GRAD_KEY = "sansu-drill-grad-v1";
   function pickGrad(){
     if(!GRAD_N) return pickCheer();
     let last = -1; try{ last = +(localStorage.getItem(GRAD_KEY) ?? -1); }catch(e){}
