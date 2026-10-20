@@ -2098,10 +2098,18 @@ span.stkw > svg{position:absolute;left:0;top:0;width:100%;height:100%;display:bl
     document.body.classList.remove("drill-set");
     if(toHome) setMode("home");
   }
+  // ちょうせん おわり の え（chars/set/idk01〜03・weak01〜03）。コーナー ごとに ランダム、おなじ え は つづけて ださない
+  const SET_PIC_N = 3, SET_PIC_KEY = "sansu-drill-setpic-v1";
+  function pickSetPic(kind){
+    let last = {}; try{ last = JSON.parse(localStorage.getItem(SET_PIC_KEY) || "{}"); }catch(e){}
+    let i; do{ i = Math.floor(Math.random()*SET_PIC_N); }while(SET_PIC_N > 1 && i === last[kind]);
+    last[kind] = i; try{ localStorage.setItem(SET_PIC_KEY, JSON.stringify(last)); }catch(e){}
+    return `chars/set/${kind}${String(i+1).padStart(2,"0")}.webp`;
+  }
   function finishSet(){
     const d = drillSet, left = d.kind==="idk" ? idkList().length : weakList().length;
     const name = d.kind==="idk" ? "わからなかった もんだい" : "にがて もんだい";
-    nkModal({pic:`<img class="nk-mimg pop wide" src="${d.ok===d.n ? pickCheer() : "chars/acc/t70.webp"}" alt="" draggable="false">`,
+    nkModal({pic:`<img class="nk-mimg pop wide" src="${pickSetPic(d.kind)}" alt="" draggable="false">`,
       title:"ちょうせん おわり！",
       text:`${d.n}もん ちゅう ${d.ok}もん せいかい！<br>` + (left ? `${name}は あと ${left}もん` : `${name}は ぜんぶ なくなったよ！`),
       buttons:[{label:"ホームに もどる", onClick:()=>{ setTimeout(()=>endSet(true), 0); }}]});
