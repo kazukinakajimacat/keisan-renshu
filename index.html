@@ -2559,11 +2559,56 @@ span.stkw > svg{position:absolute;left:0;top:0;width:100%;height:100%;display:bl
     bn.scrollIntoView({behavior:"smooth", block:"center"});
   }
 
+  /* ---------- せいかいの わりあい で ひとこと ----------
+     ・きのうの けっか：その日 はじめて ひらいた ときに 1かい（きのう といて いない ときは ださない）
+     ・きょうの とちゅう：50もん とく ごとに、その 50もんの けっか で（いろいろ・ます・とけい ぜんぶ かぞえる）
+     わけかた：100%／70〜99%／50〜69%／49% いか */
+  const ACC_BLOCK = 50;
+  function accMsg(ok, n, when, total){
+    const r = n ? ok / n : 0, pct = Math.floor(r * 100);   // きりすて（69.5% を 70% と みせて わけかた と ずれない ように）
+    const band = ok === n ? 0 : r >= 0.7 ? 1 : r >= 0.5 ? 2 : 3;
+    const y = when === "yday";
+    const title = [
+      "すごい！！ つづけよう！",
+      y ? "よく がんばったね！" : "よく がんばってるね！",
+      y ? "きのうは おつかれさま" : "いい ちょうし！",
+      y ? "むずかしかったかな？" : "むずかしいかな？"
+    ][band];
+    const tail = [
+      "",
+      "",
+      y ? "きょうは せいかいを ふやして いこう" : "ここから せいかいを ふやして いこう",
+      "たくさん やるのも だいじだけど、<br>せいかいを めざして がんばろう"
+    ][band];
+    const head = y ? `きのうは ${n}もん といて、<br>${ok}もん せいかい（${pct}%）` : `きょう ${total}もん といたよ。<br>さいごの ${n}もんは ${ok}もん せいかい（${pct}%）`;
+    const img = band <= 1 ? pickCheer() : band === 2 ? "chars/koro_happy.webp" : "chars/mii_normal.webp";
+    return {band, title, text: head + (tail ? `<br>${tail}` : ""), img};
+  }
+  function accShow(ev){
+    const m = accMsg(ev.ok, ev.n, ev.when, ev.total);
+    nkModal({pic:`<img class="nk-mimg pop wide" src="${m.img}" alt="" draggable="false">`,
+      title: m.title, text: m.text,
+      buttons:[{label: m.band <= 1 ? "やったー！" : "がんばる！"}]});
+  }
+  // その日 はじめて ひらいた とき：きのうの けっか を おしらせ に いれる
+  function accYday(){
+    const T = todayKey(), y = dkAdd(T, -1), d = (stats.days||{})[y];
+    if(stats.accSeen === T) return;
+    stats.accSeen = T; saveStats();
+    if(d && d.n > 0) nkData().queue.push({t:"acc", when:"yday", ok:d.ok||0, n:d.n});
+  }
+
   function onAnswered(ok){
     const k = todayKey();
     const t = stats.days[k] || (stats.days[k] = {n:0, done:false});
     t.n++; t.ok = (t.ok||0) + (ok?1:0);
     if(ok) msCheck();
+    // 50もん ごと：その 50もんの けっか で ひとこと（ます けいさん の とちゅう なら おわって から でる）
+    if(t.n % ACC_BLOCK === 0){
+      const bok = t.ok - (t.bOk || 0); t.bOk = t.ok;
+      nkData().queue.push({t:"acc", when:"today", ok:bok, n:ACC_BLOCK, total:t.n});
+      setTimeout(nkShowQueue, 1500);
+    }
     let goal = false;
     if(!t.done && t.n>=GOAL){ t.done = true; goal = true; }
     saveStats();
@@ -2930,6 +2975,8 @@ span.stkw > svg{position:absolute;left:0;top:0;width:100%;height:100%;display:bl
       nkModal({pic:nkPicHTML(nkImgSrc(c.id, ev.stage, "h"), "evolve", ev.stage), title:`${nkDisplayName(c)}が ${nkLabel(sp, ev.stage)}に なったよ！`,
         text: ev.stage===5 ? "さいごまで そだったね。つきの おわりに たびだつよ" : "これからも いっしょに がんばろうね",
         buttons:[{label:"やったね！"}]});
+    }else if(ev.t==="acc"){
+      accShow(ev);
     }else if(ev.t==="ms"){
       // おやすみ ちゅう は みせない。もらった ことも とりけして、さいかい した ときに あらためて わたす
       if(MS_ON) msShow(ev.n); else { delete msData().got[ev.n]; saveStats(); setTimeout(nkShowQueue, 0); }
@@ -3905,7 +3952,7 @@ span.stkw > svg{position:absolute;left:0;top:0;width:100%;height:100%;display:bl
   });
 
   backfillSessions();   // まえの きろくを かずに して ひきつぐ（1かい だけ）
-  nkTick(); renderNk(); msCheck(); setTimeout(nkShowQueue, 900);
+  nkTick(); renderNk(); msCheck(); accYday(); setTimeout(nkShowQueue, 900);
   applyMc(); if(mcOn()){ setPets(null,null); say("cat", mcLine("greeting")); }
   setLevel(level, false);
   renderHistory();
