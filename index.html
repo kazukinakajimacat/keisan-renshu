@@ -81,6 +81,9 @@ body{
 body.course .idk-btn{font-size:14px;padding:3px 14px}
 .msg.idk{color:var(--blue)}
 .miss-card.idk{border-color:var(--blue)}
+/* わからない は がめんの まんなか に だす（まちがい は したの まま） */
+.miss-pop:has(.miss-card.idk){top:0;align-items:center;padding:16px 12px;background:color-mix(in srgb,var(--bg) 55%,transparent)}
+.miss-card.idk{box-shadow:0 10px 32px rgba(0,0,0,.3);animation:nkPop .3s ease-out}
 .sets{display:grid;grid-template-columns:1fr 1fr;gap:10px}
 .set-btn{font:inherit;display:flex;flex-direction:column;align-items:center;gap:2px;background:var(--surface);border:2px solid var(--line);border-radius:16px;padding:10px 6px;cursor:pointer;color:var(--ink)}
 .set-btn b{font-size:15px;font-weight:900;text-align:center;line-height:1.35}
@@ -113,7 +116,7 @@ body.drill-set #drillTop .levels,body.drill-set #superNote,body.drill-set #drill
 .miss-card .msg.ng{color:var(--ng)}
 .miss-card .explain{border:none;padding:0;background:none}
 @keyframes missUp{from{transform:translateY(40px);opacity:0}to{transform:none;opacity:1}}
-@media (prefers-reduced-motion:reduce){.miss-card{animation:none}}
+@media (prefers-reduced-motion:reduce){.miss-card,.miss-card.idk{animation:none}}
 /* feedback */
 .fb{min-height:64px;display:flex;flex-direction:column;align-items:center;gap:12px;text-align:center}
 .fb .msg{font-size:28px;font-weight:900}
