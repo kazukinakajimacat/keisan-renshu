@@ -5,10 +5,10 @@
 <link rel="icon" type="image/png" sizes="64x64" href="favicon.png?v=3">
 <link rel="apple-touch-icon" href="apple-touch-icon.png?v=3">
 <link rel="manifest" href="manifest.json">
-<script src="stickers/stickers.js?v=202610202134"></script>
-<script src="nakama/nakama.js?v=202610202134"></script>
-<script src="clock/clock.js?v=202610202134"></script>
-<script src="drill/patterns.js?v=202610202134"></script>
+<script src="stickers/stickers.js?v=202610202135"></script>
+<script src="nakama/nakama.js?v=202610202135"></script>
+<script src="clock/clock.js?v=202610202135"></script>
+<script src="drill/patterns.js?v=202610202135"></script>
 <meta name="apple-mobile-web-app-title" content="けいさん">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -2603,13 +2603,14 @@ span.stkw > svg{position:absolute;left:0;top:0;width:100%;height:100%;display:bl
   function onAnswered(ok){
     const k = todayKey();
     const t = stats.days[k] || (stats.days[k] = {n:0, done:false});
+    // この しくみ を いれる まえ から かぞえて いた ひ は、いま から くぎりを かぞえる（さいしょの くぎりは 50もん より すくない）
+    if(t.bN === undefined){ t.bN = t.n; t.bOk = t.ok || 0; }
     t.n++; t.ok = (t.ok||0) + (ok?1:0);
     if(ok) msCheck();
-    // 50もん ごと：その 50もんの けっか で ひとこと（ます けいさん の とちゅう なら おわって から でる）
+    // 50もん ごと：その くぎりの けっか で ひとこと（ます けいさん の とちゅう なら おわって から でる）
     if(t.n % ACC_BLOCK === 0){
-      const bok = t.ok - (t.bOk || 0); t.bOk = t.ok;
-      nkData().queue.push({t:"acc", when:"today", ok:bok, n:ACC_BLOCK, total:t.n});
-      setTimeout(nkShowQueue, 1500);
+      const bn = t.n - t.bN, bok = t.ok - t.bOk; t.bN = t.n; t.bOk = t.ok;
+      if(bn > 0){ nkData().queue.push({t:"acc", when:"today", ok:bok, n:bn, total:t.n}); setTimeout(nkShowQueue, 1500); }
     }
     let goal = false;
     if(!t.done && t.n>=GOAL){ t.done = true; goal = true; }
