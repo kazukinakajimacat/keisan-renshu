@@ -236,6 +236,14 @@ details.hist summary{cursor:pointer;font-weight:700;color:var(--muted);font-size
 .hc-day[aria-pressed="true"] i{color:#fff}
 .hc-day:disabled{cursor:default}
 .hc-title{font-weight:900;font-size:15px;margin-top:4px}
+.new{font-style:normal;color:var(--ng);font-weight:900;font-size:12px;margin-left:.5em}
+.hc-day .new{margin:0;font-size:10px;line-height:1.1}
+.hc-day[aria-pressed="true"] .new{background:#fff;border-radius:6px;padding:0 4px}
+.nw-cat{display:inline-block;font-size:12px;font-weight:900;border-radius:999px;padding:1px 9px;margin-right:.5em;background:var(--frame);border:1px solid var(--line);vertical-align:2px}
+.nw-cat.add{background:var(--ok-soft)}
+.nw-cat.fix{background:var(--ng-soft)}
+.nw-text{font-size:14px;line-height:1.6}
+.nw-text code,.hist-item li code{font-size:12px}
 .hist-item{border-top:1px solid var(--line);padding-top:10px;display:flex;flex-direction:column;gap:6px}
 .hist-item .h{font-weight:900;font-size:15px}
 .hist-item ul{margin:0;padding-left:1.2em;font-size:14px}
@@ -876,6 +884,10 @@ span.stkw > svg{position:absolute;left:0;top:0;width:100%;height:100%;display:bl
     <div class="pg-box" id="pgBox"></div>
     <div class="tl-box" id="tlBox"></div>
     <div class="hist-body" id="histBody"></div>
+  </details>
+  <details class="hist" id="news" hidden>
+    <summary>おうちの方へ：更新情報<em class="new" id="newsNew" hidden>New</em></summary>
+    <div class="hist-body" id="newsBody"></div>
   </details>
   </div>
 
@@ -2319,8 +2331,43 @@ span.stkw > svg{position:absolute;left:0;top:0;width:100%;height:100%;display:bl
     window.scrollTo({top:0});
   });
 
-  // おうちの方へ の きろく は カレンダー で ひ を えらんで みる（えらんだ ひ・みている つき は この がめん の あいだ だけ おぼえる）
-  let histSel = null, histMon = null;
+  /* ---------- カレンダー（これまでの記録・更新情報 で つかう） ----------
+     st = {sel, mon}：えらんだ ひ・みている つき（この がめん の あいだ だけ おぼえる）。counts = {ひ: けんすう}
+     はじめは いちばん あたらしい ひ を えらぶ。まえ は いちばん ふるい つき、つぎ は こんげつ まで */
+  const CAL_WD = ["日","月","火","水","木","金","土"];
+  const calDayLabel = k => { const d = k.split("-").map(Number); return `${d[1]}月${d[2]}日（${CAL_WD[new Date(d[0], d[1]-1, d[2]).getDay()]}）`; };
+  function calHTML(st, counts, isNew){
+    const days = Object.keys(counts).sort();
+    if(!st.sel || !counts[st.sel]) st.sel = days[days.length-1];
+    if(!st.mon) st.mon = st.sel.slice(0,7);
+    const tm = todayKey().slice(0,7), lm = days[days.length-1].slice(0,7);
+    const first = days[0].slice(0,7), last = tm > lm ? tm : lm;
+    if(st.mon < first) st.mon = first;
+    if(st.mon > last) st.mon = last;
+    const [y, m] = st.mon.split("-").map(Number);
+    const start = new Date(y, m-1, 1).getDay(), dim = new Date(y, m, 0).getDate(), tk = todayKey();
+    let cells = "";
+    for(let i=0;i<start;i++) cells += `<span></span>`;
+    for(let dd=1; dd<=dim; dd++){
+      const k = `${st.mon}-${String(dd).padStart(2,"0")}`, n = counts[k] || 0, nw = n && isNew && isNew(k);
+      cells += `<button type="button" class="hc-day${n?" has":""}${k===tk?" today":""}" data-k="${k}"${n?` aria-pressed="${k===st.sel}" aria-label="${m}月${dd}日 ${n}件${nw?" New":""}"`:" disabled"}>${dd}${n?`<i>${n}件</i>`:""}${nw?`<em class="new">New</em>`:""}</button>`;
+    }
+    return `
+      <div class="hc">
+        <div class="hc-nav"><button type="button" data-cal="-1" aria-label="前の月"${st.mon<=first?" disabled":""}>‹</button><b>${y}年${m}月</b><button type="button" data-cal="1" aria-label="次の月"${st.mon>=last?" disabled":""}>›</button></div>
+        <div class="hc-grid">${CAL_WD.map((w,i)=>`<span class="wd${i===0?" sun":i===6?" sat":""}">${w}</span>`).join("")}${cells}</div>
+      </div>`;
+  }
+  function calBind(root, st, redo){
+    root.querySelectorAll("[data-cal]").forEach(b=>b.addEventListener("click", ()=>{
+      const [y, m] = st.mon.split("-").map(Number), t = new Date(y, m-1+Number(b.dataset.cal), 1);
+      st.mon = `${t.getFullYear()}-${String(t.getMonth()+1).padStart(2,"0")}`; redo();
+    }));
+    root.querySelectorAll(".hc-day.has").forEach(b=>b.addEventListener("click", ()=>{ st.sel = b.dataset.k; redo(); }));
+  }
+
+  // おうちの方へ の きろく は カレンダー で ひ を えらんで みる
+  const histSt = {sel:null, mon:null};
   function histDay(h){
     if(h.d) return h.d;
     const m = String(h.at||"").match(/^(\d+)\/(\d+)/); if(!m) return null;
@@ -2337,40 +2384,18 @@ span.stkw > svg{position:absolute;left:0;top:0;width:100%;height:100%;display:bl
     // ひ ごとに まとめる（まえの きろく は ひづけ が「10/20 21:39」だけ なので、年 を おぎなう）
     const byDay = {};
     history.forEach(h=>{ const k = histDay(h); if(k) (byDay[k] || (byDay[k] = [])).push(h); });
-    const days = Object.keys(byDay).sort();
-    if(!histSel || !byDay[histSel]) histSel = days[days.length-1];
-    if(!histMon) histMon = histSel.slice(0,7);
-    const first = days[0].slice(0,7), last = todayKey().slice(0,7) > days[days.length-1].slice(0,7) ? todayKey().slice(0,7) : days[days.length-1].slice(0,7);
-    if(histMon < first) histMon = first;
-    if(histMon > last) histMon = last;
-    const [y, m] = histMon.split("-").map(Number);
-    const start = new Date(y, m-1, 1).getDay(), dim = new Date(y, m, 0).getDate(), tk = todayKey();
-    let cells = "";
-    for(let i=0;i<start;i++) cells += `<span></span>`;
-    for(let dd=1; dd<=dim; dd++){
-      const k = `${histMon}-${String(dd).padStart(2,"0")}`, n = (byDay[k]||[]).length;
-      cells += `<button type="button" class="hc-day${n?" has":""}${k===tk?" today":""}" data-k="${k}"${n?` aria-pressed="${k===histSel}" aria-label="${m}月${dd}日 ${n}件"`:" disabled"}>${dd}${n?`<i>${n}件</i>`:""}</button>`;
-    }
-    const WD = ["日","月","火","水","木","金","土"];
-    const sel = byDay[histSel] || [], sd = histSel.split("-").map(Number), sw = WD[new Date(sd[0], sd[1]-1, sd[2]).getDay()];
-    body.innerHTML = note + `
-      <div class="hc">
-        <div class="hc-nav"><button type="button" id="hcPrev" aria-label="前の月"${histMon<=first?" disabled":""}>‹</button><b>${y}年${m}月</b><button type="button" id="hcNext" aria-label="次の月"${histMon>=last?" disabled":""}>›</button></div>
-        <div class="hc-grid">${WD.map((w,i)=>`<span class="wd${i===0?" sun":i===6?" sat":""}">${w}</span>`).join("")}${cells}</div>
-        <div class="hc-title">${sd[1]}月${sd[2]}日（${sw}）の記録　${sel.length}件</div>
-      </div>` + sel.map(h=>`
+    const counts = {}; Object.keys(byDay).forEach(k=>counts[k] = byDay[k].length);
+    const cal = calHTML(histSt, counts), sel = byDay[histSt.sel] || [];
+    body.innerHTML = note + cal + `<div class="hc-title">${calDayLabel(histSt.sel)}の記録　${sel.length}件</div>` + sel.map(h=>`
       <div class="hist-item">
         <div class="h num">${h.at}　${h.lv?`【${h.lv}】`:""}${h.ok}/${h.total||20}問正解　<span style="font-weight:500;color:var(--muted)">${h.clock ? `とけい・平均 ${h.avg}` : h.total===25 ? `タイム ${h.avg}` : `たし算 ${h.add}・ひき算 ${h.sub}・平均 ${h.avg}`}</span></div>
         <ul>${h.findings.map(x=>`<li>${x}</li>`).join("")}</ul>
       </div>`).join("") + `<button class="clear" id="clearBtn">記録と苦手データを消す</button>`;
-    const shift = dm => { const t = new Date(y, m-1+dm, 1); histMon = `${t.getFullYear()}-${String(t.getMonth()+1).padStart(2,"0")}`; renderHistory(); };
-    $("hcPrev").addEventListener("click", ()=>shift(-1));
-    $("hcNext").addEventListener("click", ()=>shift(1));
-    body.querySelectorAll(".hc-day.has").forEach(b=>b.addEventListener("click", ()=>{ histSel = b.dataset.k; renderHistory(); }));
+    calBind(body, histSt, renderHistory);
     const cb=$("clearBtn"); let armed=false;
     cb.addEventListener("click",()=>{
       if(!armed){ armed=true; cb.classList.add("arm"); cb.textContent="もう一度押すと消えます"; return; }
-      history=[]; stats={facts:{}, types:{}}; histSel = histMon = null;
+      history=[]; stats={facts:{}, types:{}}; histSt.sel = histSt.mon = null;
       stats.album={}; stats.days={};
       gbest={};   // ます けいさんの さいこう タイムも けす
       tlog = {}; try{ localStorage.removeItem(TLOG_KEY); }catch(e){}   // あそんだ じかんの グラフも けす（きょうの じかんの くぎりは のこす）
@@ -2383,6 +2408,51 @@ span.stkw > svg{position:absolute;left:0;top:0;width:100%;height:100%;display:bl
       if(mode==="zukan") renderZukan();
     });
   }
+
+  /* ---------- おうちの方へ：更新情報 ----------
+     CHANGELOG.md（公開の たびに かきたして いる 更新履歴）を よみこんで、カレンダー で ひ を えらんで みる。
+     ちょっきん 1しゅうかん（きょう を いれて 7にち）の 更新 に 赤字 で New。よみこめない とき は なにも ださない */
+  const NEWS_DAYS = 7;
+  const newsSt = {sel:null, mon:null};
+  let news = null;   // {"2026-10-20":[{cat, t, text, sub:[]}]}
+  const newsIsNew = k => { const d = k.split("-").map(Number), t = new Date(); t.setHours(0,0,0,0); return (t - new Date(d[0], d[1]-1, d[2])) / 864e5 < NEWS_DAYS; };
+  const mdInline = x => String(x).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/\*\*(.+?)\*\*/g,"<b>$1</b>").replace(/`(.+?)`/g,"<code>$1</code>");
+  function newsParse(md){
+    const out = {}; let day = null, cat = "", last = null;
+    md.split(/\r?\n/).forEach(l=>{
+      let m;
+      if((m = l.match(/^## (\d{4}-\d{2}-\d{2})/))){ day = m[1]; cat = ""; last = null; return; }
+      if(!day) return;   // はじめ の せつめい（追加・変更・修正 の いみ）は とばす
+      if((m = l.match(/^### (.+)/))){ cat = m[1].trim(); last = null; return; }
+      if((m = l.match(/^- (?:\*\*(\d{1,2}:\d{2})\*\* )?(.*)/))){ last = {cat, t:m[1]||"", text:m[2], sub:[]}; (out[day] || (out[day] = [])).push(last); return; }
+      if(last && (m = l.match(/^\s+- (.*)/))) last.sub.push(m[1]);
+    });
+    const tv = t => { const a = t.split(":").map(Number); return a.length===2 ? a[0]*60 + a[1] : -1; };
+    Object.values(out).forEach(L=>L.sort((a,b)=>tv(b.t) - tv(a.t)));   // あたらしい じゅん
+    return out;
+  }
+  function renderNews(){
+    const box = $("news");
+    if(!news || !Object.keys(news).length){ box.hidden = true; return; }
+    box.hidden = false;
+    const counts = {}; Object.keys(news).forEach(k=>counts[k] = news[k].length);
+    $("newsNew").hidden = !Object.keys(news).some(newsIsNew);
+    const cal = calHTML(newsSt, counts, newsIsNew), k = newsSt.sel, L = news[k];
+    const cls = c => /^追加/.test(c) ? "add" : /^修正/.test(c) ? "fix" : "";
+    $("newsBody").innerHTML = cal + `<div class="hc-title">${calDayLabel(k)}の更新　${L.length}件${newsIsNew(k)?`<em class="new">New</em>`:""}</div>` + L.map(e=>`
+      <div class="hist-item">
+        <div class="h">${e.cat?`<span class="nw-cat ${cls(e.cat)}">${mdInline(e.cat)}</span>`:""}${e.t?`<span class="num">${e.t}</span>`:""}</div>
+        <div class="nw-text">${mdInline(e.text)}</div>
+        ${e.sub.length?`<ul>${e.sub.map(x=>`<li>${mdInline(x)}</li>`).join("")}</ul>`:""}
+      </div>`).join("");
+    calBind($("newsBody"), newsSt, renderNews);
+  }
+  function loadNews(){
+    try{
+      fetch("CHANGELOG.md", {cache:"no-cache"}).then(r=>r.ok ? r.text() : "").then(t=>{ news = newsParse(t); renderNews(); }).catch(()=>{});
+    }catch(e){}
+  }
+  loadNews();
 
   /* ---------- 1かいごとの けっかの きろく ----------
      20もん・ます1まい ごとの けっかを かずで のこす（stats.sess）。
