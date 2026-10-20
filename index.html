@@ -2581,7 +2581,8 @@ span.stkw > svg{position:absolute;left:0;top:0;width:100%;height:100%;display:bl
       "たくさん やるのも だいじだけど、<br>せいかいを めざして がんばろう"
     ][band];
     const head = y ? `きのうは ${n}もん といて、<br>${ok}もん せいかい（${pct}%）` : `きょう ${total}もん といたよ。<br>さいごの ${n}もんは ${ok}もん せいかい（${pct}%）`;
-    const img = band <= 1 ? pickCheer() : band === 2 ? "chars/koro_happy.webp" : "chars/mii_normal.webp";
+    // え：まえの ひ（あさの たいよう と ノート）と、きょう の とちゅう（はちまき と えんぴつ）で べつ
+    const img = `chars/acc/${y ? "y" : "t"}${["100","70","50","0"][band]}.webp`;
     return {band, title, text: head + (tail ? `<br>${tail}` : ""), img};
   }
   function accShow(ev){
