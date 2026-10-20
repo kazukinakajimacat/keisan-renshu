@@ -1876,10 +1876,15 @@ span.stkw > svg{position:absolute;left:0;top:0;width:100%;height:100%;display:bl
     if(p.f.x){ typeTally(p.type, ok, slow); saveStats(); return null; }
     const k=fKey(p.f);
     const e = stats.facts[k] || (stats.facts[k] = {score:0, seen:0, miss:0, f:p.f});
+    e.weak = weakNow(e);   // まえの きろく しか ない こ は、いま の じょうたい を きめて おく
     e.seen++; e.f=p.f;
     if(!ok){ e.miss++; e.score = Math.min(6, e.score+3); }
     else if(slow){ e.score = Math.min(6, e.score+1.5); }
     else { e.score *= 0.5; if(e.score<0.3) e.score=0; }
+    // にがて：2かい いじょう といて せいかいが 半分 より すくない と はいる。3かい つづけて せいかい で そつぎょう
+    e.run = ok ? (e.run||0) + 1 : 0;
+    if(!ok && e.seen >= 2 && (e.seen - e.miss) / e.seen < 0.5) e.weak = true;
+    if(e.weak && e.run >= GRAD_RUN){ e.weak = false; nkData().queue.push({t:"grad", f:p.f}); setTimeout(nkShowQueue, 1500); }
     typeTally(p.type, ok, slow);
     logFactDay(k, ok, slow);
     const nm = updateMastery(p.f, ok, slow, ms);
@@ -2026,6 +2031,25 @@ span.stkw > svg{position:absolute;left:0;top:0;width:100%;height:100%;display:bl
      ・にがて もんだい：これまでに 2かい いじょう といて、せいかいが 半分 より すくない けいさん（10までの たしざん・ひきざん・3つの かず）
      どちらも 1かい 10もん まで。ふつうの もんだい と おなじく シール・めあて に かぞえる */
   const IDK_MAX = 60, SET_N = 10;
+  // にがて：weak が ある こ は それを つかう。まだ ない こ（まえの きろく）は「2かい いじょう といて せいかいが 半分 より すくない」
+  const GRAD_RUN = 3;
+  function weakNow(e){ return e.weak != null ? e.weak : ((e.seen||0) >= 2 && (e.seen - (e.miss||0)) / e.seen < 0.5); }
+  // そつぎょう の え（chars/grad/grad01〜）。え が とどく まで は 0 で、みー と ころ の よろこぶ え を つかう
+  const GRAD_N = 0, GRAD_KEY = "sansu-drill-grad-v1";
+  function pickGrad(){
+    if(!GRAD_N) return pickCheer();
+    let last = -1; try{ last = +(localStorage.getItem(GRAD_KEY) ?? -1); }catch(e){}
+    let i; do{ i = Math.floor(Math.random()*GRAD_N); }while(GRAD_N > 1 && i === last);
+    try{ localStorage.setItem(GRAD_KEY, String(i)); }catch(e){}
+    return `chars/grad/grad${String(i+1).padStart(2,"0")}.webp`;
+  }
+  function gradShow(f){
+    const t = f.three ? `${f.a} ${opText(f.o1)} ${f.b} ${opText(f.o2)} ${f.c}` : factText(f);
+    nkModal({pic:`<img class="nk-mimg pop wide" src="${pickGrad()}" alt="" draggable="false">`,
+      title:"そつぎょう！",
+      text:`「${t}」は 3かい つづけて せいかい！<br>にがて もんだい から そつぎょう だよ`,
+      buttons:[{label:"やったー！"}]});
+  }
   let drillSet = null;   // {kind, list, i, ok, n}
   const idkList = () => stats.idk || (stats.idk = []);
   const PKEYS = ["type","f","ans","cls","html","parent","confuse","explain","frame","choices","order","make","time","done"];
@@ -2044,7 +2068,7 @@ span.stkw > svg{position:absolute;left:0;top:0;width:100%;height:100%;display:bl
     saveStats();
   }
   function weakList(){
-    return Object.entries(stats.facts||{}).filter(([k,e])=>e && e.f && !e.f.x && (e.seen||0) >= 2 && (e.seen - (e.miss||0)) / e.seen < 0.5)
+    return Object.entries(stats.facts||{}).filter(([k,e])=>e && e.f && !e.f.x && weakNow(e))
       .sort((a,b)=>(b[1].miss/b[1].seen) - (a[1].miss/a[1].seen)).map(([k,e])=>e.f);
   }
   function weakProblem(f){
@@ -3097,6 +3121,8 @@ span.stkw > svg{position:absolute;left:0;top:0;width:100%;height:100%;display:bl
       nkModal({pic:nkPicHTML(nkImgSrc(c.id, ev.stage, "h"), "evolve", ev.stage), title:`${nkDisplayName(c)}が ${nkLabel(sp, ev.stage)}に なったよ！`,
         text: ev.stage===5 ? "さいごまで そだったね。つきの おわりに たびだつよ" : "これからも いっしょに がんばろうね",
         buttons:[{label:"やったね！"}]});
+    }else if(ev.t==="grad"){
+      gradShow(ev.f);
     }else if(ev.t==="acc"){
       accShow(ev);
     }else if(ev.t==="ms"){
