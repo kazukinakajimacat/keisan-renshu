@@ -734,6 +734,35 @@ body.course .choice.pad-del{padding:4px 0;font-size:16px}
 body.course .choice.pad-go{padding:4px 0;font-size:19px}
 body.course:has(.choices.pad) .q:not(.small):not(.story):not(.pic):not(.mid):not(.xcmp){font-size:clamp(40px,11.5vw,58px)}
 body.course .levels.nrange .lv{padding:3px 2px;font-size:12px}
+/* スマホ：ブラウザの バー で みえる たかさ が 660px くらい しか ない ので、もんだいの がめん を さらに つめる */
+@media (max-width:520px){
+  body.course .wrap,body.course .stack{gap:6px}
+  body.course .navbar .nv{padding:6px 0}
+  body.course .navbar .home-btn{padding:4px 8px}
+  body.course .levels:not(.gk):not(.nrange){grid-template-columns:auto auto auto auto!important}
+  body.course .levels .lv{padding:4px 8px;font-size:12px;white-space:nowrap}
+  body.course .levels.nrange .lv{padding:2px}
+  body.course #superNote{display:none!important}
+  body.course .track i{height:6px}
+  body.course .pet,body.course .sum-pets .pet{width:42px;flex-basis:42px}
+  body.course .buddies .pet .pet-face{width:42px;height:42px}
+  body.course .bubble{font-size:13px;padding:4px 10px}
+  body.course .card{padding:8px 10px}
+  body.course .tags .ptag{margin-bottom:2px}
+  body.course .q{font-size:clamp(40px,12vw,60px)}
+  body.course .q.story{font-size:17px;line-height:1.55}
+  body.course .choice{padding:5px 0;font-size:clamp(22px,7vw,30px)}
+  body.course .pad-keys .choice{padding:2px 0;font-size:clamp(20px,6.2vw,26px)}
+  body.course .choice.pad-del,body.course .choice.pad-go{padding:2px 0}
+  body.course .pad-disp{font-size:24px}
+  body.course .oslot{height:44px}
+  body.course .grid th,body.course .grid td{height:34px;font-size:19px}
+  body.course #gpad .choice{padding:5px 0}
+  body.course .gbar .chip{padding:1px 6px}
+}
+/* ます 30まで：1〜9・0・けす を 6れつ 2だん に */
+#gpad:has(.gdel){grid-template-columns:repeat(6,1fr)}
+#gpad:has(.gdel) .choice.gdel{grid-column:auto;font-size:16px}
 /* 10を こえる かずの え：10の わくを ならべる */
 .tenframes{display:flex;flex-wrap:wrap;justify-content:center;gap:6px}
 .tenframes .tenframe,.q.pic .tenframes .tenframe,body.course .q.pic .tenframes .tenframe{grid-template-columns:repeat(5,26px);grid-template-rows:repeat(2,26px);gap:3px;padding:3px}
