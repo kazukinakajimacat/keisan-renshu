@@ -660,6 +660,7 @@ span.stkw > svg{position:absolute;left:0;top:0;width:100%;height:100%;display:bl
 .nk-mcard p b.num{color:var(--ink);font-size:1.2em}
 .nk-mpic.ms{height:auto;padding:0}
 .ms-pic{width:min(100%,300px);aspect-ratio:1;border-radius:18px;display:block;animation:nkPop .6s ease-out}
+.ms-pic.wide{width:min(100%,420px);aspect-ratio:3/2}
 .alb small{font-size:11px;color:var(--muted);font-weight:700;white-space:nowrap}
 .alb:focus-visible{outline:3px solid var(--blue);outline-offset:1px}
 .cd.stk-day > svg.stk,.cd.stk-day > .stkw{position:absolute;left:auto;right:2px;bottom:2px;top:auto;width:62%;height:62%;transform:none}
@@ -3144,8 +3145,20 @@ body.course .levels.nrange .lv{padding:3px 2px;font-size:12px}
     // ずかん の 30まで の ページ（シート）が ぜんぶ きらきら（ZK_PAGES の 2ページめ から）。30より うえ を たす とき も ここに ならべる
     ...[["zk_a2","+",1,"11〜18","たしざん こたえが 11〜18"],["zk_a3","+",2,"10〜19＋","たしざん 10〜19 ＋ 1けた"],["zk_a4","+",3,"20〜29＋","たしざん 20〜29 ＋ 1けた"],
         ["zk_s2","-",1,"11〜19−","ひきざん 11〜19 − 1けた"],["zk_s3","-",2,"20〜30−","ひきざん 20〜30 − 1けた"]].map(([id,op,pg,label,name])=>
-      ({id, label, title:`${name} ぜんぶ きらきら！`, alt:`${name} クリア おめでとう`, img:id, ok:()=>zkPageKira(op, pg)}))
+      ({id, label, title:`${name} ぜんぶ きらきら！`, alt:`${name} クリア おめでとう`, img:id, ok:()=>zkPageKira(op, pg)})),
+    // なかま 12しゅるい ぜんいん たびだった「つぎの ひ」に わたす きねんしゃしん（え は よこながの 3:2）
+    {id:"nk_all", label:"ぜんいん", title:"ぜんいん しゅうごう！", alt:"12ひきの なかま ぜんいんの きねんしゃしん", img:"nk_all", wide:true,
+      text:"12ひき ぜんいん そだてきった きみに、<br>ぜんいん しゅうごうの しゃしんを<br>プレゼント！",
+      ok:()=>{ const d = nkAllDoneDay(); return !!d && todayKey() > d; }}
   ];
+  // 12しゅるい ぜんぶ が はじめて たびだった ひ（まだ なら null）
+  function nkAllDoneDay(){
+    if(!NK_LIST.length || !stats.nk) return null;
+    const first = {};
+    (stats.nk.dex||[]).forEach(e=>{ if(e.result==="tabidachi" && e.at && (!first[e.id] || e.at < first[e.id])) first[e.id] = e.at; });
+    if(!NK_LIST.every(sp=>first[sp.id])) return null;
+    return Object.values(first).sort().pop();
+  }
   const MS_HOLD = new Set([]);   // え が まだ ない・かくにん ちゅう の もの の id（わたさない）。いまは なし
   const msById = id => MS_LIST.find(x=>x.id===String(id));
   const msData = () => stats.ms || (stats.ms = {got:{}});
@@ -3161,9 +3174,9 @@ body.course .levels.nrange .lv{padding:3px 2px;font-size:12px}
   function msShow(id, again){
     const it = msById(id); if(!it) return;
     const [y,m,d] = String(msData().got[it.id]||"").split("-").map(Number);
-    nkModal({pic:`<img class="ms-pic" src="${msImg(it)}" alt="${it.alt}" draggable="false">`,
+    nkModal({pic:`<img class="ms-pic${it.wide ? " wide" : ""}" src="${msImg(it)}" alt="${it.alt}" draggable="false">`,
       title: it.title,
-      text: again ? (m ? `${m}がつ ${d}にちに もらった<br>とくべつ シールだよ` : "とくべつ シールだよ") : "とくべつ シールを もらったよ。<br>シール ちょうに はって おくね",
+      text: again ? (m ? `${m}がつ ${d}にちに もらった<br>とくべつ シールだよ` : "とくべつ シールだよ") : (it.text ? it.text + "<br>シール ちょうに はって おくね" : "とくべつ シールを もらったよ。<br>シール ちょうに はって おくね"),
       buttons:[{label: again ? "とじる" : "やったー！", onClick:()=>{ if(mode==="zukan") renderMs(); }}]});
   }
   function renderMs(){
