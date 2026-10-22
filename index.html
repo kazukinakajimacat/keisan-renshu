@@ -716,18 +716,24 @@ span.stkw > svg{position:absolute;left:0;top:0;width:100%;height:100%;display:bl
 #gpad .choice.gdel{grid-column:1/-1;font-size:20px;padding:6px 0}
 /* 30まで の こたえ：0〜9 で 2けた まで いれて「こたえる」 */
 .choices.pad{display:flex;flex-direction:column;align-items:stretch;gap:10px}
-.pad-disp{align-self:center;min-width:120px;text-align:center;font-size:44px;font-weight:900;line-height:1.15;background:var(--surface);border:3px solid var(--line);border-radius:16px;padding:2px 20px;font-variant-numeric:tabular-nums}
+.pad-disp{display:grid;place-items:center;min-width:0;text-align:center;font-size:36px;font-weight:900;line-height:1.1;background:var(--surface);border:3px solid var(--line);border-radius:16px;padding:2px 6px;font-variant-numeric:tabular-nums}
 .pad-disp.empty{color:var(--muted)}
 .pad-disp.right{border-color:var(--ok);color:var(--ok);background:var(--ok-soft)}
 .pad-disp.wrong{border-color:var(--ng);color:var(--ng);background:var(--ng-soft)}
 .pad-keys{display:grid;grid-template-columns:repeat(5,1fr);gap:10px}
-.pad-row{display:grid;grid-template-columns:1fr 2fr;gap:10px}
+.pad-row{display:grid;grid-template-columns:1.1fr 1fr 1.6fr;gap:10px}
 .choice.pad-del{font-size:20px}
 .choice.pad-go{font-size:24px;background:var(--blue);border-color:var(--blue);color:#fff}
 .choice.pad-go:disabled,.choice.pad-del:disabled{opacity:.4}
-body.course .pad-disp{font-size:36px}
-body.course .choice.pad-del{font-size:18px}
-body.course .choice.pad-go{font-size:21px}
+/* もんだいの がめん：30まで の すうじ ボタン は スクロール しない ように ちいさめ */
+body.course .choices.pad{gap:6px}
+body.course .pad-keys,body.course .pad-row{gap:6px}
+body.course .pad-keys .choice{padding:4px 0;font-size:clamp(22px,6.6vw,28px)}
+body.course .pad-disp{font-size:28px;border-width:2px}
+body.course .choice.pad-del{padding:4px 0;font-size:16px}
+body.course .choice.pad-go{padding:4px 0;font-size:19px}
+body.course:has(.choices.pad) .q:not(.small):not(.story):not(.pic):not(.mid):not(.xcmp){font-size:clamp(40px,11.5vw,58px)}
+body.course .levels.nrange .lv{padding:3px 2px;font-size:12px}
 /* 10を こえる かずの え：10の わくを ならべる */
 .tenframes{display:flex;flex-wrap:wrap;justify-content:center;gap:6px}
 .tenframes .tenframe,.q.pic .tenframes .tenframe,body.course .q.pic .tenframes .tenframe{grid-template-columns:repeat(5,26px);grid-template-rows:repeat(2,26px);gap:3px;padding:3px}
@@ -1915,8 +1921,8 @@ body.course .choice.pad-go{font-size:21px}
     });
     del.addEventListener("click", ()=>{ if(current && v){ v = v.slice(0,-1); draw(); } });
     go.addEventListener("click", ()=>{ if(current && v) answer(Number(v), null); });
-    const row = document.createElement("div"); row.className = "pad-row"; row.append(del, go);
-    chEl.append(disp, keys, row);
+    const row = document.createElement("div"); row.className = "pad-row"; row.append(disp, del, go);
+    chEl.append(keys, row);
     p.pad = true;
     draw();
   }
