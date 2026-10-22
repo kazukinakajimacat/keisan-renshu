@@ -3701,6 +3701,11 @@ body.course .choice.pad-go{font-size:21px}
   for(let a=1;a<=MAX30-1;a++){ const row=[]; for(let b=1;b<=9 && a+b<=MAX30;b++) row.push({a,op:"+",b,ans:a+b}); ZK30_ADD.push(row); }
   for(let a=2;a<=MAX30;a++){ const row=[]; for(let b=1;b<=9 && b<a;b++) row.push({a,op:"-",b,ans:a-b}); ZK30_SUB.push(row); }
   const ZK_KEYS = new Set([...ZK30_ADD.flat(), ...ZK30_SUB.flat()].map(fKey));
+  // ずかん の 30まで の がめん には、10まで に ある 90 は ださない（たし算180・ひき算180）。
+  // うしろの かず の いち は そのまま に して、ださない ところ は あける（null）。ぜんぶ あいた ぎょう は ださない
+  const ZK10_KEYS = new Set([...ZK_ADD.flat(), ...ZK_SUB.flat()].map(fKey));
+  const zkOnly30 = rows => rows.map(r=>r.map(f=>ZK10_KEYS.has(fKey(f)) ? null : f)).filter(r=>r.some(Boolean));
+  const ZK30X_ADD = zkOnly30(ZK30_ADD), ZK30X_SUB = zkOnly30(ZK30_SUB);
   // ずかんで みる はんい（10まで／30まで）
   const ZKR_KEY = "sansu-drill-zkrange-v1";
   let zkRange = "10";
@@ -3789,12 +3794,13 @@ body.course .choice.pad-go{font-size:21px}
 
   // 30まで は ぎょうを「1けた」「10〜19」「20〜29（30）」に わけて みだしを つける
   function zkRowsHTML(rows, op){
-    const row = r => `<div class="zrow">${r.map(zkCell).join("")}</div>`;
+    const row = r => `<div class="zrow">${r.map(f=>f ? zkCell(f) : `<span class="zk-sp"></span>`).join("")}</div>`;
     if(zkRange!=="30") return rows.map(row).join("");
+    const ra = r => r.find(Boolean).a;
     return [[1,9],[10,19],[20,MAX30]].map(([lo,hi])=>{
-      const rs = rows.filter(r=>r[0].a>=lo && r[0].a<=hi); if(!rs.length) return "";
-      const last = rs[rs.length-1][0].a;
-      return `<div class="zsec">${lo<10 ? "1けた" : `${lo}〜${last}`} ${opText(op)} 1けた</div>` + rs.map(row).join("");
+      const rs = rows.filter(r=>ra(r)>=lo && ra(r)<=hi); if(!rs.length) return "";
+      const first = ra(rs[0]), last = ra(rs[rs.length-1]);
+      return `<div class="zsec">${lo<10 ? "1けた" : `${first}〜${last}`} ${opText(op)} 1けた</div>` + rs.map(row).join("");
     }).join("");
   }
   document.querySelectorAll(".lv[data-zr]").forEach(b=>b.addEventListener("click",()=>{
@@ -3804,10 +3810,11 @@ body.course .choice.pad-go{font-size:21px}
   }));
   function renderZukan(){
     document.querySelectorAll(".lv[data-zr]").forEach(b=>b.setAttribute("aria-pressed", b.dataset.zr===zkRange ? "true" : "false"));
-    const ZA = zkRange==="30" ? ZK30_ADD : ZK_ADD, ZS = zkRange==="30" ? ZK30_SUB : ZK_SUB;
-    const ZK_TOTAL = ZA.flat().length + ZS.flat().length;
-    const addN = masterCount(ZA.flat()), subN = masterCount(ZS.flat());
-    const all = addN+subN, allL = [...ZA.flat(), ...ZS.flat()];
+    const ZA = zkRange==="30" ? ZK30X_ADD : ZK_ADD, ZS = zkRange==="30" ? ZK30X_SUB : ZK_SUB;
+    const FA = ZA.flat().filter(Boolean), FS = ZS.flat().filter(Boolean);
+    const ZK_TOTAL = FA.length + FS.length;
+    const addN = masterCount(FA), subN = masterCount(FS);
+    const all = addN+subN, allL = [...FA, ...FS];
     const n2 = masterCount(allL, 2), n3 = masterCount(allL, 3);
     $("zkTotal").textContent = all;
     $("zkPika").textContent = n2; $("zkKira").textContent = n3;
@@ -3815,8 +3822,8 @@ body.course .choice.pad-go{font-size:21px}
     $("zkBar3").style.width = (n3/ZK_TOTAL*100).toFixed(1)+"%";
     $("zkMax").textContent = ZK_TOTAL;
     $("zkBar").style.width = (all/ZK_TOTAL*100).toFixed(1)+"%";
-    $("zkAddN").textContent = `${addN} / ${ZA.flat().length}`;
-    $("zkSubN").textContent = `${subN} / ${ZS.flat().length}`;
+    $("zkAddN").textContent = `${addN} / ${FA.length}`;
+    $("zkSubN").textContent = `${subN} / ${FS.length}`;
     $("zkAdd").innerHTML = zkRowsHTML(ZA, "+");
     $("zkSub").innerHTML = zkRowsHTML(ZS, "-");
     document.querySelectorAll(".zk").forEach(b=>b.addEventListener("click",()=>{
