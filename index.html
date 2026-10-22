@@ -708,6 +708,31 @@ span.stkw > svg{position:absolute;left:0;top:0;width:100%;height:100%;display:bl
 .levels:not(.gk){grid-template-columns:repeat(4,1fr)!important;border-radius:20px!important}
 .levels:not(.gk) .lv{font-size:14px;border-radius:14px;padding:6px 2px;line-height:1.25;min-width:0}
 .lv[data-lv="super"][aria-pressed="true"]{background:#7453D6}
+/* かずの はんい（10まで／30まで） */
+.levels.nrange{grid-template-columns:repeat(2,1fr)!important}
+.lv[data-nr][aria-pressed="true"],.lv[data-zr][aria-pressed="true"]{background:var(--yellow);color:#2A2112}
+/* 30まで の こたえ：0〜9 で 2けた まで いれて「こたえる」 */
+.choices.pad{display:flex;flex-direction:column;align-items:stretch;gap:10px}
+.pad-disp{align-self:center;min-width:120px;text-align:center;font-size:44px;font-weight:900;line-height:1.15;background:var(--surface);border:3px solid var(--line);border-radius:16px;padding:2px 20px;font-variant-numeric:tabular-nums}
+.pad-disp.empty{color:var(--muted)}
+.pad-disp.right{border-color:var(--ok);color:var(--ok);background:var(--ok-soft)}
+.pad-disp.wrong{border-color:var(--ng);color:var(--ng);background:var(--ng-soft)}
+.pad-keys{display:grid;grid-template-columns:repeat(5,1fr);gap:10px}
+.pad-row{display:grid;grid-template-columns:1fr 2fr;gap:10px}
+.choice.pad-del{font-size:20px}
+.choice.pad-go{font-size:24px;background:var(--blue);border-color:var(--blue);color:#fff}
+.choice.pad-go:disabled,.choice.pad-del:disabled{opacity:.4}
+body.course .pad-disp{font-size:36px}
+body.course .choice.pad-del{font-size:18px}
+body.course .choice.pad-go{font-size:21px}
+/* 10を こえる かずの え：10の わくを ならべる */
+.tenframes{display:flex;flex-wrap:wrap;justify-content:center;gap:6px}
+.tenframes .tenframe,.q.pic .tenframes .tenframe,body.course .q.pic .tenframes .tenframe{grid-template-columns:repeat(5,26px);grid-template-rows:repeat(2,26px);gap:3px;padding:3px}
+.tenframes .tenframe span::after,.q.pic .tenframes .tenframe span::after,body.course .q.pic .tenframes .tenframe span::after{width:18px;height:18px}
+.tenframes .tenframe span.x::before{font-size:20px}
+/* ずかん 30まで の みだし */
+.zsec{font-size:13px;font-weight:900;color:var(--muted);margin:6px 0 0}
+.zsec:first-child{margin-top:0}
 .super-note{font-size:14px;font-weight:700;color:#7453D6;text-align:center;word-break:keep-all}
 :root[data-theme="dark"] .super-note{color:#B7A2FF}
 @media (prefers-color-scheme: dark){:root:not([data-theme="light"]) .super-note{color:#B7A2FF}}
@@ -816,6 +841,10 @@ span.stkw > svg{position:absolute;left:0;top:0;width:100%;height:100%;display:bl
     <button class="lv" data-lv="normal" id="lv-normal">ふつう</button>
     <button class="lv" data-lv="hard" id="lv-hard">むずかしい</button>
     <button class="lv" data-lv="super" id="lv-super">ちょう むずかしい</button>
+  </div>
+  <div class="levels nrange" role="group" aria-label="かずの はんい">
+    <button class="lv" data-nr="10" id="nr-10">10まで</button>
+    <button class="lv" data-nr="30" id="nr-30">30まで</button>
   </div>
   <div class="super-note" id="superNote" hidden>むずかしい もんだい ばかり。1もん 10びょう！</div>
   <div class="track" id="track" aria-hidden="true"></div>
@@ -947,6 +976,10 @@ span.stkw > svg{position:absolute;left:0;top:0;width:100%;height:100%;display:bl
   </div>
 
   <div id="zukanMain" class="stack" hidden>
+    <div class="levels nrange" role="group" aria-label="ずかんの はんい">
+      <button class="lv" data-zr="10">10まで</button>
+      <button class="lv" data-zr="30">30まで</button>
+    </div>
     <div class="zk-head">
       <div class="zk-big">すらすら シール <b class="num" id="zkTotal">0</b> / <span class="num" id="zkMax">90</span></div>
       <div class="zk-bar"><i id="zkBar"></i><i id="zkBar2" class="b2"></i><i id="zkBar3" class="b3"></i></div>
@@ -1182,7 +1215,12 @@ span.stkw > svg{position:absolute;left:0;top:0;width:100%;height:100%;display:bl
   const LV_KEY = "sansu-drill-level-v1";
   let level = "easy";
   try{ const l = localStorage.getItem(LV_KEY); if(LEVELS[l]) level = l; }catch(e){}
-  const levelTypes = () => Object.keys(LEVELS[level].types);
+  // かずの はんい：10まで（いままで）／30まで。30まで は つかう パターンを しぼる（R30_TYPES）
+  const RANGE_KEY = "sansu-drill-range-v1";
+  let nrange = "10";
+  try{ if(localStorage.getItem(RANGE_KEY)==="30") nrange = "30"; }catch(e){}
+  const R30_TYPES = new Set(["plain","missing","decomp","pic","word","next","prevnext","seq","bigger","sort"]);
+  const levelTypes = () => Object.keys(LEVELS[level].types).filter(t => nrange!=="30" || R30_TYPES.has(t));
   function threeAllowed(f){
     const m = LEVELS[level].three;
     if(!m) return false;
@@ -1209,9 +1247,19 @@ span.stkw > svg{position:absolute;left:0;top:0;width:100%;height:100%;display:bl
   const ALL_ADD=[], ALL_SUB=[];
   for(let a=0;a<=MAX;a++) for(let b=0;a+b<=MAX;b++) if(a+b>=2) ALL_ADD.push({a,op:"+",b,ans:a+b});
   for(let a=2;a<=MAX;a++) for(let b=0;b<a;b++) ALL_SUB.push({a,op:"-",b,ans:a-b});
+  // 30まで：1けた±1けた（くりあがり・くりさがり あり）と 2けた±1けた。かずも こたえも 1〜30（0 は つかわない）。
+  // たしざん 225・ひきざん 225。10まで の 90 は ぜんぶ この なかに はいる
+  const MAX30 = 30;
+  const ALL30_ADD=[], ALL30_SUB=[];
+  for(let a=1;a<=MAX30-1;a++) for(let b=1;b<=9 && a+b<=MAX30;b++) ALL30_ADD.push({a,op:"+",b,ans:a+b});
+  for(let a=2;a<=MAX30;a++) for(let b=1;b<=9 && b<a;b++) ALL30_SUB.push({a,op:"-",b,ans:a-b});
+  const NMAX = () => nrange==="30" ? MAX30 : MAX;
+  // 10を こえる かずが でて くる けいさん
+  const isBigF = f => !!f && !f.x && !f.three && Math.max(f.a, f.b, f.ans) > 10;
+  const isBigP = p => isBigF(p.f) || (typeof p.ans==="number" && p.ans > 10);
   function randomFact(){
     for(let t=0;t<60;t++){
-      const f = {...pick(Math.random()<0.5 ? ALL_ADD : ALL_SUB)};
+      const f = {...pick(nrange==="30" ? (Math.random()<0.5 ? ALL30_ADD : ALL30_SUB) : (Math.random()<0.5 ? ALL_ADD : ALL_SUB))};
       if((f.a===0||f.b===0) && Math.random()<0.8) continue;
       if(recent.includes(fKey(f))) continue;
       // ちょう むずかしい：0や 小さい かずだけの けいさんは さける
@@ -1245,15 +1293,22 @@ span.stkw > svg{position:absolute;left:0;top:0;width:100%;height:100%;display:bl
   const EDIBLE = ["あめ","いちご","みかん","おにぎり","くり"];
   const NAMES = ["みー","ころ"];
 
+  // 10を こえる ときは 10の わくを ならべる（23 なら わく 3つ：10・10・3）
   function frameHTML(a,op,b){
-    let h='<div class="tenframe" aria-hidden="true">';
-    for(let i=0;i<10;i++){
-      let c="";
-      if(op==="+"){ if(i<a) c="r"; else if(i<a+b) c="b"; }
-      else { if(i<a-b) c="r"; else if(i<a) c="x"; }
-      h+=`<span class="${c}"></span>`;
+    const nf = Math.max(1, Math.ceil((op==="+" ? a+b : a) / 10));
+    let h = nf > 1 ? '<div class="tenframes" aria-hidden="true">' : '';
+    for(let k=0;k<nf;k++){
+      h += '<div class="tenframe" aria-hidden="true">';
+      for(let j=0;j<10;j++){
+        const i = k*10 + j;
+        let c="";
+        if(op==="+"){ if(i<a) c="r"; else if(i<a+b) c="b"; }
+        else { if(i<a-b) c="r"; else if(i<a) c="x"; }
+        h+=`<span class="${c}"></span>`;
+      }
+      h += '</div>';
     }
-    return h+'</div>';
+    return h + (nf > 1 ? '</div>' : '');
   }
 
   /* パターンごとに、問題・答え・解説をつくる。つくれない組み合わせは null */
@@ -1358,10 +1413,13 @@ span.stkw > svg{position:absolute;left:0;top:0;width:100%;height:100%;display:bl
   const RIDES   = [["🚗","くるま"],["🚌","バス"],["🚃","でんしゃ"],["✈️","ひこうき"],["🚲","じてんしゃ"],["🚀","ロケット"],["🚒","しょうぼうしゃ"]];
   const emo = (e, n, cls="") => `<span class="xe ${cls}">${e}</span>`.repeat(n);
   const choiceNums = arr => arr.map(v=>({v, label:String(v)}));
+  // すうじの せん に だす はんい：でて くる かずが はいる 10ごとの くぎり（1〜10・11〜20・21〜30）
+  const nlWin = nums => { const a = nums.filter(v=>typeof v==="number" && v>0); return {lo: Math.floor((Math.min(...a)-1)/10)*10+1, hi: Math.ceil(Math.max(...a)/10)*10}; };
   // すうじの せん（こたえの せつめい よう）
   function numLine(mark, opt={}){
+    const lo = opt.lo || 1, hi = opt.hi || 10;
     let h='<div class="numline" aria-hidden="true">';
-    for(let i=1;i<=10;i++){
+    for(let i=lo;i<=hi;i++){
       const c = i===mark ? "on" : (opt.dim && opt.dim(i)) ? "dim" : (opt.soft && opt.soft(i)) ? "soft" : "";
       h+=`<span class="${c}">${i}</span>`;
     }
@@ -1443,14 +1501,14 @@ span.stkw > svg{position:absolute;left:0;top:0;width:100%;height:100%;display:bl
     sort(){
       const r=lvRank();
       const k = [3,4,rnd(4,5),5][r];
-      const nums = shuffle([1,2,3,4,5,6,7,8,9,10]).slice(0,k);
+      const nums = shuffle(Array.from({length:NMAX()}, (_,i)=>i+1)).slice(0,k);
       const desc = r>0 && Math.random()<0.5;
       const ok = [...nums].sort((x,y)=> desc ? y-x : x-y);
       return { type:"sort", f:xf(`sort:${nums.join(",")}:${desc?"d":"a"}`), ans:ok.join(" → "), cls:"pic",
         html:`<div class="xbig xnums">${nums.map(v=>`<span>${v}</span>`).join("")}</div><span class="ask">${desc ? "おおきい" : "ちいさい"} じゅんに ならべよう</span>`,
         parent:`${nums.join(" ")} を${desc ? "おおきい" : "ちいさい"}じゅんに`, confuse:[],
         explain:`${desc ? "おおきい" : "ちいさい"} じゅんは <b class="num">${ok.join(" → ")}</b>`,
-        frame:numLine(0, {soft:i=>nums.includes(i)}),
+        frame:numLine(0, {soft:i=>nums.includes(i), ...nlWin(nums)}),
         order:{nums, k}, time: 6000 + k*2500 };
     },
 
@@ -1460,23 +1518,23 @@ span.stkw > svg{position:absolute;left:0;top:0;width:100%;height:100%;display:bl
       const step = r>=2 && Math.random()<0.3 ? 2 : 1;
       const down = Math.random() < [0.35,0.45,0.5,0.5][r];   // へって いく ならび（9 → 8 → 7 → ?）
       const shown = 3, d = down ? -step : step;
-      const s0 = down ? rnd(1 + step*shown, 10) : rnd(1, 10 - step*shown);
+      const N = NMAX(), s0 = down ? rnd(1 + step*shown, N) : rnd(1, N - step*shown);
       const seq = Array.from({length:shown}, (_,i)=>s0+i*d), ans = s0+shown*d, last = seq[shown-1];
       return { type:"next", f:xf(`next:${s0}${down?"-":"+"}${step}`), ans, cls:"mid",
         html:`${seq.join(`<span class="op">→</span>`)}<span class="op">→</span>${BL}`,
         parent:`${seq.join("→")}→?`, confuse:[last, last-d, ans+1, ans-1].filter(v=>v!==ans),
         explain: `${step}ずつ ${down ? "へって" : "ふえて"} いるので <b class="num">${ans}</b>`,
-        frame:numLine(ans, {soft:i=>seq.includes(i)}) };
+        frame:numLine(ans, {soft:i=>seq.includes(i), ...nlWin([...seq, ans])}) };
     },
 
     // ⑦ まえの かず・うしろの かず
     prevnext(){
-      const n=rnd(2,9), before=Math.random()<0.5, ans = before ? n-1 : n+1;
+      const n=rnd(2,NMAX()-1), before=Math.random()<0.5, ans = before ? n-1 : n+1;
       return { type:"prevnext", f:xf(`pn:${n}${before?"-":"+"}`), ans, cls:"pic",
         html:`<div class="xbig">${n}</div><span class="ask">${n}の ひとつ ${before ? "まえ" : "あと"}の かずは？</span>`,
         parent:`${n}の ひとつ${before ? "まえ" : "あと"}`, confuse:[n, before ? n+1 : n-1],
         explain:`${n}の ひとつ ${before ? "まえ" : "あと"}は <b class="num">${ans}</b>`,
-        frame:numLine(ans, {soft:i=>i===n}) };
+        frame:numLine(ans, {soft:i=>i===n, ...nlWin([n, ans])}) };
     },
 
     // ⑧ かずを あてよう（ヒントで ひとつに しぼる）
@@ -1521,27 +1579,28 @@ span.stkw > svg{position:absolute;left:0;top:0;width:100%;height:100%;display:bl
     seq(){
       const r=lvRank();
       const step = r>=2 && Math.random()<0.35 ? 2 : 1;
-      const len = 5, s0 = rnd(1, 10-step*(len-1));
+      const len = 5, s0 = rnd(1, NMAX()-step*(len-1));
       const row = Array.from({length:len}, (_,i)=>s0+i*step);
       const bi = rnd(1, len-2);   // さいしょと さいごは あけない
       return { type:"seq", f:xf(`seq:${s0}+${step}@${bi}`), ans:row[bi], cls:"mid",
         html:`<span class="xseq">${row.map((v,i)=> i===bi ? `<b class="box">□</b>` : `<span>${v}</span>`).join("")}</span><span class="ask">□ に はいる かずは？</span>`,
         parent:`${row.map((v,i)=>i===bi?"□":v).join(" ")}`, confuse:[row[bi-1], row[bi+1]],
         explain: step===1 ? `${row[bi-1]} と ${row[bi+1]} の あいだは <b class="num">${row[bi]}</b>` : `2ずつ ふえて いるので <b class="num">${row[bi]}</b>`,
-        frame:numLine(row[bi], {soft:i=>row.includes(i) && i!==row[bi]}) };
+        frame:numLine(row[bi], {soft:i=>row.includes(i) && i!==row[bi], ...nlWin(row)}) };
     },
 
     // ⑩ どちらが おおきい？
     bigger(){
       const r=lvRank();
-      let a=rnd(1,10), b;
-      do{ b = r>=2 ? a + pick([-2,-1,1,2]) : rnd(1,10); }while(b===a || b<1 || b>10);
+      const N = NMAX();
+      let a=rnd(1,N), b;
+      do{ b = r>=2 ? a + pick([-2,-1,1,2]) : rnd(1,N); }while(b===a || b<1 || b>N);
       const big = Math.random()<0.5, ans = big ? Math.max(a,b) : Math.min(a,b);
       return { type:"bigger", f:xf(`big:${a},${b}:${big?"b":"s"}`), ans, cls:"mid",
         html:`${a}${HA("と")}${b}<span class="ask">${big ? "おおきい" : "ちいさい"}のは どっち？</span>`,
         parent:`${a} と ${b}（${big ? "おおきい" : "ちいさい"}ほう）`, confuse:[a===ans ? b : a],
         explain:`${big ? "おおきい" : "ちいさい"}のは <b class="num">${ans}</b>`,
-        frame:numLine(ans, {soft:i=>i===a||i===b}),
+        frame:numLine(ans, {soft:i=>i===a||i===b, ...nlWin([a, b])}),
         choices: choiceNums([a,b]) };
     },
 
@@ -1687,7 +1746,7 @@ span.stkw > svg{position:absolute;left:0;top:0;width:100%;height:100%;display:bl
 
   function makeProblem(){
     const lt = levelTypes();
-    const weak = weakFacts().filter(w=>!recent.includes(w.k) && (w.f.three ? threeAllowed(w.f) : true));
+    const weak = weakFacts().filter(w=>!recent.includes(w.k) && (w.f.three ? nrange!=="30" && threeAllowed(w.f) : nrange==="30" || !isBigF(w.f)));
     const tu = LEVELS[level].hardFacts ? "mid" : tuning();
     const pWeak = Math.min(tu==="hard" ? 0.4 : 0.3, 0.06*weak.length) * (tu==="easy" ? 0.3 : 1);
     for(let t=0;t<40;t++){
@@ -1820,6 +1879,33 @@ span.stkw > svg{position:absolute;left:0;top:0;width:100%;height:100%;display:bl
     chEl.append(slots, tiles, note);
     draw();
   }
+  /* 30まで の こたえ：0〜9 の ボタンで 2けた まで いれて「こたえる」。「けす」で 1もじ もどす。
+     30まで を えらんで いる とき と、10を こえる けいさん（にがて・わからなかった もんだい など）で つかう */
+  const PAD_SLOW = 1.5;   // ボタンを 2〜3かい おすので、じかんの めやす（すらすら・きらきら・10びょう）を ながく する
+  function renderPad(p){
+    chEl.className = "choices pad";
+    let v = "";
+    const disp = document.createElement("div"); disp.className = "pad-disp num"; disp.id = "padDisp"; disp.setAttribute("aria-live", "polite");
+    const keys = document.createElement("div"); keys.className = "pad-keys";
+    const del = document.createElement("button"); del.type = "button"; del.className = "choice pad-del"; del.textContent = "けす"; del.id = "padDel";
+    const go = document.createElement("button"); go.type = "button"; go.className = "choice pad-go"; go.textContent = "こたえる"; go.id = "padGo";
+    const draw = () => { disp.textContent = v || "？"; disp.classList.toggle("empty", !v); del.disabled = !v; go.disabled = !v; };
+    [1,2,3,4,5,6,7,8,9,0].forEach(d=>{
+      const b = document.createElement("button"); b.type = "button"; b.className = "choice num"; b.textContent = d; b.id = "pd" + d;
+      b.addEventListener("click", ()=>{ if(!current || v.length >= 2 || (d===0 && !v)) return; v += d; draw(); });
+      keys.appendChild(b);
+    });
+    del.addEventListener("click", ()=>{ if(current && v){ v = v.slice(0,-1); draw(); } });
+    go.addEventListener("click", ()=>{ if(current && v) answer(Number(v), null); });
+    const row = document.createElement("div"); row.className = "pad-row"; row.append(del, go);
+    chEl.append(disp, keys, row);
+    p.pad = true;
+    draw();
+  }
+  function markPad(ok){
+    const d = $("padDisp"); if(d) d.classList.add(ok ? "right" : "wrong");
+    chEl.querySelectorAll("button").forEach(b=>{ b.disabled = true; });
+  }
   function markMake(ok){
     chEl.querySelectorAll(".oslot").forEach(el=>{ if(el.textContent) el.classList.add(ok ? "right" : "wrong"); });
     chEl.querySelectorAll("button").forEach(b=>{ b.disabled = true; });
@@ -1862,7 +1948,8 @@ span.stkw > svg{position:absolute;left:0;top:0;width:100%;height:100%;display:bl
         b.addEventListener("click",()=>answer(c.v,b));
         chEl.appendChild(b);
       });
-    }else for(let n=1;n<=10;n++){
+    }else if(nrange==="30" || isBigP(p)) renderPad(p);
+    else for(let n=1;n<=10;n++){
       const b=document.createElement("button");
       b.className="choice num"; b.textContent=n; b.dataset.v=n; b.id="c"+n;
       b.addEventListener("click",()=>answer(n,b));
@@ -1891,7 +1978,7 @@ span.stkw > svg{position:absolute;left:0;top:0;width:100%;height:100%;display:bl
   }
   function startTimer(){
     stopTimer();
-    const ms = LEVELS[level].timed ? Math.max(LEVELS[level].timed, (current&&current.time)||0) : 0, el = $("timer");
+    const ms = LEVELS[level].timed ? Math.max(LEVELS[level].timed, (current&&current.time)||0) * (current && current.pad ? PAD_SLOW : 1) : 0, el = $("timer");
     el.hidden = !ms;
     if(!ms || !current) return;
     el.style.setProperty("--tms", ms+"ms");
@@ -1926,7 +2013,7 @@ span.stkw > svg{position:absolute;left:0;top:0;width:100%;height:100%;display:bl
   }
 
   // けいさん ごとの 1にち ぶんの きろく（おうちの方へ の グラフよう）。stats.fl[ひづけ][しき] = [といた かず, まちがい, じかんが かかった]
-  // 10までの たしざん・ひきざん（90こ）だけ。FL_KEEP にち ぶんを のこす
+  // ずかんに ある けいさん（30までの たしざん・ひきざん 450こ）だけ。FL_KEEP にち ぶんを のこす
   const FL_KEEP = 100;
   function logFactDay(k, ok, slow){
     if(!ZK_KEYS.has(k)) return;
@@ -1957,10 +2044,12 @@ span.stkw > svg{position:absolute;left:0;top:0;width:100%;height:100%;display:bl
       if(ok) drillSet.ok++;
       if(ok && p.idkKey){ const L = idkList(), j = L.findIndex(x=>x.key===p.idkKey); if(j>=0){ L.splice(j,1); saveStats(); } }   // せいかい したら リスト から けす
     }
-    const slow = ok && ms > slowLimit(p.type);
+    const msAdj = p.pad ? ms / PAD_SLOW : ms;   // すうじ ボタン は おす かいすう が おおい ぶん を ならす
+    const slow = ok && msAdj > slowLimit(p.type);
     calmNote(ok, ms, {timeout});
     if(p.order) markOrder(p, n);
     else if(p.make) markMake(ok);
+    else if(p.pad) markPad(ok);
     else [...chEl.children].forEach(b=>{
       b.disabled = true;
       if(b.dataset.v===String(p.ans)) b.classList.add("right");
@@ -1970,8 +2059,8 @@ span.stkw > svg{position:absolute;left:0;top:0;width:100%;height:100%;display:bl
 
     let errType = null;
     if(!ok){ errType = timeout ? "timeout" : (typeof n==="number" && typeof p.ans==="number" && Math.abs(n-p.ans)===1) ? "off1" : (p.confuse.includes(n) ? "confuse" : "other"); }
-    if(ok){ const ts=typeStat(p.type).times; ts.push(ms); if(ts.length>30) ts.shift(); }
-    const nm = updateFact(p, ok, slow, ms);
+    if(ok){ const ts=typeStat(p.type).times; ts.push(msAdj); if(ts.length>30) ts.shift(); }
+    const nm = updateFact(p, ok, slow, msAdj);
     onAnswered(ok); recordAcc(ok); stickerStep();
     round.push({type:p.type, parent:p.parent, op:p.f.three?"mix":p.f.op, ans:p.ans, chosen:n, ok, ms, slow,
                 errType, retry:p.retry, focus:!!p.focus, adj:p.adj||null, tags:factTags(p.f)});
@@ -2161,7 +2250,8 @@ span.stkw > svg{position:absolute;left:0;top:0;width:100%;height:100%;display:bl
     $("idkBtn").disabled = true;
     idkAdd(p);
     if(!drillSet) reviewQueue.push({p:{...p, retry:undefined}, kind:"miss", due:qIndex+REVIEW_GAP});
-    if(!p.order && !p.make) [...chEl.children].forEach(b=>{ b.disabled = true; if(b.dataset.v===String(p.ans)) b.classList.add("right"); else b.classList.add("dim"); });
+    if(p.pad){ chEl.querySelectorAll("button").forEach(b=>{ b.disabled = true; }); const d = $("padDisp"); if(d){ d.textContent = p.ans; d.classList.remove("empty"); d.classList.add("right"); } }
+    else if(!p.order && !p.make) [...chEl.children].forEach(b=>{ b.disabled = true; if(b.dataset.v===String(p.ans)) b.classList.add("right"); else b.classList.add("dim"); });
     else chEl.querySelectorAll("button").forEach(b=>{ b.disabled = true; });
     const pop = $("missPop");
     pop.innerHTML = `<div class="miss-card idk" role="dialog" aria-modal="true" aria-labelledby="missTitle">
@@ -2287,7 +2377,7 @@ span.stkw > svg{position:absolute;left:0;top:0;width:100%;height:100%;display:bl
     const s = analyze(round);
     $("sumScore").textContent = s.ok;
     $("sumTitle").textContent = (s.ok===ROUND ? "ぜんもん せいかい！すごい！" : "20もん おわったよ！");
-    $("sumLevel").textContent = LEVELS[level].label;
+    $("sumLevel").textContent = LEVELS[level].label + (nrange==="30" ? "・30まで" : "");
     $("sumPets").innerHTML = `<img class="sum-cheer" src="${pickCheer()}" alt="みー と ころ が よろこんで いるよ" draggable="false">`;
     if(mcOn()){ setPets("happy",null); say("cat", mcLine("finish")); }
     if(pendingSticker){
@@ -2308,7 +2398,7 @@ span.stkw > svg{position:absolute;left:0;top:0;width:100%;height:100%;display:bl
     const d=new Date();
     history.unshift({d:dayKey(d),
       at:`${d.getMonth()+1}/${d.getDate()} ${d.getHours()}:${String(d.getMinutes()).padStart(2,"0")}`,
-      lv:LEVELS[level].label, ok:s.ok, add:s.add, sub:s.sub, avg:s.avg, findings:s.findings
+      lv:LEVELS[level].label + (nrange==="30" ? "・30まで" : ""), ok:s.ok, add:s.add, sub:s.sub, avg:s.avg, findings:s.findings
     });
     history = history.slice(0,HIST_MAX);
     try{ lsSet(STORE, JSON.stringify(history)); }catch(e){}
@@ -3545,8 +3635,15 @@ span.stkw > svg{position:absolute;left:0;top:0;width:100%;height:100%;display:bl
   const ZK_ADD=[], ZK_SUB=[];
   for(let a=1;a<=9;a++){ const row=[]; for(let b=1;a+b<=MAX;b++) row.push({a,op:"+",b,ans:a+b}); ZK_ADD.push(row); }
   for(let a=2;a<=MAX;a++){ const row=[]; for(let b=1;b<a;b++) row.push({a,op:"-",b,ans:a-b}); ZK_SUB.push(row); }
-  const ZK_KEYS = new Set([...ZK_ADD.flat(), ...ZK_SUB.flat()].map(fKey));
-  const ZK_TOTAL = ZK_KEYS.size;
+  // 30まで の ずかん（さいしょの かず ごとの ぎょう）。10まで の 90 も ふくむ。すらすら シール は この 450 に つく
+  const ZK30_ADD=[], ZK30_SUB=[];
+  for(let a=1;a<=MAX30-1;a++){ const row=[]; for(let b=1;b<=9 && a+b<=MAX30;b++) row.push({a,op:"+",b,ans:a+b}); ZK30_ADD.push(row); }
+  for(let a=2;a<=MAX30;a++){ const row=[]; for(let b=1;b<=9 && b<a;b++) row.push({a,op:"-",b,ans:a-b}); ZK30_SUB.push(row); }
+  const ZK_KEYS = new Set([...ZK30_ADD.flat(), ...ZK30_SUB.flat()].map(fKey));
+  // ずかんで みる はんい（10まで／30まで）
+  const ZKR_KEY = "sansu-drill-zkrange-v1";
+  let zkRange = "10";
+  try{ if(localStorage.getItem(ZKR_KEY)==="30") zkRange = "30"; }catch(e){}
 
   /* すらすら シールは 3だんかい。いちど はった シールは けさない（まちがえても さげない）
        1 すらすら … つづけて 2かい、じかんないに せいかい
@@ -3576,7 +3673,7 @@ span.stkw > svg{position:absolute;left:0;top:0;width:100%;height:100%;display:bl
     return null;
   }
   function celebrateMaster(nm){
-    const {f, lv} = nm, all=[...ZK_ADD.flat(), ...ZK_SUB.flat()];
+    const {f, lv} = nm, all=[...ZK30_ADD.flat(), ...ZK30_SUB.flat()];
     const total = masterCount(all, lv), name = ZK_LV[lv].label;
     const w = pick(["cat","dog"]);
     setPets(lv>=2 ? "wow" : "happy", lv>=2 ? "wow" : "happy");
@@ -3629,9 +3726,27 @@ span.stkw > svg{position:absolute;left:0;top:0;width:100%;height:100%;display:bl
   $("calPrev").addEventListener("click", ()=>moveCal(-1));
   $("calNext").addEventListener("click", ()=>moveCal(1));
 
+  // 30まで は ぎょうを「1けた」「10〜19」「20〜29（30）」に わけて みだしを つける
+  function zkRowsHTML(rows, op){
+    const row = r => `<div class="zrow">${r.map(zkCell).join("")}</div>`;
+    if(zkRange!=="30") return rows.map(row).join("");
+    return [[1,9],[10,19],[20,MAX30]].map(([lo,hi])=>{
+      const rs = rows.filter(r=>r[0].a>=lo && r[0].a<=hi); if(!rs.length) return "";
+      const last = rs[rs.length-1][0].a;
+      return `<div class="zsec">${lo<10 ? "1けた" : `${lo}〜${last}`} ${opText(op)} 1けた</div>` + rs.map(row).join("");
+    }).join("");
+  }
+  document.querySelectorAll(".lv[data-zr]").forEach(b=>b.addEventListener("click",()=>{
+    if(b.dataset.zr===zkRange) return;
+    zkRange = b.dataset.zr; try{ lsSet(ZKR_KEY, zkRange); }catch(e){}
+    renderZukan();
+  }));
   function renderZukan(){
-    const addN = masterCount(ZK_ADD.flat()), subN = masterCount(ZK_SUB.flat());
-    const all = addN+subN, allL = [...ZK_ADD.flat(), ...ZK_SUB.flat()];
+    document.querySelectorAll(".lv[data-zr]").forEach(b=>b.setAttribute("aria-pressed", b.dataset.zr===zkRange ? "true" : "false"));
+    const ZA = zkRange==="30" ? ZK30_ADD : ZK_ADD, ZS = zkRange==="30" ? ZK30_SUB : ZK_SUB;
+    const ZK_TOTAL = ZA.flat().length + ZS.flat().length;
+    const addN = masterCount(ZA.flat()), subN = masterCount(ZS.flat());
+    const all = addN+subN, allL = [...ZA.flat(), ...ZS.flat()];
     const n2 = masterCount(allL, 2), n3 = masterCount(allL, 3);
     $("zkTotal").textContent = all;
     $("zkPika").textContent = n2; $("zkKira").textContent = n3;
@@ -3639,10 +3754,10 @@ span.stkw > svg{position:absolute;left:0;top:0;width:100%;height:100%;display:bl
     $("zkBar3").style.width = (n3/ZK_TOTAL*100).toFixed(1)+"%";
     $("zkMax").textContent = ZK_TOTAL;
     $("zkBar").style.width = (all/ZK_TOTAL*100).toFixed(1)+"%";
-    $("zkAddN").textContent = `${addN} / ${ZK_ADD.flat().length}`;
-    $("zkSubN").textContent = `${subN} / ${ZK_SUB.flat().length}`;
-    $("zkAdd").innerHTML = ZK_ADD.map(r=>`<div class="zrow">${r.map(zkCell).join("")}</div>`).join("");
-    $("zkSub").innerHTML = ZK_SUB.map(r=>`<div class="zrow">${r.map(zkCell).join("")}</div>`).join("");
+    $("zkAddN").textContent = `${addN} / ${ZA.flat().length}`;
+    $("zkSubN").textContent = `${subN} / ${ZS.flat().length}`;
+    $("zkAdd").innerHTML = zkRowsHTML(ZA, "+");
+    $("zkSub").innerHTML = zkRowsHTML(ZS, "-");
     document.querySelectorAll(".zk").forEach(b=>b.addEventListener("click",()=>{
       const e = stats.facts[b.dataset.k]||{};
       const mm = b.dataset.k.match(/^(\d+)([+-])(\d+)$/);
@@ -3788,7 +3903,7 @@ span.stkw > svg{position:absolute;left:0;top:0;width:100%;height:100%;display:bl
     // まえの きかんと くらべるのは、まえの きかんが まるごと きろくの ある ひに はいって いる とき だけ
     const pMin = prevKeys && tlogFirst && prevKeys[0] >= tlogFirst ? Math.round(pgSum(prevKeys, pgSec)/60) : null;
     // ③ けいさん ごと
-    const zk = [...ZK_ADD.flat(), ...ZK_SUB.flat()], inR = d => d && d >= from && d <= to;
+    const zk = [...ZK30_ADD.flat(), ...ZK30_SUB.flat()], inR = d => d && d >= from && d <= to;
     const got = lv => zk.filter(f=>{ const e = stats.facts[fKey(f)]; return e && e.master && inR((e.gd || [e.masterAt])[lv-1]); });
     const g1 = got(1), g2 = got(2), g3 = got(3);
     const fl = stats.fl || {}, flFirst = Object.keys(fl).sort()[0];
@@ -4073,6 +4188,21 @@ span.stkw > svg{position:absolute;left:0;top:0;width:100%;height:100%;display:bl
     }
   }
   document.querySelectorAll(".lv[data-lv]").forEach(b=>b.addEventListener("click",()=>{ if(b.dataset.lv!==level) setLevel(b.dataset.lv, true); }));
+  // かずの はんい（10まで／30まで）。かえたら 20もんを やりなおす
+  function setRange(r, announce){
+    nrange = r;
+    try{ lsSet(RANGE_KEY, r); }catch(e){}
+    document.querySelectorAll(".lv[data-nr]").forEach(b=>b.setAttribute("aria-pressed", b.dataset.nr===r ? "true" : "false"));
+    if(announce){
+      round=[]; streak=0; reviewQueue=[]; current=null;
+      nextProblem();
+      const w = pick(["cat","dog"]);
+      say(w, r==="30" ? (w==="cat" ? "30までの かずに したにゃ！くりあがりも あるにゃ" : "30までの かずに したよ！おおきい かず、がんばろう わん")
+                      : (w==="cat" ? "10までの かずに したにゃ" : "10までの かずに したよ わん"));
+    }
+  }
+  document.querySelectorAll(".lv[data-nr]").forEach(b=>b.addEventListener("click",()=>{ if(b.dataset.nr!==nrange) setRange(b.dataset.nr, true); }));
+  setRange(nrange, false);
 
 
   /* ---------- クラウド ほぞん ---------- */
@@ -4177,6 +4307,9 @@ span.stkw > svg{position:absolute;left:0;top:0;width:100%;height:100%;display:bl
     const t = e.target, k = e.key;
     if(t && (t.tagName === "INPUT" || t.tagName === "TEXTAREA" || t.isContentEditable)) return;
     if(!$("nkModal").hidden || !$("mcModal").hidden || !$("overlay").hidden) return;
+    if(k === "Enter" && mode === "drill" && current && current.pad && !kbOn($("nextBtn"))){
+      e.preventDefault(); const g = kbBtn("padGo"); if(g) g.click(); return;   // すうじ ボタン：Enter で こたえる（フォーカス して いる すうじ は おさない）
+    }
     if(k === "Enter"){
       if(t && t.tagName === "BUTTON") return;   // フォーカス して いる ボタンは ブラウザが おす
       const b = kbBtn("nextBtn") || kbBtn("ckPopNext")
@@ -4198,6 +4331,11 @@ span.stkw > svg{position:absolute;left:0;top:0;width:100%;height:100%;display:bl
           return;
         }
         if(d !== null) kbDigit(d, v => [...chEl.querySelectorAll(".otiles button")].find(b => kbOn(b) && b.textContent === String(v)) || null);
+        return;
+      }
+      if(p.pad){
+        if(k === "Backspace"){ e.preventDefault(); const b = kbBtn("padDel"); if(b) b.click(); return; }
+        if(d !== null){ const b = kbBtn("pd" + d); if(b) b.click(); }
         return;
       }
       if(p.choices){
