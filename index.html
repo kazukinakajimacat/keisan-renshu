@@ -710,7 +710,10 @@ span.stkw > svg{position:absolute;left:0;top:0;width:100%;height:100%;display:bl
 .lv[data-lv="super"][aria-pressed="true"]{background:#7453D6}
 /* かずの はんい（10まで／30まで） */
 .levels.nrange{grid-template-columns:repeat(2,1fr)!important}
-.lv[data-nr][aria-pressed="true"],.lv[data-zr][aria-pressed="true"]{background:var(--yellow);color:#2A2112}
+.lv[data-nr][aria-pressed="true"],.lv[data-zr][aria-pressed="true"],.lv[data-gr][aria-pressed="true"]{background:var(--yellow);color:#2A2112}
+/* ます けいさん 30まで：いれた とちゅう の かず と「けす」 */
+.grid td .gin{color:var(--blue)}
+#gpad .choice.gdel{grid-column:1/-1;font-size:20px;padding:6px 0}
 /* 30まで の こたえ：0〜9 で 2けた まで いれて「こたえる」 */
 .choices.pad{display:flex;flex-direction:column;align-items:stretch;gap:10px}
 .pad-disp{align-self:center;min-width:120px;text-align:center;font-size:44px;font-weight:900;line-height:1.15;background:var(--surface);border:3px solid var(--line);border-radius:16px;padding:2px 20px;font-variant-numeric:tabular-nums}
@@ -855,6 +858,10 @@ body.course .choice.pad-go{font-size:21px}
       <button class="lv" data-gk="add" id="gk-add">たしざん</button>
       <button class="lv" data-gk="sub" id="gk-sub">ひきざん</button>
       <button class="lv" data-gk="mix" id="gk-mix">まぜまぜ</button>
+    </div>
+    <div class="levels nrange" role="group" aria-label="かずの はんい">
+      <button class="lv" data-gr="10" id="gr-10">10まで</button>
+      <button class="lv" data-gr="30" id="gr-30">30まで</button>
     </div>
     <div class="gbar num">
       <div class="chip">じかん <span class="v" id="gtime">0:00</span></div>
@@ -2586,13 +2593,36 @@ body.course .choice.pad-go{font-size:21px}
   try{ const k=localStorage.getItem(GK_KEY); if(GKINDS[k]) gkind=k; }catch(e){}
   try{ gbest = JSON.parse(localStorage.getItem(GBEST_KEY)||"{}") || {}; }catch(e){ gbest={}; }
   let G = null;   // {rows, cols, cells:[{a,op,b,ans,chosen,ok,ms}], idx, start, timer, running}
+  // かずの はんい（10まで／30まで）。いろいろ もんだい とは べつに おぼえる。さいこう きろく も はんい ごとに わける
+  const GR_KEY = "sansu-drill-gridrange-v1";
+  let grange = "10", gbuf = "";   // gbuf：30まで で いれて いる とちゅう の かず
+  try{ if(localStorage.getItem(GR_KEY)==="30") grange = "30"; }catch(e){}
+  const gbk = () => grange==="30" ? gkind + "30" : gkind;
 
   const shuffle = a => { const x=[...a]; for(let i=x.length-1;i>0;i--){ const j=Math.floor(Math.random()*(i+1)); [x[i],x[j]]=[x[j],x[i]]; } return x; };
   const range = (lo,hi) => Array.from({length:hi-lo+1},(_,i)=>lo+i);
   const fmtT = ms => { const s=Math.floor(ms/1000); return `${Math.floor(s/60)}:${String(s%60).padStart(2,"0")}`; };
 
   // ひだりの かず（rows） と うえ（cols） で けいさん。答えはいつも 1〜10
+  function makeGrid30(kind){
+    if(kind==="add"){
+      const cols = shuffle(range(1,9)).slice(0,GN), top = MAX30 - Math.max(...cols);
+      const rows = shuffle(range(5, top)).slice(0,GN);
+      return {rows, cols:cols.map(v=>({op:"+",v}))};
+    }
+    if(kind==="sub"){
+      const rows = shuffle(range(10, MAX30)).slice(0,GN);
+      const cols = shuffle(range(1,9)).slice(0,GN).map(v=>({op:"-",v}));
+      return {rows, cols};
+    }
+    // まぜまぜ：ひだりは つづいた 5つの かず（10〜25）、うえは +と− が ぜんぶ ちがう かず
+    const st = rnd(10, 21), nPlus = rnd(2,3);
+    const plus = shuffle(range(1, Math.min(9, MAX30-(st+4)))).slice(0,nPlus);
+    const minus = shuffle(range(1,9).filter(v=>!plus.includes(v))).slice(0,GN-nPlus);
+    return {rows:shuffle(range(st, st+4)), cols:shuffle([...plus.map(v=>({op:"+",v})), ...minus.map(v=>({op:"-",v}))])};
+  }
   function makeGrid(kind){
+    if(grange==="30") return makeGrid30(kind);
     if(kind==="add"){
       const m = pick([4,5]);
       let rows = shuffle(range(0,m)).slice(0,GN);
@@ -2624,6 +2654,7 @@ body.course .choice.pad-go{font-size:21px}
         const k=i*GN+j, cell=G.cells[k];
         let cls="", txt="";
         if(cell.chosen!=null){ cls = cell.ok ? "ok" : "ng"; txt = cell.ans; }
+        else if(k===G.idx && G.running && gbuf){ cls="cur"; txt = `<span class="gin">${gbuf}</span>`; }
         else if(k===G.idx && G.running){
           cls="cur";
           // まぜまぜ：いま とく ますに「ひだりの かず ＋/− うえの かず」を うすく だす
@@ -2639,7 +2670,7 @@ body.course .choice.pad-go{font-size:21px}
       $("gh-r"+i).classList.add("hl"); $("gh-c"+j).classList.add("hl");
     }
     $("gleft").textContent = G.cells.length - G.idx;
-    $("gbest").textContent = gbest[gkind] ? fmtT(gbest[gkind]) : "-";
+    $("gbest").textContent = gbest[gbk()] ? fmtT(gbest[gbk()]) : "-";
   }
 
   function newGrid(){
@@ -2647,7 +2678,7 @@ body.course .choice.pad-go{font-size:21px}
     const g = makeGrid(gkind);
     const cells=[];
     g.rows.forEach(r=>g.cols.forEach(c=>{ cells.push({a:r, op:c.op, b:c.v, ans:calc(r,c.op,c.v), chosen:null}); }));
-    G = {...g, cells, idx:0, start:0, timer:null, running:false, cellAt:0};
+    G = {...g, cells, idx:0, start:0, timer:null, running:false, cellAt:0}; gbuf = "";
     $("gtime").textContent="0:00";
     $("gstartWrap").hidden=false;
     // まぜまぜは やりかたを スタートの まえに みせる
@@ -2665,7 +2696,7 @@ body.course .choice.pad-go{font-size:21px}
     say(w, hint + (w==="cat" ? "にゃ" : " わん"));
   }
 
-  function setPadEnabled(on){ [...$("gpad").children].forEach(b=>{ b.disabled=!on; b.className="choice num"; }); }
+  function setPadEnabled(on){ [...$("gpad").children].forEach(b=>{ b.disabled=!on; b.className = b.dataset.cls || "choice num"; }); }
 
   function startGrid(){
     if(tlGate()) return;
@@ -2676,13 +2707,23 @@ body.course .choice.pad-go{font-size:21px}
     renderGrid();
   }
 
+  // 30まで：すうじを おすと ますに でる。こたえの けたすう ぶん おしたら はんてい（0 から は はじめない）
+  function gridDigit(d){
+    if(!G || !G.running || G.idx>=G.cells.length) return;
+    if(!gbuf && d===0) return;
+    gbuf += d;
+    if(gbuf.length >= String(G.cells[G.idx].ans).length){ const n = Number(gbuf); gbuf = ""; gridAnswer(n); }
+    else renderGrid();
+  }
+  function gridDel(){ if(G && G.running && gbuf){ gbuf = gbuf.slice(0,-1); renderGrid(); } }
   function gridAnswer(n){
     if(!G || !G.running) return;
     const cell=G.cells[G.idx]; const now=performance.now();
     cell.chosen=n; cell.ok = n===cell.ans; cell.ms = now-G.cellAt; G.cellAt=now;
-    const slow = cell.ok && cell.ms > slowLimit("grid");
-    if(cell.ok){ const ts=typeStat("grid").times; ts.push(cell.ms); if(ts.length>30) ts.shift(); }
-    const nm = updateFact({type:"grid", f:{a:cell.a, op:cell.op, b:cell.b, ans:cell.ans}}, cell.ok, slow, cell.ms);
+    const msAdj = grange==="30" ? cell.ms / PAD_SLOW : cell.ms;   // ボタンを おす かいすう が おおい ぶん を ならす
+    const slow = cell.ok && msAdj > slowLimit("grid");
+    if(cell.ok){ const ts=typeStat("grid").times; ts.push(msAdj); if(ts.length>30) ts.shift(); }
+    const nm = updateFact({type:"grid", f:{a:cell.a, op:cell.op, b:cell.b, ans:cell.ans}}, cell.ok, slow, msAdj);
     onAnswered(cell.ok);
     calmNote(cell.ok, cell.ms, {noFast:true});
     G.idx++;
@@ -2714,8 +2755,8 @@ body.course .choice.pad-go{font-size:21px}
     const okN = G.cells.filter(c=>c.ok).length;
     const miss = G.cells.filter(c=>!c.ok);
     // 記録はぜんもん正解のときだけ
-    const isRec = okN===G.cells.length && (!gbest[gkind] || total<gbest[gkind]);
-    if(isRec){ gbest[gkind]=total; try{ lsSet(GBEST_KEY, JSON.stringify(gbest)); }catch(e){} $("gbest").textContent = fmtT(total); }
+    const isRec = okN===G.cells.length && (!gbest[gbk()] || total<gbest[gbk()]);
+    if(isRec){ gbest[gbk()]=total; try{ lsSet(GBEST_KEY, JSON.stringify(gbest)); }catch(e){} $("gbest").textContent = fmtT(total); }
     $("grScore").textContent=okN; $("grTime").textContent=fmtT(total);
     $("grRec").hidden=!isRec;
     $("grTitle").textContent = okN===G.cells.length ? "ぜんぶ せいかい！" : "さいごまで できたね！";
@@ -2728,7 +2769,7 @@ body.course .choice.pad-go{font-size:21px}
 
     const f=[];
     const avg = total/G.cells.length;
-    f.push(`${GKINDS[gkind].name}25問、${okN}問正解、タイム${fmtT(total)}（1問平均${(avg/1000).toFixed(1)}秒）。`);
+    f.push(`${GKINDS[gkind].name}${grange==="30" ? "（30まで）" : ""}25問、${okN}問正解、タイム${fmtT(total)}（1問平均${(avg/1000).toFixed(1)}秒）。`);
     if(miss.length) f.push(`間違えた計算：${miss.map(c=>`${c.a} ${opText(c.op)} ${c.b}（${c.chosen}と回答）`).join("、")}。これらは、いろいろもんだいでも多めに出します。`);
     const slowC = G.cells.filter(c=>c.ok).sort((x,y)=>y.ms-x.ms).slice(0,3).filter(c=>c.ms>avg*1.6);
     if(slowC.length) f.push(`手が止まりやすかった計算：${slowC.map(c=>`${c.a} ${opText(c.op)} ${c.b}（${(c.ms/1000).toFixed(1)}秒）`).join("、")}。`);
@@ -2736,29 +2777,40 @@ body.course .choice.pad-go{font-size:21px}
       const mo = miss.filter(c=>c.chosen===calc(c.a, c.op==="+"?"-":"+", c.b)).length;
       if(mo) f.push(`+と−を取り違えたと思われるミスが${mo}回ありました。列ごとに記号が変わるので、記号を指でさしてから計算すると防ぎやすいです。`);
     }
-    if(!miss.length && gbest[gkind] && !isRec) f.push(`これまでの最高記録は${fmtT(gbest[gkind])}です。`);
+    if(!miss.length && gbest[gbk()] && !isRec) f.push(`これまでの最高記録は${fmtT(gbest[gbk()])}です。`);
     $("grFind").innerHTML = f.map(x=>`<li>${x}</li>`).join("");
     $("gresult").hidden=false;
 
     const d=new Date();
     history.unshift({d:dayKey(d), at:`${d.getMonth()+1}/${d.getDate()} ${d.getHours()}:${String(d.getMinutes()).padStart(2,"0")}`,
-      lv:`ます・${GKINDS[gkind].label}`, ok:okN, total:25, add:"-", sub:"-", avg:fmtT(total), findings:f});
+      lv:`ます・${GKINDS[gkind].label}${grange==="30" ? "・30まで" : ""}`, ok:okN, total:25, add:"-", sub:"-", avg:fmtT(total), findings:f});
     history=history.slice(0,HIST_MAX);
     try{ lsSet(STORE, JSON.stringify(history)); }catch(e){}
-    logSession({k:"grid", gk:gkind, n:G.cells.length, ok:okN, t:Math.round(total), ms:Math.round(total/G.cells.length)});
+    logSession({k:"grid", gk:gkind, ...(grange==="30" ? {nr:30} : {}), n:G.cells.length, ok:okN, t:Math.round(total), ms:Math.round(total/G.cells.length)});
     renderHistory();
     $("gresult").scrollIntoView({behavior:"smooth", block:"start"});
     if(pendingSticker) setTimeout(showStickerBanner, 700);
     else if(pendingEvent) setTimeout(showGoalBanner, 700);
   }
 
-  // すうじパッド
-  for(let n=1;n<=10;n++){
-    const b=document.createElement("button");
-    b.className="choice num"; b.textContent=n; b.id="g"+n;
-    b.addEventListener("click",()=>gridAnswer(n));
-    $("gpad").appendChild(b);
+  // すうじパッド：10まで は 1〜10 を おして こたえる。30まで は 1〜9・0 で 2けた まで（「けす」で 1もじ もどす）
+  function renderGPad(){
+    const pad = $("gpad"); pad.innerHTML = "";
+    const keys = grange==="30" ? [1,2,3,4,5,6,7,8,9,0] : [1,2,3,4,5,6,7,8,9,10];
+    keys.forEach(n=>{
+      const b=document.createElement("button");
+      b.className="choice num"; b.textContent=n; b.id="g"+n;
+      b.addEventListener("click",()=> grange==="30" ? gridDigit(n) : gridAnswer(n));
+      pad.appendChild(b);
+    });
+    if(grange==="30"){
+      const b=document.createElement("button");
+      b.className = b.dataset.cls = "choice gdel"; b.textContent="けす"; b.id="gdel";
+      b.addEventListener("click", gridDel);
+      pad.appendChild(b);
+    }
   }
+  renderGPad();
   $("gstart").addEventListener("click", startGrid);
   $("gagain").addEventListener("click", ()=>{ newGrid(); window.scrollTo({top:0}); });
 
@@ -2768,6 +2820,15 @@ body.course .choice.pad-go{font-size:21px}
     newGrid();
   }
   document.querySelectorAll(".gk .lv").forEach(b=>b.addEventListener("click",()=>setGKind(b.dataset.gk)));
+  function setGRange(r, renew){
+    grange = r; gbuf = "";
+    try{ lsSet(GR_KEY, r); }catch(e){}
+    document.querySelectorAll(".lv[data-gr]").forEach(b=>b.setAttribute("aria-pressed", b.dataset.gr===r ? "true" : "false"));
+    renderGPad();
+    if(renew) newGrid();
+  }
+  document.querySelectorAll(".lv[data-gr]").forEach(b=>b.addEventListener("click",()=>{ if(b.dataset.gr!==grange) setGRange(b.dataset.gr, true); }));
+  setGRange(grange, false);
 
 
   /* ---------- きょうの めあて ---------- */
@@ -4352,6 +4413,11 @@ body.course .choice.pad-go{font-size:21px}
     }
     // ます けいさん
     if(mode === "grid" && G && G.running){
+      if(grange==="30"){
+        if(k === "Backspace"){ e.preventDefault(); const b = kbBtn("gdel"); if(b) b.click(); return; }
+        if(d !== null){ const b = kbBtn("g" + d); if(b) b.click(); }
+        return;
+      }
       if(d !== null) kbDigit(d, v => kbBtn("g" + v));
       return;
     }
