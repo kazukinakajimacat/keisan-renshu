@@ -1226,7 +1226,9 @@ body.course .choice.pad-go{font-size:21px}
   const RANGE_KEY = "sansu-drill-range-v1";
   let nrange = "10";
   try{ if(localStorage.getItem(RANGE_KEY)==="30") nrange = "30"; }catch(e){}
-  const R30_TYPES = new Set(["plain","missing","decomp","pic","word","next","prevnext","seq","bigger","sort"]);
+  // 30まで に ださない のは「なんばんめ？」「どちらが なんこ おおい？」「かずを あてよう」（ユーザー指定）
+  const R30_TYPES = new Set(["plain","missing","decomp","pic","word","three","next","prevnext","seq","bigger","sort",
+    "atoiku","ten","submiss","same","target","exprcmp","sign","truefalse","pickexpr","make","kaimono","fix"]);
   const levelTypes = () => Object.keys(LEVELS[level].types).filter(t => nrange!=="30" || R30_TYPES.has(t));
   function threeAllowed(f){
     const m = LEVELS[level].three;
@@ -1281,9 +1283,10 @@ body.course .choice.pad-go{font-size:21px}
     for(let t=0;t<200;t++){
       const o1=Math.random()<0.5?"+":"-";
       const o2= mixed ? (o1==="+"?"-":"+") : o1;
-      const a=rnd(1,MAX), b=rnd(1,6), c=rnd(1,6);
-      const r1=calc(a,o1,b); if(r1<0||r1>MAX) continue;
-      const ans=calc(r1,o2,c); if(ans<1||ans>MAX) continue;
+      const N = NMAX(), big = N > MAX;
+      const a = big ? rnd(1,N-1) : rnd(1,MAX), b = big ? rnd(1,9) : rnd(1,6), c = big ? rnd(1,9) : rnd(1,6);
+      const r1=calc(a,o1,b); if(r1<(big?1:0)||r1>N) continue;
+      const ans=calc(r1,o2,c); if(ans<1||ans>N) continue;
       const g={three:true, a,o1,b,o2,c,r1,ans};
       if(recent.includes(fKey(g)) && t<150) continue;
       return g;
@@ -1475,13 +1478,14 @@ body.course .choice.pad-go{font-size:21px}
 
     // ③ あと いくつ？（めあての かずまで）
     atoiku(){
-      const r=lvRank();
-      const T = rnd([5,5,6,6][r], [7,10,10,10][r]);
-      const c = rnd(Math.max(1, T-([4,6,8,8][r])), T-1);
-      const asText = r>0 && Math.random()<0.4;
+      const r=lvRank(), big = NMAX() > MAX;
+      const T = big ? rnd(11, NMAX()) : rnd([5,5,6,6][r], [7,10,10,10][r]);
+      const c = big ? rnd(T-([4,6,9,9][r]), T-1) : rnd(Math.max(1, T-([4,6,8,8][r])), T-1);
+      const asText = big || (r>0 && Math.random()<0.4);
       const [e,name] = pick([...ANIMALS.slice(0,5), ...FRUITS.slice(0,4)]);
       const unit = ANIMALS.some(x=>x[0]===e) ? "ひき" : "こ";
       if(!asText && T===10) return XGEN.atoiku();   // 10の ときは「10に なるのは？」と かぶるので ことばで だす
+      if(big && T%10===0 && Math.random()<0.7) return XGEN.atoiku();   // 20・30 は「20に なるのは？」と かぶるので すくなめ
       const verb = unit==="ひき" ? "います" : "あります";
       const html = asText
         ? `<div class="xbig">${c}<small>${unit}</small></div><span class="ask">${name}が ${c}${unit} ${verb}。<br>あと いくつで ${T}${unit}？</span>`
@@ -1494,14 +1498,14 @@ body.course .choice.pad-go{font-size:21px}
 
     // ④ 10に なるのは？
     ten(){
-      const r=lvRank(), n=rnd(1,9);
+      const r=lvRank(), T = NMAX() > MAX ? pick([10,20,30]) : 10, n=rnd(T-9,T-1);
       const pic = Math.random() < [0.7,0.5,0.35,0.25][r];
-      return { type:"ten", f:xf(`ten:${n}:${pic?"p":"t"}`), ans:10-n, cls: pic ? "pic" : "small",
+      return { type:"ten", f:xf(`ten:${n}${T===10 ? "" : "/"+T}:${pic?"p":"t"}`), ans:T-n, cls: pic ? "pic" : "small", tag: T===10 ? null : `${T}に なるのは？`,
         html: pic
-          ? frameHTML(n,"+",0) + `<span class="ask">あと いくつ あかを ふやすと 10に なる？</span>`
-          : `${n}${HA("と")}${BL}${HA("で")}10<span class="ask">${n}と あわせて 10に なる かずは？</span>`,
-        parent:`${n} と ? で 10`, confuse:[n, 10],
-        explain:`${n} と <b class="num">${10-n}</b> で 10`, frame:frameHTML(n,"+",10-n) };
+          ? frameHTML(n,"+",0) + `<span class="ask">あと いくつ あかを ふやすと ${T}に なる？</span>`
+          : `${n}${HA("と")}${BL}${HA("で")}${T}<span class="ask">${n}と あわせて ${T}に なる かずは？</span>`,
+        parent:`${n} と ? で ${T}`, confuse:[n, T],
+        explain:`${n} と <b class="num">${T-n}</b> で ${T}`, frame:frameHTML(n,"+",T-n) };
     },
 
     // ⑤ ならべかえ（すうじを じゅんばんに タップ）
@@ -1613,7 +1617,7 @@ body.course .choice.pad-go{font-size:21px}
 
     /* ---------- しきを かんがえる もんだい（10しゅるい） ----------
        もんだいの なかみ（かず・せんたくし）は drill/patterns.js で つくる。ここは がめんに だす かたちに する だけ。
-       しきに でる かず も こたえ も 1〜10。もんだいぶんは ひらがなと すうじ だけ */
+       しきに でる かず も こたえ も 1〜10（30まで の ときは 1〜30、たす・ひく かず は 1けた）。もんだいぶんは ひらがなと すうじ だけ */
     // ⑪ ひきざんの あなあき（a − ? = c ／ ? − b = c）
     submiss(){
       const d = PT.submiss(), {a,b,c} = d, f = {a, op:"-", b, ans:c};
@@ -1651,7 +1655,7 @@ body.course .choice.pad-go{font-size:21px}
         html:`<span class="xpair">${exH(x)}${HA("と")}${exH(y)}</span><span class="ask">こたえが ${w}のは どっち？</span>`,
         parent:`${PT.text(x)} と ${PT.text(y)}（${w}ほう）`, confuse:[],
         explain:`${PT.text(x)} = ${x.v}、${PT.text(y)} = ${y.v}<br>${w}のは <b class="num nw">${rt}</b>`,
-        frame:numLine(d.right.v, {soft:i=>i===x.v||i===y.v}), choices:exChoices(d.pair), time:12000 };
+        frame:numLine(d.right.v, {soft:i=>i===x.v||i===y.v, ...nlWin([x.v, y.v])}), choices:exChoices(d.pair), time:12000 };
     },
 
     // ⑮ ＋かな？ −かな？
@@ -1752,8 +1756,10 @@ body.course .choice.pad-go{font-size:21px}
   }
 
   function makeProblem(){
+    PT.use(nrange==="30" ? 30 : 10);
     const lt = levelTypes();
-    const weak = weakFacts().filter(w=>!recent.includes(w.k) && (w.f.three ? nrange!=="30" && threeAllowed(w.f) : nrange==="30" || !isBigF(w.f)));
+    const big3 = f => Math.max(f.a, f.r1, f.ans) > MAX;
+    const weak = weakFacts().filter(w=>!recent.includes(w.k) && (w.f.three ? threeAllowed(w.f) && (nrange==="30" || !big3(w.f)) : nrange==="30" || !isBigF(w.f)));
     const tu = LEVELS[level].hardFacts ? "mid" : tuning();
     const pWeak = Math.min(tu==="hard" ? 0.4 : 0.3, 0.06*weak.length) * (tu==="easy" ? 0.3 : 1);
     for(let t=0;t<40;t++){
@@ -1933,7 +1939,7 @@ body.course .choice.pad-go{font-size:21px}
     current = p; lastKey = fKey(p.f);
     recent.push(lastKey); if(recent.length>RECENT_N) recent.shift();
 
-    $("ptag").textContent = TYPES[p.type].label;
+    $("ptag").textContent = p.tag || TYPES[p.type].label;
     const ag=$("againTag");
     ag.hidden = !p.retry && !drillSet;
     ag.textContent = drillSet ? `${drillSet.kind==="idk" ? "わからなかった もんだい" : "にがて もんだい"} ${drillSet.i} / ${drillSet.n}`
@@ -2074,7 +2080,7 @@ body.course .choice.pad-go{font-size:21px}
     current = null;
 
     const base = {type:p.type, f:p.f, ans:p.ans, cls:p.cls, html:p.html, parent:p.parent, confuse:p.confuse, explain:p.explain, frame:p.frame,
-                  choices:p.choices, order:p.order, time:p.time, make:p.make, check:p.check, done:p.done};
+                  choices:p.choices, order:p.order, time:p.time, make:p.make, check:p.check, done:p.done, tag:p.tag};
     if(!ok && p.retry!=="miss") reviewQueue.push({p:base, kind:"miss", due:qIndex+REVIEW_GAP});
     else if(slow && !p.retry) reviewQueue.push({p:base, kind:"slow", due:qIndex+SLOW_GAP});
 
@@ -2181,7 +2187,7 @@ body.course .choice.pad-go{font-size:21px}
   }
   let drillSet = null, setLv0 = null;   // {kind, list, i, ok, n}
   const idkList = () => stats.idk || (stats.idk = []);
-  const PKEYS = ["type","f","ans","cls","html","parent","confuse","explain","frame","choices","order","make","time","done"];
+  const PKEYS = ["type","f","ans","cls","html","parent","confuse","explain","frame","choices","order","make","time","done","tag"];
   const pSave = p => { const o = {}; PKEYS.forEach(k=>{ if(p[k] !== undefined) o[k] = p[k]; }); return JSON.parse(JSON.stringify(o)); };
   // しまって おいた もんだい を もどす（しきを つくろう の はんていは かたち から つくりなおす）
   const pLoad = o => {

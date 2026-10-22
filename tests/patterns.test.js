@@ -131,4 +131,44 @@ for(let m = 5; m <= 9; m++) assert.ok(count.money[m] > 0, `kaimono: ${m}えん �
 // せいかいの いち は かたよらない
 for(const [k, arr] of Object.entries(firstPos)) arr.forEach((c, i) => assert.ok(Math.abs(c / N - 1 / arr.length) < 0.04, `${k}: せいかいが ${i + 1}ばんめ に かたよる（${c}）`));
 
-console.log(`pattern tests: all passed（10パターン × ${N}もん）`);
+// ---------- 30まで（P.use(30)） ----------
+// 1けた±1けた・2けた±1けた だけ：かず も こたえ も 1〜30、たす かず・ひく かず は 1〜9（2けた どうし は ださない）
+const in30 = v => Number.isInteger(v) && v >= 1 && v <= 30;
+const ok30 = (e, label) => {
+  assert.ok(in30(e.a) && Number.isInteger(e.b) && e.b >= 1 && e.b <= 9, `${label}: 30まで の かたち では ない ${JSON.stringify(e)}`);
+  assert.equal(e.v, val(e), `${label}: v が ちがう`);
+  assert.ok(in30(e.v), `${label}: こたえが 1〜30 では ない ${JSON.stringify(e)}`);
+};
+assert.equal(P.use(30), 30);
+assert.equal(P.POOLS[30].EXPRS.length, 450);
+P.POOLS[30].EXPRS.forEach(e => ok30(e, "EXPRS30"));
+let big30 = 0;
+for(let i = 0; i < N; i++){
+  { const p = P.submiss(); ok30({a:p.a, op:"-", b:p.b, v:p.c}, "submiss30"); assert.equal(p.ans, p.form === "R" ? p.b : p.a);
+    const sol = []; for(let x = 1; x <= 30; x++) if(p.form === "R" ? p.a - x === p.c : x - p.b === p.c) sol.push(x);
+    assert.deepEqual(sol, [p.ans]); if(p.a > 10) big30++; }
+  { const p = P.same(); ok30(p.base, "same30"); p.choices.forEach(e => ok30(e, "same30")); distinct(p.choices, "same30");
+    assert.equal(p.choices.filter(e => e.v === p.base.v).length, 1); p.choices.forEach(e => assert.ok(!swapped(e, p.base))); }
+  { const p = P.target(); assert.ok(p.n >= 2 && p.n <= 30); p.choices.forEach(e => ok30(e, "target30")); distinct(p.choices, "target30");
+    assert.equal(p.choices.filter(e => e.v === p.n).length, 1); }
+  for(const lv of [0, 1, 2, 3]){ const p = P.exprcmp(lv); p.pair.forEach(e => ok30(e, "exprcmp30")); distinct(p.pair, "exprcmp30");
+    const [x, y] = p.pair; assert.equal(p.right, p.big ? (x.v > y.v ? x : y) : (x.v < y.v ? x : y)); }
+  { const p = P.sign(); ok30({a:p.a, op:p.ans, b:p.b, v:p.c}, "sign30");
+    assert.deepEqual(["+", "-"].filter(o => (o === "+" ? p.a + p.b : p.a - p.b) === p.c), [p.ans]); }
+  { const p = P.truefalse(); ok30(p.e, "tf30"); assert.ok(in30(p.shown)); assert.equal(p.ok, p.shown === p.e.v); }
+  { const p = P.pickexpr(); p.choices.forEach(e => ok30(e, "pick30")); distinct(p.choices, "pick30");
+    assert.ok(p.a > p.b && p.a >= 10, "pick30: a は 10 いじょう"); hira(p.story, "pick30"); hira(p.ask, "pick30");
+    assert.deepEqual((p.story.match(/\d+/g) || []).map(Number), [p.a, p.b]); }
+  { const p = P.make(); p.cards.forEach(v => assert.ok(in30(v), "make30 はんい"));
+    const perms = [[0,1,2],[0,2,1],[1,0,2],[1,2,0],[2,0,1],[2,1,0]].map(ix => ix.map(i => p.cards[i]));
+    const good = [...new Set(perms.filter(p.check).map(a => a.join(",")))].sort();
+    assert.deepEqual(good, [...new Set(p.answers.map(a => a.join(",")))].sort(), `make30: ${p.cards} ${p.op}`);
+    const [a0, b0, c0] = p.answers[0]; ok30({a:a0, op:p.op, b:b0, v:c0}, "make30 さいしょの こたえ"); }
+  { const p = P.kaimono(); ok30({a:p.money, op:"-", b:p.price, v:p.ans}, "kaimono30"); assert.ok(p.money >= 10); hira(p.name, "kaimono30"); }
+  { const p = P.fix(); ok30(p.e, "fix30"); assert.ok(in30(p.wrong)); assert.notEqual(p.wrong, p.ans); }
+}
+assert.ok(big30 > N * 0.5, "30まで：10を こえる かず が でる");
+assert.equal(P.use(10), 10);
+{ const p = P.target(); assert.ok(p.n <= 10, "use(10) で もとに もどる"); }
+
+console.log(`pattern tests: all passed（10パターン × ${N}もん、10まで と 30まで）`);
