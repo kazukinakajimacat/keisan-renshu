@@ -710,7 +710,7 @@ span.stkw > svg{position:absolute;left:0;top:0;width:100%;height:100%;display:bl
 .lv[data-lv="super"][aria-pressed="true"]{background:#7453D6}
 /* かずの はんい（10まで／30まで） */
 .levels.nrange{grid-template-columns:repeat(2,1fr)!important}
-.lv[data-nr][aria-pressed="true"],.lv[data-zr][aria-pressed="true"],.lv[data-gr][aria-pressed="true"]{background:var(--yellow);color:#2A2112}
+.lv[data-nr][aria-pressed="true"],.lv[data-gr][aria-pressed="true"]{background:var(--yellow);color:#2A2112}
 /* ます けいさん 30まで：いれた とちゅう の かず と「けす」 */
 .grid td .gin{color:var(--blue)}
 #gpad .choice.gdel{grid-column:1/-1;font-size:20px;padding:6px 0}
@@ -749,7 +749,7 @@ body.course .choice.pad-go{font-size:21px}
 .cal-nav .ct small{display:block;font-size:12px;color:var(--muted);font-weight:700}
 .cal-b:disabled{opacity:.35;cursor:default}
 .zk-nav{margin-bottom:8px}
-.zk-nav .ct{font-size:15px}
+.zk-nav .ct{font-size:15px;word-break:keep-all}
 .alb-nav{margin:4px 0 8px}
 .cal-b{font:inherit;font-size:14px;font-weight:900;color:var(--ink);background:var(--bg);border:2px solid var(--line);border-radius:999px;padding:6px 12px;cursor:pointer;white-space:nowrap}
 .cal-b:disabled{opacity:.35;cursor:default}
@@ -987,10 +987,6 @@ body.course .choice.pad-go{font-size:21px}
   </div>
 
   <div id="zukanMain" class="stack" hidden>
-    <div class="levels nrange" role="group" aria-label="ずかんの はんい">
-      <button class="lv" data-zr="10">10まで</button>
-      <button class="lv" data-zr="30">30まで</button>
-    </div>
     <div class="zk-head">
       <div class="zk-big">すらすら シール <b class="num" id="zkTotal">0</b> / <span class="num" id="zkMax">90</span></div>
       <div class="zk-bar"><i id="zkBar"></i><i id="zkBar2" class="b2"></i><i id="zkBar3" class="b3"></i></div>
@@ -3731,10 +3727,18 @@ body.course .choice.pad-go{font-size:21px}
   const ZK10_KEYS = new Set([...ZK_ADD.flat(), ...ZK_SUB.flat()].map(fKey));
   const zkOnly30 = rows => rows.map(r=>r.map(f=>ZK10_KEYS.has(fKey(f)) ? null : f)).filter(r=>r.some(Boolean));
   const ZK30X_ADD = zkOnly30(ZK30_ADD), ZK30X_SUB = zkOnly30(ZK30_SUB);
-  // ずかんで みる はんい（10まで／30まで）
-  const ZKR_KEY = "sansu-drill-zkrange-v1";
-  let zkRange = "10";
-  try{ if(localStorage.getItem(ZKR_KEY)==="30") zkRange = "30"; }catch(e){}
+  /* ずかん の ページ（「まえ」「つぎ」で めくる）。さいしょ は 10まで の 45こ、そのあと 30まで を くぎり ごとに。
+     ページ どうし で おなじ しき は ださない（30まで の ページ には 10まで の 90 を いれない） */
+  function zkPages(rows10, rows30x, op){
+    const ra = r => r.find(Boolean).a, o = opText(op);
+    const pages = [{title: op==="+" ? "こたえが 10まで" : "10まで の ひきざん", rows: rows10}];
+    [[1,9],[10,19],[20,MAX30]].forEach(([lo,hi])=>{
+      const rs = rows30x.filter(r=>ra(r)>=lo && ra(r)<=hi); if(!rs.length) return;
+      pages.push({title: lo<10 ? `こたえが 11〜18` : `${ra(rs[0])}〜${ra(rs[rs.length-1])} ${o} 1けた`, rows: rs});   // 1けた＋1けた の くりあがり は こたえ 11〜18
+    });
+    return pages;
+  }
+  const ZK_PAGES = {"+": zkPages(ZK_ADD, ZK30X_ADD, "+"), "-": zkPages(ZK_SUB, ZK30X_SUB, "-")};
 
   /* すらすら シールは 3だんかい。いちど はった シールは けさない（まちがえても さげない）
        1 すらすら … つづけて 2かい、じかんないに せいかい
@@ -3817,29 +3821,21 @@ body.course .choice.pad-go{font-size:21px}
   $("calPrev").addEventListener("click", ()=>moveCal(-1));
   $("calNext").addEventListener("click", ()=>moveCal(1));
 
-  // 30まで は ぎょうを「1けた」「10〜19」「20〜29（30）」に わけて みだしを つける
-  // 30まで は ながく なるので、くぎり（1けた・10〜19・20〜29 など）ごとに 1ページ。「まえ」「つぎ」で めくる
   const zkPage = {"+":0, "-":0};
-  function zkRowsHTML(rows, op){
+  function zkRowsHTML(op){
     const row = r => `<div class="zrow">${r.map(f=>f ? zkCell(f) : `<span class="zk-sp"></span>`).join("")}</div>`;
-    if(zkRange!=="30") return rows.map(row).join("");
-    const ra = r => r.find(Boolean).a;
-    const secs = [[1,9],[10,19],[20,MAX30]].map(([lo,hi])=>{
-      const rs = rows.filter(r=>ra(r)>=lo && ra(r)<=hi); if(!rs.length) return null;
-      return {rs, title:`${lo<10 ? "1けた" : `${ra(rs[0])}〜${ra(rs[rs.length-1])}`} ${opText(op)} 1けた`};
-    }).filter(Boolean);
-    const i = zkPage[op] = Math.max(0, Math.min(secs.length-1, zkPage[op])), sec = secs[i];
+    const secs = ZK_PAGES[op];
+    const i = zkPage[op] = Math.max(0, Math.min(secs.length-1, zkPage[op])), sec = {title: secs[i].title, rs: secs[i].rows};
     return `<div class="cal-nav zk-nav">
         <button type="button" class="cal-b" data-zp="${op}" data-d="-1" aria-label="まえの ページ"${i===0 ? " disabled" : ""}>◀ まえ</button>
         <div class="ct">${sec.title}<small class="num">${i+1} / ${secs.length}</small></div>
         <button type="button" class="cal-b" data-zp="${op}" data-d="1" aria-label="つぎの ページ"${i===secs.length-1 ? " disabled" : ""}>つぎ ▶</button>
       </div>` + sec.rs.map(row).join("");
   }
-  const zkRows = op => zkRange==="30" ? (op==="+" ? ZK30X_ADD : ZK30X_SUB) : (op==="+" ? ZK_ADD : ZK_SUB);
   // ずかんの ます・ページを めくる ボタン（なかみを かきかえても はたらく ように、まとめて うけとる）
   [["zkAdd","+"],["zkSub","-"]].forEach(([id, op])=>$(id).addEventListener("click", ev=>{
     const nav = ev.target.closest("[data-zp]");
-    if(nav){ zkPage[op] += Number(nav.dataset.d); $(id).innerHTML = zkRowsHTML(zkRows(op), op); return; }
+    if(nav){ zkPage[op] += Number(nav.dataset.d); $(id).innerHTML = zkRowsHTML(op); return; }
     const b = ev.target.closest(".zk[data-k]"); if(!b) return;
     const e = stats.facts[b.dataset.k]||{};
     const mm = b.dataset.k.match(/^(\d+)([+-])(\d+)$/);
@@ -3853,15 +3849,9 @@ body.course .choice.pad-go{font-size:21px}
           : e.done ? `${txt} = ${ans}　あと すこしで シールだよ`
           : `${txt} は まだ でて いないよ`);
   }));
-  document.querySelectorAll(".lv[data-zr]").forEach(b=>b.addEventListener("click",()=>{
-    if(b.dataset.zr===zkRange) return;
-    zkRange = b.dataset.zr; try{ lsSet(ZKR_KEY, zkRange); }catch(e){}
-    renderZukan();
-  }));
   function renderZukan(){
-    document.querySelectorAll(".lv[data-zr]").forEach(b=>b.setAttribute("aria-pressed", b.dataset.zr===zkRange ? "true" : "false"));
-    const ZA = zkRange==="30" ? ZK30X_ADD : ZK_ADD, ZS = zkRange==="30" ? ZK30X_SUB : ZK_SUB;
-    const FA = ZA.flat().filter(Boolean), FS = ZS.flat().filter(Boolean);
+    // かず は ぜんぶ（たしざん 225・ひきざん 225）で かぞえる
+    const FA = ZK30_ADD.flat(), FS = ZK30_SUB.flat();
     const ZK_TOTAL = FA.length + FS.length;
     const addN = masterCount(FA), subN = masterCount(FS);
     const all = addN+subN, allL = [...FA, ...FS];
@@ -3874,8 +3864,9 @@ body.course .choice.pad-go{font-size:21px}
     $("zkBar").style.width = (all/ZK_TOTAL*100).toFixed(1)+"%";
     $("zkAddN").textContent = `${addN} / ${FA.length}`;
     $("zkSubN").textContent = `${subN} / ${FS.length}`;
-    $("zkAdd").innerHTML = zkRowsHTML(ZA, "+");
-    $("zkSub").innerHTML = zkRowsHTML(ZS, "-");
+    zkPage["+"] = zkPage["-"] = 0;   // ずかんを ひらいたら さいしょ の ページ から
+    $("zkAdd").innerHTML = zkRowsHTML("+");
+    $("zkSub").innerHTML = zkRowsHTML("-");
 
     renderNkDex();
     calView = null;   // ずかんを ひらいたら こんげつ から
