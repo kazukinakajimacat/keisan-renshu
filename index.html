@@ -718,6 +718,9 @@ span.stkw > svg{position:absolute;left:0;top:0;width:100%;height:100%;display:bl
 .choices.pad{display:flex;flex-direction:column;align-items:stretch;gap:10px}
 .pad-disp{display:grid;place-items:center;min-width:0;text-align:center;font-size:36px;font-weight:900;line-height:1.1;background:var(--surface);border:3px solid var(--line);border-radius:16px;padding:2px 6px;font-variant-numeric:tabular-nums}
 .pad-disp.empty{color:var(--muted)}
+/* いれた かず は あお で みせて、おした ボタン は いっしゅん あお に ひからせる（ボタンの すうじ と みわけ やすく） */
+.pad-disp:not(.empty):not(.right):not(.wrong){border-color:var(--blue);color:var(--blue);background:color-mix(in srgb,var(--blue) 16%,var(--surface))}
+.choice.hit{background:var(--blue)!important;border-color:var(--blue)!important;color:#fff!important}
 .pad-disp.right{border-color:var(--ok);color:var(--ok);background:var(--ok-soft)}
 .pad-disp.wrong{border-color:var(--ng);color:var(--ng);background:var(--ng-soft)}
 .pad-keys{display:grid;grid-template-columns:repeat(5,1fr);gap:10px}
@@ -1945,7 +1948,7 @@ body.course .levels.nrange .lv{padding:3px 2px;font-size:12px}
     const draw = () => { disp.textContent = v || "？"; disp.classList.toggle("empty", !v); del.disabled = !v; go.disabled = !v; };
     [1,2,3,4,5,6,7,8,9,0].forEach(d=>{
       const b = document.createElement("button"); b.type = "button"; b.className = "choice num"; b.textContent = d; b.id = "pd" + d;
-      b.addEventListener("click", ()=>{ if(!current || v.length >= 2 || (d===0 && !v)) return; v += d; draw(); });
+      b.addEventListener("click", ()=>{ if(!current || v.length >= 2 || (d===0 && !v)) return; v += d; draw(); padHit(b); });
       keys.appendChild(b);
     });
     del.addEventListener("click", ()=>{ if(current && v){ v = v.slice(0,-1); draw(); } });
@@ -1955,6 +1958,8 @@ body.course .levels.nrange .lv{padding:3px 2px;font-size:12px}
     p.pad = true;
     draw();
   }
+  // おした ボタンを いっしゅん ひからせる
+  function padHit(b){ b.classList.add("hit"); clearTimeout(b._hit); b._hit = setTimeout(()=>b.classList.remove("hit"), 220); }
   function markPad(ok){
     const d = $("padDisp"); if(d) d.classList.add(ok ? "right" : "wrong");
     chEl.querySelectorAll("button").forEach(b=>{ b.disabled = true; });
@@ -2846,7 +2851,7 @@ body.course .levels.nrange .lv{padding:3px 2px;font-size:12px}
     keys.forEach(n=>{
       const b=document.createElement("button");
       b.className="choice num"; b.textContent=n; b.id="g"+n;
-      b.addEventListener("click",()=> grange==="30" ? gridDigit(n) : gridAnswer(n));
+      b.addEventListener("click",()=>{ if(grange==="30"){ if(G && G.running) padHit(b); gridDigit(n); } else gridAnswer(n); });
       pad.appendChild(b);
     });
     if(grange==="30"){
