@@ -5,10 +5,10 @@
 <link rel="icon" type="image/png" sizes="64x64" href="favicon.png?v=3">
 <link rel="apple-touch-icon" href="apple-touch-icon.png?v=3">
 <link rel="manifest" href="manifest.json">
-<script src="stickers/stickers.js?v=202610222139"></script>
-<script src="nakama/nakama.js?v=202610222139"></script>
-<script src="clock/clock.js?v=202610222139"></script>
-<script src="drill/patterns.js?v=202610222139"></script>
+<script src="stickers/stickers.js?v=202610222216"></script>
+<script src="nakama/nakama.js?v=202610222216"></script>
+<script src="clock/clock.js?v=202610222216"></script>
+<script src="drill/patterns.js?v=202610222216"></script>
 <meta name="apple-mobile-web-app-title" content="けいさん">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -618,7 +618,8 @@ body.course .ck-ctl .choice{padding:4px 0;font-size:24px}
 /* today's sticker */
 .stkrow{display:flex;align-items:center;gap:12px;background:var(--surface);border:2px solid var(--line);border-radius:16px;padding:8px 12px}
 .stk-icon{flex:0 0 52px;color:var(--line);display:flex}
-.stk-txt{flex:1;min-width:0;display:flex;flex-direction:column;gap:2px;font-size:15px;font-weight:700;word-break:keep-all}
+.stk-txt{flex:1;min-width:0;display:flex;flex-direction:column;gap:2px;font-size:15px;font-weight:700;word-break:keep-all;overflow-wrap:anywhere}
+.stk-txt .stk-tier{display:inline-block}   /* ながい なまえ でも「（スーパーレア）」で はみださない ように、きりの よい ところ で おりかえす */
 .stk-txt b{font-weight:900;color:var(--red)}
 .stk-next{display:flex;align-items:center;justify-content:space-between;gap:8px;font-size:13px;color:var(--muted);flex-wrap:wrap}
 .stk-pips{display:flex;gap:4px}
@@ -3021,7 +3022,7 @@ body.course .levels.nrange .lv{padding:3px 2px;font-size:12px}
     const nx = STK_TIERS.find(x=>dn<x.n);
     $("stkIcon").innerHTML = got ? stickerSVG(k, got.tier, 52) : stickerPreview(k, 52);
     $("stkText").innerHTML = got
-      ? `きょうの シール：<b>${mo.name}</b>（${tierByKey(got.tier).label}）`
+      ? `きょうの シール：<wbr><b>${mo.name}</b><wbr><span class="stk-tier">（${tierByKey(got.tier).label}）</span>`
       : `きょうの シールは <b>${mo.name}</b>！`;
     $("stkNext").textContent = nx ? `${nx.label}まで あと ${nx.n-dn}もん` : "さいこう ランクに なったよ！";
     $("stkPips").innerHTML = STK_TIERS.map(x=>`<i class="${dn>=x.n?"on":""}" title="${x.label}"></i>`).join("");
@@ -3132,13 +3133,18 @@ body.course .levels.nrange .lv{padding:3px 2px;font-size:12px}
      え は milestone/<img>.webp（おおきい）と <img>_s.webp（ちいさい）。みー と ころ だけを かく
      （まだ あって いない なかま を さきに みせない ため） */
   const MS_ON = true;   // false に すると ぜんぶ おやすみ
-  const zkAllKira = rows => { const l = rows.flat(); return masterCount(l, 3) === l.length; };
+  const zkAllKira = rows => { const l = rows.flat().filter(Boolean); return masterCount(l, 3) === l.length; };
+  const zkPageKira = (op, i) => !!ZK_PAGES[op][i] && zkAllKira(ZK_PAGES[op][i].rows);
   const MS_LIST = [
     ...[1000,2000,3000,4000,5000,6000,7000,8000,9000,10000].map(n=>({id:String(n), label:String(n), title:`${n}もん せいかい！`,
       alt:`${n}もん せいかい おめでとう`, img:`ms_${n}`, ok:()=>totalOk()>=n})),
     {id:"zk_add", label:"たしざん", title:"たしざん ぜんぶ きらきら！", alt:"たしざん クリア おめでとう", img:"zk_add", ok:()=>zkAllKira(ZK_ADD)},
     {id:"zk_sub", label:"ひきざん", title:"ひきざん ぜんぶ きらきら！", alt:"ひきざん クリア おめでとう", img:"zk_sub", ok:()=>zkAllKira(ZK_SUB)},
-    {id:"zk_all", label:"ぜんぶ", title:"ずかん ぜんぶ きらきら！", alt:"たしざん ひきざん ぜんぶ クリア おめでとう", img:"zk_all", ok:()=>zkAllKira(ZK_ADD) && zkAllKira(ZK_SUB)}
+    {id:"zk_all", label:"ぜんぶ", title:"ずかん ぜんぶ きらきら！", alt:"たしざん ひきざん ぜんぶ クリア おめでとう", img:"zk_all", ok:()=>zkAllKira(ZK_ADD) && zkAllKira(ZK_SUB)},
+    // ずかん の 30まで の ページ（シート）が ぜんぶ きらきら（ZK_PAGES の 2ページめ から）。30より うえ を たす とき も ここに ならべる
+    ...[["zk_a2","+",1,"11〜18","たしざん こたえが 11〜18"],["zk_a3","+",2,"10〜19＋","たしざん 10〜19 ＋ 1けた"],["zk_a4","+",3,"20〜29＋","たしざん 20〜29 ＋ 1けた"],
+        ["zk_s2","-",1,"11〜19−","ひきざん 11〜19 − 1けた"],["zk_s3","-",2,"20〜30−","ひきざん 20〜30 − 1けた"]].map(([id,op,pg,label,name])=>
+      ({id, label, title:`${name} ぜんぶ きらきら！`, alt:`${name} クリア おめでとう`, img:id, ok:()=>zkPageKira(op, pg)}))
   ];
   const MS_HOLD = new Set([]);   // え が まだ ない・かくにん ちゅう の もの の id（わたさない）。いまは なし
   const msById = id => MS_LIST.find(x=>x.id===String(id));
