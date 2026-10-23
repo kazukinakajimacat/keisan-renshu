@@ -250,8 +250,10 @@ details.hist summary{cursor:pointer;font-weight:700;color:var(--muted);font-size
 .empty{font-size:14px;color:var(--muted)}
 .clear{font:inherit;font-size:13px;font-weight:700;color:var(--muted);background:none;border:1px solid var(--line);border-radius:999px;padding:4px 12px;cursor:pointer;align-self:flex-start}
 .clear.arm{color:var(--ng);border-color:var(--ng)}
-.pin-box{display:flex;flex-direction:column;gap:8px;background:var(--bg);border:2px solid var(--line);border-radius:12px;padding:10px 12px;font-size:14px}
-.pin-box[hidden]{display:none}
+.pin-pop{position:fixed;inset:0;z-index:30;display:flex;align-items:center;justify-content:center;padding:16px;background:rgba(0,0,0,.45)}
+.pin-pop[hidden]{display:none}
+.pin-box{width:min(100%,380px);display:flex;flex-direction:column;gap:10px;background:var(--surface);border:2px solid var(--line);border-radius:18px;padding:16px;font-size:14px;box-shadow:0 10px 32px rgba(0,0,0,.3);animation:nkPop .25s ease-out}
+.pin-h{margin:0;font-size:16px;font-weight:900}
 .pin-box p{margin:0;line-height:1.6}
 .pin-box b{color:var(--ng)}
 .pin-row{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
@@ -969,7 +971,6 @@ body.course .levels.nrange .lv{padding:3px 2px;font-size:12px}
       <button type="button" class="set-btn" id="setIdk"><b><i>わからなかった</i> <i>もんだい</i></b><span id="setIdkN"></span></button>
       <button type="button" class="set-btn" id="setWeak"><b><i>にがて</i> <i>もんだい</i></b><span id="setWeakN"></span></button>
     </div>
-  <div class="pin-box" id="pinGate" hidden></div>
   <details class="hist" id="hist">
     <summary>おうちの方へ：これまでの記録</summary>
     <div class="pg-box" id="pgBox"></div>
@@ -1081,6 +1082,7 @@ body.course .levels.nrange .lv{padding:3px 2px;font-size:12px}
   </div>
 
   <div class="save-state" id="saveState" aria-live="polite"></div>
+  <div class="pin-pop" id="pinPop" hidden><div class="pin-box" id="pinGate" role="dialog" aria-modal="true" aria-label="おうちの方の パスワード"></div></div>
   <div class="tl-toast" id="tlToast" role="status" hidden></div>
 </div>
 
@@ -2551,7 +2553,7 @@ body.course .levels.nrange .lv{padding:3px 2px;font-size:12px}
       <div class="hist-item">
         <div class="h num">${h.at}　${h.lv?`【${h.lv}】`:""}${h.ok}/${h.total||20}問正解　<span style="font-weight:500;color:var(--muted)">${h.clock ? `とけい・平均 ${h.avg}` : h.total===25 ? `タイム ${h.avg}` : `たし算 ${h.add}・ひき算 ${h.sub}・平均 ${h.avg}`}</span></div>
         <ul>${h.findings.map(x=>`<li>${x}</li>`).join("")}</ul>
-      </div>`).join("") + `<button class="clear" id="clearBtn">記録と苦手データを消す</button><div class="pin-box" id="pinBox" hidden></div>`;
+      </div>`).join("") + `<button class="clear" id="clearBtn">記録と苦手データを消す</button>`;
     calBind(body, histSt, renderHistory);
     $("clearBtn").addEventListener("click", ()=>pinOpen(wipeAll));
   }
@@ -2598,11 +2600,10 @@ body.course .levels.nrange .lv{padding:3px 2px;font-size:12px}
   const pinSet = v => { try{ localStorage.setItem(PIN_KEY, v); }catch(e){} };
   let pinState = null;   // {step:"set"|"set2"|"ask"|"forgot", run, first, q:[{a,b}], box, gate}
   // gate：「おうちの方へ」を ひらく とき（きめたら そのまま ひらく）。そうでない とき は きろく を けす とき
-  function pinOpen(run, gate){
-    if(pinState && pinState.box !== (gate ? "pinGate" : "pinBox")){ const b = $(pinState.box); if(b){ b.hidden = true; b.innerHTML = ""; } }
-    pinState = {step: pinGet() ? "ask" : "set", run, gate, box: gate ? "pinGate" : "pinBox"}; pinRender();
-  }
-  function pinClose(){ const id = pinState && pinState.box; pinState = null; const b = id && $(id); if(b){ b.hidden = true; b.innerHTML = ""; } }
+  // パスワード の らん は がめんの まんなか の ポップアップ（pinPop）に だす。そとを おすと やめる
+  function pinOpen(run, gate){ pinState = {step: pinGet() ? "ask" : "set", run, gate, box: "pinGate"}; pinRender(); }
+  function pinClose(){ pinState = null; $("pinPop").hidden = true; $("pinGate").innerHTML = ""; }
+  $("pinPop").addEventListener("click", e=>{ if(e.target === $("pinPop")) pinClose(); });
   function pinRender(){
     if(!pinState) return;
     const box = $(pinState.box); if(!box) return;
@@ -2615,8 +2616,8 @@ body.course .levels.nrange .lv{padding:3px 2px;font-size:12px}
         : `<p>記録と苦手データを消します。<b>元には戻せません。</b>おうちの方の パスワードを 入れてください。</p><div class="pin-row">${inp("pinIn","パスワード")}<button type="button" id="pinOk" class="danger">消す</button></div>`)
       + `<button type="button" class="pin-link" id="pinForgot">パスワードを忘れたとき</button>`;
     else if(st.step === "forgot") h = `<p>おうちの方の確認です。答えを入れると、パスワードを決め直せます。</p>${st.q.map((x,i)=>`<div class="pin-row"><span>${x.a} × ${x.b} ＝</span><input id="pinQ${i}" type="text" inputmode="numeric" maxlength="3" autocomplete="off" aria-label="こたえ"></div>`).join("")}<div class="pin-row"><button type="button" id="pinOk">決め直す</button></div>`;
-    box.innerHTML = h + `<div class="pin-row"><span class="err" id="pinErr"></span><button type="button" id="pinNo">やめる</button></div>`;
-    box.hidden = false;
+    box.innerHTML = `<h4 class="pin-h">おうちの方の パスワード</h4>` + h + `<div class="pin-row"><span class="err" id="pinErr"></span><button type="button" id="pinNo">やめる</button></div>`;
+    $("pinPop").hidden = false;
     const err = t => { $("pinErr").textContent = t; }, val = id => ($(id).value || "").trim();
     const ok = () => {
       if(st.step === "set" || st.step === "set2"){
@@ -2642,6 +2643,7 @@ body.course .levels.nrange .lv{padding:3px 2px;font-size:12px}
     $("pinNo").addEventListener("click", pinClose);
     if($("pinForgot")) $("pinForgot").addEventListener("click", ()=>{ st.step = "forgot"; st.q = [0,1].map(()=>({a:rnd(12,19), b:rnd(6,9)})); pinRender(); });
     const first = box.querySelector("input"); if(first) first.focus({preventScroll:true});
+
   }
 
   /* ---------- おうちの方へ：更新情報 ----------
