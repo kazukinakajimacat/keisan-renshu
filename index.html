@@ -2733,7 +2733,7 @@ body.course .levels.nrange .lv{padding:3px 2px;font-size:12px}
      アプリの なかで こたえて「送る」と、Google スプレッドシート（Apps Script の ウェブアプリ）に 1ぎょう ふえる。
      おくるのは この フォームの なかみ と 端末の しゅるい・アプリの 版 だけ（学習の 記録 は おくらない）。
      つづけて おくれない ように、1かい おくったら 60びょう まつ */
-  const VOICE_URL = "";   // Apps Script の ウェブアプリ の URL（https://script.google.com/macros/s/…/exec）
+  const VOICE_URL = "https://script.google.com/macros/s/AKfycbyOriYcpTIzSRcj6vQtMiRabr1n8-b27HO7p1hIX75wAAnKVeBhs_cNxKcG-ajRC8P9Xg/exec";   // Apps Script の ウェブアプリ の URL（https://script.google.com/macros/s/…/exec）
   const VOICE_WAIT = 60000, VOICE_KEY = "sansu-drill-voice-at-v1";
   const devKind = () => { const u = navigator.userAgent || ""; return /iPad|Macintosh/.test(u) && navigator.maxTouchPoints > 1 ? "iPad" : /iPhone/.test(u) ? "iPhone" : /Android/.test(u) ? (/Mobile/.test(u) ? "Androidスマホ" : "Androidタブレット") : "パソコン"; };
   const appVer = () => { const m = (document.querySelector('script[src*="?v="]')||{}).src || ""; return (m.match(/v=(\d+)/)||[])[1] || ""; };
