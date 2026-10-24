@@ -263,6 +263,13 @@ details.hist summary{cursor:pointer;font-weight:700;color:var(--muted);font-size
 .vc-score span{display:grid;place-items:center;min-height:44px;text-align:center;font-size:12px;line-height:1.25;border:2px solid var(--line);border-radius:10px;background:var(--surface);padding:4px 2px;word-break:keep-all}
 .vc-score input:checked + span{border-color:var(--blue);background:var(--blue);color:#fff}
 .vc-score input:focus-visible + span{outline:3px solid var(--blue);outline-offset:2px}
+.vc-nps{display:grid;grid-template-columns:repeat(11,1fr);gap:3px}
+.vc-nps label{position:relative}
+.vc-nps input{position:absolute;opacity:0;inset:0;margin:0;cursor:pointer}
+.vc-nps span{display:grid;place-items:center;height:38px;font-size:14px;font-weight:900;border:2px solid var(--line);border-radius:8px;background:var(--surface);font-variant-numeric:tabular-nums}
+.vc-nps input:checked + span{border-color:var(--blue);background:var(--blue);color:#fff}
+.vc-nps input:focus-visible + span{outline:3px solid var(--blue);outline-offset:2px}
+.vc-nps-ends{display:flex;justify-content:space-between;gap:8px;font-size:11px;font-weight:700;color:var(--muted)}
 .vc-hp{position:absolute;left:-9999px;width:1px;height:1px;opacity:0}
 .vc-row{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
 .vc-send{font:inherit;font-size:15px;font-weight:900;color:#fff;background:var(--blue);border:0;border-radius:999px;padding:8px 26px;cursor:pointer}
@@ -1011,12 +1018,19 @@ body.course .levels.nrange .lv{padding:3px 2px;font-size:12px}
           <label><input type="radio" name="score" value="5"><span>とても<br>楽しそう</span></label><label><input type="radio" name="score" value="4"><span>楽しそう</span></label><label><input type="radio" name="score" value="3"><span>ふつう</span></label><label><input type="radio" name="score" value="2"><span>あまり</span></label><label><input type="radio" name="score" value="1"><span>楽しく<br>なさそう</span></label>
         </div>
       </fieldset>
+      <fieldset class="vc-q">
+        <legend>このアプリを、お友だちや知り合いのご家庭に すすめたいと思いますか？</legend>
+        <div class="vc-nps" role="radiogroup" aria-label="0（まったく すすめない）から 10（ぜひ すすめたい）">
+          <label><input type="radio" name="nps" value="0"><span>0</span></label><label><input type="radio" name="nps" value="1"><span>1</span></label><label><input type="radio" name="nps" value="2"><span>2</span></label><label><input type="radio" name="nps" value="3"><span>3</span></label><label><input type="radio" name="nps" value="4"><span>4</span></label><label><input type="radio" name="nps" value="5"><span>5</span></label><label><input type="radio" name="nps" value="6"><span>6</span></label><label><input type="radio" name="nps" value="7"><span>7</span></label><label><input type="radio" name="nps" value="8"><span>8</span></label><label><input type="radio" name="nps" value="9"><span>9</span></label><label><input type="radio" name="nps" value="10"><span>10</span></label>
+        </div>
+        <div class="vc-nps-ends"><span>0：まったく すすめない</span><span>10：ぜひ すすめたい</span></div>
+      </fieldset>
       <label class="vc-q"><span>よかったところ</span><textarea name="good" maxlength="500" rows="3" placeholder="例：シールを集めるのを楽しみにしている"></textarea></label>
       <label class="vc-q"><span>困ったところ・ほしい機能</span><textarea name="bad" maxlength="500" rows="3" placeholder="例：かけ算も練習したい"></textarea></label>
       <label class="vc-q"><span>お子さんの学年（任意）</span><select name="grade"><option value="">選ばない</option><option>年長</option><option>小学1年</option><option>小学2年</option><option>小学3年以上</option><option>その他</option></select></label>
       <input class="vc-hp" type="text" name="hp" tabindex="-1" aria-hidden="true">
       <div class="vc-row"><button type="submit" class="vc-send" id="vcSend">送る</button><span class="vc-msg" id="vcMsg" role="status"></span></div>
-      <p class="vc-note small">送った内容は、作者の Google スプレッドシートに保存されます（送る日時・楽しさ・書いた文・学年・端末の種類・アプリの版）。学習の記録は送りません。</p>
+      <p class="vc-note small">送った内容は、作者の Google スプレッドシートに保存されます（送る日時・楽しさ・すすめたい度合い・書いた文・学年・端末の種類・アプリの版）。学習の記録は送りません。</p>
     </form>
   </details>
   </div>
@@ -2742,8 +2756,8 @@ body.course .levels.nrange .lv{padding:3px 2px;font-size:12px}
     const f = $("vcForm"), msg = $("vcMsg"), btn = $("vcSend");
     const say2 = (t, ok) => { msg.textContent = t; msg.className = "vc-msg " + (ok ? "ok" : "ng"); };
     const fd = new FormData(f);
-    const data = {score: fd.get("score") || "", good: (fd.get("good")||"").trim(), bad: (fd.get("bad")||"").trim(), grade: fd.get("grade") || "", hp: fd.get("hp") || "", device: devKind(), ver: appVer()};
-    if(!data.score && !data.good && !data.bad) return say2("どれか1つは答えてください", false);
+    const data = {score: fd.get("score") || "", nps: fd.get("nps") ?? "", good: (fd.get("good")||"").trim(), bad: (fd.get("bad")||"").trim(), grade: fd.get("grade") || "", hp: fd.get("hp") || "", device: devKind(), ver: appVer()};
+    if(!data.score && data.nps === "" && !data.good && !data.bad) return say2("どれか1つは答えてください", false);
     if(!VOICE_URL) return say2("いまは準備中です", false);
     let last = 0; try{ last = +localStorage.getItem(VOICE_KEY) || 0; }catch(e){}
     if(Date.now() - last < VOICE_WAIT) return say2("少し時間をおいてから送ってください", false);
