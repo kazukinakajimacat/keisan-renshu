@@ -250,6 +250,26 @@ details.hist summary{cursor:pointer;font-weight:700;color:var(--muted);font-size
 .empty{font-size:14px;color:var(--muted)}
 .clear{font:inherit;font-size:13px;font-weight:700;color:var(--muted);background:none;border:1px solid var(--line);border-radius:999px;padding:4px 12px;cursor:pointer;align-self:flex-start}
 .clear.arm{color:var(--ng);border-color:var(--ng)}
+/* おうちの方へ：ご意見・ご感想 */
+.vc{display:flex;flex-direction:column;gap:12px;margin-top:12px;font-size:14px}
+.vc-note{margin:0;color:var(--muted);line-height:1.6}
+.vc-note.small{font-size:12px}
+.vc-q{display:flex;flex-direction:column;gap:6px;border:0;margin:0;padding:0;font-weight:700;min-width:0}
+.vc-q legend{padding:0;margin-bottom:6px;font-weight:700}
+.vc-q textarea,.vc-q select{font:inherit;font-size:15px;font-weight:500;padding:8px 10px;border-radius:10px;border:2px solid var(--line);background:var(--surface);color:var(--ink);resize:vertical;width:100%;box-sizing:border-box}
+.vc-score{display:grid;grid-template-columns:repeat(5,1fr);gap:6px}
+.vc-score label{position:relative}
+.vc-score input{position:absolute;opacity:0;inset:0;margin:0;cursor:pointer}
+.vc-score span{display:grid;place-items:center;min-height:44px;text-align:center;font-size:12px;line-height:1.25;border:2px solid var(--line);border-radius:10px;background:var(--surface);padding:4px 2px;word-break:keep-all}
+.vc-score input:checked + span{border-color:var(--blue);background:var(--blue);color:#fff}
+.vc-score input:focus-visible + span{outline:3px solid var(--blue);outline-offset:2px}
+.vc-hp{position:absolute;left:-9999px;width:1px;height:1px;opacity:0}
+.vc-row{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+.vc-send{font:inherit;font-size:15px;font-weight:900;color:#fff;background:var(--blue);border:0;border-radius:999px;padding:8px 26px;cursor:pointer}
+.vc-send:disabled{opacity:.5;cursor:default}
+.vc-msg{font-weight:700}
+.vc-msg.ok{color:var(--ok)}
+.vc-msg.ng{color:var(--ng)}
 .pin-pop{position:fixed;inset:0;z-index:30;display:flex;align-items:center;justify-content:center;padding:16px;background:rgba(0,0,0,.45)}
 .pin-pop[hidden]{display:none}
 .pin-box{width:min(100%,380px);display:flex;flex-direction:column;gap:10px;background:var(--surface);border:2px solid var(--line);border-radius:18px;padding:16px;font-size:14px;box-shadow:0 10px 32px rgba(0,0,0,.3);animation:nkPop .25s ease-out}
@@ -980,6 +1000,24 @@ body.course .levels.nrange .lv{padding:3px 2px;font-size:12px}
   <details class="hist" id="news" hidden>
     <summary>おうちの方へ：更新情報<em class="new" id="newsNew" hidden>New</em></summary>
     <div class="hist-body" id="newsBody"></div>
+  </details>
+  <details class="hist" id="voice">
+    <summary>おうちの方へ：ご意見・ご感想</summary>
+    <form class="vc" id="vcForm" autocomplete="off" novalidate>
+      <p class="vc-note">使ってみた感想を教えてください。今後の改善に使います。<br>お名前・住所・学校名など、個人が分かることは書かないでください。</p>
+      <fieldset class="vc-q">
+        <legend>お子さんは楽しく使えていますか？</legend>
+        <div class="vc-score" role="radiogroup">
+          <label><input type="radio" name="score" value="5"><span>とても<br>楽しそう</span></label><label><input type="radio" name="score" value="4"><span>楽しそう</span></label><label><input type="radio" name="score" value="3"><span>ふつう</span></label><label><input type="radio" name="score" value="2"><span>あまり</span></label><label><input type="radio" name="score" value="1"><span>楽しく<br>なさそう</span></label>
+        </div>
+      </fieldset>
+      <label class="vc-q"><span>よかったところ</span><textarea name="good" maxlength="500" rows="3" placeholder="例：シールを集めるのを楽しみにしている"></textarea></label>
+      <label class="vc-q"><span>困ったところ・ほしい機能</span><textarea name="bad" maxlength="500" rows="3" placeholder="例：かけ算も練習したい"></textarea></label>
+      <label class="vc-q"><span>お子さんの学年（任意）</span><select name="grade"><option value="">選ばない</option><option>年長</option><option>小学1年</option><option>小学2年</option><option>小学3年以上</option><option>その他</option></select></label>
+      <input class="vc-hp" type="text" name="hp" tabindex="-1" aria-hidden="true">
+      <div class="vc-row"><button type="submit" class="vc-send" id="vcSend">送る</button><span class="vc-msg" id="vcMsg" role="status"></span></div>
+      <p class="vc-note small">送った内容は、作者の Google スプレッドシートに保存されます（送る日時・楽しさ・書いた文・学年・端末の種類・アプリの版）。学習の記録は送りません。</p>
+    </form>
   </details>
   </div>
 
@@ -2577,10 +2615,10 @@ body.course .levels.nrange .lv{padding:3px 2px;font-size:12px}
   let parentOpen = false;
   function parentLock(){
     parentOpen = false;
-    ["hist","news"].forEach(id=>{ const d = $(id); if(d) d.open = false; });
+    ["hist","news","voice"].forEach(id=>{ const d = $(id); if(d) d.open = false; });
     if(pinState && pinState.gate) pinClose();
   }
-  ["hist","news"].forEach(id=>{
+  ["hist","news","voice"].forEach(id=>{
     const d = $(id), sm = d && d.querySelector("summary"); if(!sm) return;
     sm.addEventListener("click", ev=>{
       if(parentOpen || d.open) return;   // とじる のは いつでも できる
@@ -2690,6 +2728,36 @@ body.course .levels.nrange .lv{padding:3px 2px;font-size:12px}
     }catch(e){}
   }
   loadNews();
+
+  /* ---------- おうちの方へ：ご意見・ご感想 ----------
+     アプリの なかで こたえて「送る」と、Google スプレッドシート（Apps Script の ウェブアプリ）に 1ぎょう ふえる。
+     おくるのは この フォームの なかみ と 端末の しゅるい・アプリの 版 だけ（学習の 記録 は おくらない）。
+     つづけて おくれない ように、1かい おくったら 60びょう まつ */
+  const VOICE_URL = "";   // Apps Script の ウェブアプリ の URL（https://script.google.com/macros/s/…/exec）
+  const VOICE_WAIT = 60000, VOICE_KEY = "sansu-drill-voice-at-v1";
+  const devKind = () => { const u = navigator.userAgent || ""; return /iPad|Macintosh/.test(u) && navigator.maxTouchPoints > 1 ? "iPad" : /iPhone/.test(u) ? "iPhone" : /Android/.test(u) ? (/Mobile/.test(u) ? "Androidスマホ" : "Androidタブレット") : "パソコン"; };
+  const appVer = () => { const m = (document.querySelector('script[src*="?v="]')||{}).src || ""; return (m.match(/v=(\d+)/)||[])[1] || ""; };
+  $("vcForm").addEventListener("submit", async ev=>{
+    ev.preventDefault();
+    const f = $("vcForm"), msg = $("vcMsg"), btn = $("vcSend");
+    const say2 = (t, ok) => { msg.textContent = t; msg.className = "vc-msg " + (ok ? "ok" : "ng"); };
+    const fd = new FormData(f);
+    const data = {score: fd.get("score") || "", good: (fd.get("good")||"").trim(), bad: (fd.get("bad")||"").trim(), grade: fd.get("grade") || "", hp: fd.get("hp") || "", device: devKind(), ver: appVer()};
+    if(!data.score && !data.good && !data.bad) return say2("どれか1つは答えてください", false);
+    if(!VOICE_URL) return say2("いまは準備中です", false);
+    let last = 0; try{ last = +localStorage.getItem(VOICE_KEY) || 0; }catch(e){}
+    if(Date.now() - last < VOICE_WAIT) return say2("少し時間をおいてから送ってください", false);
+    btn.disabled = true; say2("送っています…", true);
+    try{
+      // Apps Script は ちがう ドメイン なので no-cors で おくる（へんじ は よめないが、とどけば スプレッドシート に はいる）
+      await fetch(VOICE_URL, {method:"POST", mode:"no-cors", headers:{"Content-Type":"text/plain;charset=utf-8"}, body: JSON.stringify(data)});
+      try{ localStorage.setItem(VOICE_KEY, String(Date.now())); }catch(e){}
+      f.reset(); say2("送りました。ありがとうございました！", true);
+    }catch(e){
+      say2("送れませんでした。電波の よい ところで もう一度 送ってください", false);
+    }
+    btn.disabled = false;
+  });
 
   /* ---------- 1かいごとの けっかの きろく ----------
      20もん・ます1まい ごとの けっかを かずで のこす（stats.sess）。
