@@ -478,6 +478,24 @@ button.oslot:disabled{cursor:default}
 .nk-modal[hidden]{display:none}
 .nk-mcard{width:100%;max-width:420px;background:var(--surface);border:2px solid var(--line);border-radius:24px;padding:20px;display:flex;flex-direction:column;align-items:center;gap:10px;text-align:center;box-shadow:0 10px 30px rgba(0,0,0,.25);animation:missUp .3s ease-out}
 .nk-mcard h2{margin:0;font-size:21px;font-weight:900}
+.nk-mcard{max-height:calc(100vh - 32px);overflow-y:auto}
+/* なかま の れきし：まんなか の せん に そって、ひづけ と できごと を ならべる */
+.nkh-wrap{width:100%;display:flex;flex-direction:column;gap:14px;text-align:left}
+.nkh{list-style:none;margin:0;padding:4px 0;position:relative}
+.nkh::before{content:"";position:absolute;left:46px;top:10px;bottom:10px;width:3px;border-radius:2px;background:color-mix(in srgb,var(--blue) 55%,transparent)}
+.nkh li{display:grid;grid-template-columns:96px 1fr;align-items:center;gap:10px;padding:6px 0;position:relative}
+.nkh-d{justify-self:start;min-width:96px;text-align:center;font-size:13px;font-weight:900;color:#fff;background:var(--blue);border-radius:8px;padding:5px 6px;position:relative;z-index:1}
+.nkh-dot{justify-self:start;margin-left:40px;width:15px;height:15px;border-radius:50%;background:var(--blue);position:relative;z-index:1}   /* ひづけ が わからない できごと */
+.nkh-b{display:flex;align-items:center;gap:10px;background:var(--bg);border:2px solid var(--line);border-radius:16px;padding:10px 12px}
+.nkh-i{font-size:24px;line-height:1}
+.nkh-b b{display:block;font-size:15px;font-weight:900;color:var(--ink)}
+.nkh-b small{display:block;font-size:12px;font-weight:700;color:var(--muted)}
+.nkh-sum{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.nkh-sum > small{grid-column:1/-1;text-align:center;font-size:13px;font-weight:700;color:var(--muted)}
+.nkh-st{background:var(--bg);border-radius:14px;padding:8px 10px;display:flex;flex-direction:column;align-items:center;gap:2px}
+.nkh-st span{font-size:12px;font-weight:700;color:var(--muted)}
+.nkh-st b{font-size:24px;font-weight:900;color:var(--ink)}
+.nkh-st b small{font-size:13px;margin-left:2px;color:var(--muted)}
 .nk-mcard p{margin:0;font-size:15px;line-height:1.7;color:var(--muted);font-weight:700}
 .nk-mpic{height:190px;display:flex;align-items:flex-end;justify-content:center;padding-bottom:4px}
 .nk-mimg{max-height:180px;max-width:220px;object-fit:contain;transform-origin:50% 100%}
@@ -511,6 +529,7 @@ button.oslot:disabled{cursor:default}
 .nkdex{display:grid;grid-template-columns:repeat(auto-fill,minmax(96px,1fr));gap:10px}
 .nkdex .empty{grid-column:1/-1;text-align:center;padding:12px 8px}
 .nkd{display:flex;flex-direction:column;align-items:center;gap:2px;text-align:center;background:var(--bg);border-radius:14px;padding:8px 4px}
+button.nkd{font:inherit;color:inherit;border:0;cursor:pointer}
 .nkd img{width:72px;height:86px;object-fit:contain;transform-origin:50% 100%}
 .nkd b{font-size:14px;font-weight:900}
 .nkd small{font-size:11px;color:var(--muted);font-weight:700;line-height:1.4}
@@ -901,6 +920,7 @@ body.course .levels.nrange .lv{padding:3px 2px;font-size:12px}
     <div class="nk-mpic" id="nkMPic"></div>
     <h2 id="nkMTitle"></h2>
     <p id="nkMText"></p>
+    <div class="nkh-wrap" id="nkMHist" hidden></div>
     <div class="nk-mname" id="nkMNameWrap" hidden>
       <input id="nkMInput" type="text" inputmode="text" maxlength="5" autocomplete="off" autocapitalize="off" spellcheck="false" placeholder="ひらがな 5もじ まで" aria-label="なまえ">
       <div class="nk-merr" id="nkMErr"></div>
@@ -3501,14 +3521,14 @@ body.course .levels.nrange .lv{padding:3px 2px;font-size:12px}
     const nk = nkData(), T = todayKey();
     nkCapInit(nk.cur);
     if(nk.cur && nkMissed(nk.cur, T) >= 3){
-      const c = nk.cur, e = {id:c.id, name:c.name, stage:nkStage(c), month:c.start.slice(0,7), result:"iede", at:T};
+      const c = nk.cur, e = {id:c.id, name:c.name, stage:nkStage(c), month:c.start.slice(0,7), result:"iede", at:T, ...nkHistKeep(c)};
       nk.dex.push(e); nk.cur = null;
       const lim = dkMonthEndNext(c.start);
       nk.nextEgg = T < lim ? dkAdd(T, 1) : null;     // いえでの よくじつに あたらしい たまご
       nk.queue.push({t:"iede", e});
     }
     if(nk.cur && nk.cur.start.slice(0,7) < T.slice(0,7)){   // とけいが もどっても たびだたない
-      const c = nk.cur, e = {id:c.id, name:c.name, stage:nkStage(c), month:c.start.slice(0,7), result:"tabidachi", at:T};
+      const c = nk.cur, e = {id:c.id, name:c.name, stage:nkStage(c), month:c.start.slice(0,7), result:"tabidachi", at:T, ...nkHistKeep(c)};
       nk.dex.push(e); nk.cur = null; nk.nextEgg = null;
       nk.queue.push({t:"depart", e});
       if(mcUnlocked() && !mcData().announced) nk.queue.push({t:"mcUnlock"});
@@ -3527,7 +3547,10 @@ body.course .levels.nrange .lv{padding:3px 2px;font-size:12px}
     const nk = nkData(); nkTick(); const c = nk.cur, T = todayKey();
     if(!c || c.days.includes(T)) return;
     const before = nkStage(c); c.days.push(T); delete c.cap; const after = nkStage(c);
-    if(after > before) nk.queue.push({t: before===0 ? "hatch" : "grow", stage:after});
+    if(after > before){
+      nk.queue.push({t: before===0 ? "hatch" : "grow", stage:after});
+      (c.ev || (c.ev = [])).push({s:after, at:T});   // しんか した ひ（れきし で つかう）
+    }
     saveStats(); renderNk();
     setTimeout(nkShowQueue, 2200);
   }
@@ -3643,11 +3666,12 @@ body.course .levels.nrange .lv{padding:3px 2px;font-size:12px}
   }
 
   let nkModalOpen = false;
-  function nkModal({pic, title, text, name, buttons}){
+  function nkModal({pic, title, text, name, buttons, hist}){
     nkModalOpen = true;
     if(mode==="drill" && current) stopTimer();   // ひらいて いる あいだ は 10びょう タイマーを とめる
     $("nkMPic").innerHTML = pic || ""; $("nkMPic").classList.toggle("ms", /ms-pic/.test(pic||""));
-    $("nkMTitle").textContent = title; $("nkMText").innerHTML = text || "";
+    $("nkMTitle").textContent = title; $("nkMText").innerHTML = text || ""; $("nkMText").hidden = !text;
+    $("nkMHist").innerHTML = hist || ""; $("nkMHist").hidden = !hist;
     $("nkMNameWrap").hidden = !name; $("nkMErr").textContent = "";
     if(name){ $("nkMInput").value = name.value || ""; }
     const bw = $("nkMBtns"); bw.innerHTML = "";
@@ -3779,7 +3803,7 @@ body.course .levels.nrange .lv{padding:3px 2px;font-size:12px}
       const nm = stage===0 && cur ? "なぞの たまご" : (e.name || sp.name);
       const note = cur ? `いくせいちゅうだよ（${nkLabel(sp, stage)}）`
         : iede ? "いえでしちゃったよ" : `たびだったよ（${nkLabel(sp, stage)}で）`;
-      return `<div class="nkd ${iede?"iede":""} ${cur?"cur":""}"><img src="${src}" alt="" loading="lazy" style="scale:${NK_SCALE[stage]}"><b>${nm}</b><small>${m}がつ・${note}</small></div>`;
+      return `<button type="button" class="nkd ${iede?"iede":""} ${cur?"cur":""}" data-h="${cur ? "cur" : nk.dex.indexOf(e)}" aria-label="${nm}の れきし"><img src="${src}" alt="" loading="lazy" style="scale:${NK_SCALE[stage]}"><b>${nm}</b><small>${m}がつ・${note}</small></button>`;
     };
     const items = [];
     if(nk.cur) items.push(card({id:nk.cur.id, name:nk.cur.name, stage:nkStage(nk.cur), month:nk.cur.start.slice(0,7), result:"cur"}, true));
@@ -3789,6 +3813,57 @@ body.course .levels.nrange .lv{padding:3px 2px;font-size:12px}
     renderMcEntry();
     box.innerHTML = items.length || unseen.length ? items.join("") + unseen.join("")
       : `<div class="empty">そだてた なかまが ここに のるよ</div>`;
+    box.querySelectorAll("button.nkd").forEach(b=>b.addEventListener("click", ()=>nkShowHist(b.dataset.h)));
+  }
+
+  /* ---------- なかま の れきし（かいしゃ の えんかく の ように、であって から の できごと を ならべる） ----------
+     いま そだてて いる こ と、2026-10-28 より あと に ずかん に のった こ は、であった ひ・しんか した ひ・
+     いっしょに いた あいだ の もんだい の かず（stats.days の n と ok）まで だす。
+     それより まえ に のった こ は、のこって いる こと（つき・どこまで そだったか・いなく なった ひ）だけ */
+  function nkHistKeep(c){ return {start:c.start, days:[...c.days], ev:c.ev ? [...c.ev] : [], full:!!c.full}; }   // nkTick から よぶ ので function に して おく
+  const jpDay = k => { const [y,m,d] = k.split("-").map(Number); return `${m}がつ ${d}にち`; };
+  function nkStageDays(c){
+    // しんか した ひ：のこって いれば それ、なければ クリア した ひ と ひつような ひかず から もとめる
+    const th = nkThresholds(c), out = {};
+    (c.ev||[]).forEach(x=>{ out[x.s] = x.at; });
+    for(let i=1; i<th.length; i++) if(!out[i] && c.days[th[i]-1]) out[i] = c.days[th[i]-1];
+    return out;
+  }
+  function nkShowHist(h){
+    const nk = stats.nk || {}, cur = h === "cur", e = cur ? nk.cur : (nk.dex||[])[Number(h)];
+    if(!e) return;
+    const sp = nkSp(e.id), stage = cur ? nkStage(e) : e.stage, iede = !cur && e.result === "iede";
+    const nm = stage===0 && cur ? "なぞの たまご" : (e.name || sp.name);
+    const T = todayKey(), known = !!(e.start && e.days);
+    const ev = [];   // {date, icon, title, sub}
+    if(known){
+      ev.push({date:jpDay(e.start), icon:"🥚", title:"たまごが とどいた", sub:"ここから いっしょに スタート"});
+      const sd = nkStageDays(e);
+      for(let i=1; i<=stage; i++) ev.push({date: sd[i] ? jpDay(sd[i]) : "", icon: i===1 ? "🐣" : "✨",
+        title: i===1 ? "うまれた！" : `${nkLabel(sp, i)}に なった`, sub: i===1 ? `${nkLabel(sp, 1)}だよ` : ""});
+    }else{
+      const [y,m] = e.month.split("-").map(Number);
+      ev.push({date:`${m}がつ`, icon:"🥚", title:"たまごが とどいた", sub:""});
+      if(stage>0) ev.push({date:"", icon:"✨", title:`${nkLabel(sp, stage)}まで そだった`, sub:""});
+    }
+    if(cur) ev.push({date:"いま", icon:"⭐", title:`${nkLabel(sp, stage)}で いっしょに いるよ`, sub:""});
+    else if(iede) ev.push({date:jpDay(e.at), icon:"💧", title:"いえで しちゃった", sub:"また あえると いいね"});
+    else ev.push({date:jpDay(e.at), icon:"🌈", title:"たびだった", sub:`${nkLabel(sp, stage)}まで そだったよ`});
+    const tl = `<ol class="nkh">${ev.map(x=>`<li>${x.date ? `<span class="nkh-d num">${x.date}</span>` : `<span class="nkh-dot" aria-hidden="true"></span>`}<div class="nkh-b"><span class="nkh-i" aria-hidden="true">${x.icon}</span><div><b>${x.title}</b>${x.sub ? `<small>${x.sub}</small>` : ""}</div></div></li>`).join("")}</ol>`;
+    // いっしょに いた あいだ の もんだい（たびだち は その つき の おわり まで、いえで は いなく なった ひ の まえ まで）
+    let sum = `<div class="nkh-sum"><small>この ころの もんだいの かずは のこって いないよ</small></div>`;
+    if(known){
+      const end = cur ? T : iede ? dkAdd(e.at, -1) : dkAdd(dkMonthEndNext(e.start), -1);
+      let n = 0, ok = 0, days = 0;
+      for(let k = e.start; k <= end; k = dkAdd(k, 1)){ const d = (stats.days||{})[k]; days++; if(d){ n += d.n||0; ok += d.ok||0; } }
+      const rate = n ? Math.round(ok / n * 100) : 0;
+      sum = `<div class="nkh-sum"><div class="nkh-st"><span>いっしょに いた ひ</span><b class="num">${days}<small>にち</small></b></div>
+        <div class="nkh-st"><span>といた もんだい</span><b class="num">${n}<small>もん</small></b></div>
+        <div class="nkh-st"><span>せいかい</span><b class="num">${ok}<small>もん</small></b></div>
+        <div class="nkh-st"><span>せいかいりつ</span><b class="num">${n ? rate : "-"}<small>${n ? "%" : ""}</small></b></div></div>`;
+    }
+    nkModal({pic: nkPicHTML(nkImgSrc(e.id, stage, iede ? "s" : "n"), "pop", stage), title:`${nm}の れきし`, hist: tl + sum,
+      buttons:[{label:"とじる"}]});
   }
 
 
