@@ -3863,7 +3863,7 @@ body.course .levels.nrange .lv{padding:3px 2px;font-size:12px}
       ev.push({date:`${m}がつ`, icon:"🥚", title:"たまごが とどいた", sub:""});
       if(stage>0) ev.push({date:"", icon:"✨", title:`${nkLabel(sp, stage)}まで そだった`, sub:""});
     }
-    // いま：であって なんにち か（とどいた ひ を 1にちめ と かぞえる。したの「いっしょに いた ひ」と おなじ かず）
+    // いま：であって なんにち か（とどいた ひ を 1にちめ と かぞえる）
     if(cur) ev.push({date:"いま", icon:"⭐", title: known ? `であって ${dkDiff(e.start, T) + 1}にち だね` : "いっしょに いるよ", sub:"いっしょに べんきょう がんばろう"});
     else if(iede) ev.push({date:jpDay(e.at), icon:"💧", title:"いえで しちゃった", sub:"また あえると いいね"});
     else ev.push({date:jpDay(e.at), icon:"🌈", title:"たびだった", sub:`${nkLabel(sp, stage)}まで そだったよ`});
@@ -3872,10 +3872,10 @@ body.course .levels.nrange .lv{padding:3px 2px;font-size:12px}
     let sum = `<div class="nkh-sum"><small>この ころの もんだいの かずは のこって いないよ</small></div>`;
     if(known){
       const end = cur ? T : iede ? dkAdd(e.at, -1) : dkAdd(dkMonthEndNext(e.start), -1);
-      let n = 0, ok = 0, days = 0;
-      for(let k = e.start; k <= end; k = dkAdd(k, 1)){ const d = (stats.days||{})[k]; days++; if(d){ n += d.n||0; ok += d.ok||0; } }
+      let n = 0, ok = 0;
+      for(let k = e.start; k <= end; k = dkAdd(k, 1)){ const d = (stats.days||{})[k]; if(d){ n += d.n||0; ok += d.ok||0; } }
       const rate = n ? Math.round(ok / n * 100) : 0;
-      sum = `<div class="nkh-sum"><div class="nkh-st"><span>いっしょに いた ひ</span><b class="num">${days}<small>にち</small></b></div>
+      sum = `<div class="nkh-sum"><div class="nkh-st"><span>めあてを クリアした ひ</span><b class="num">${e.days.length}<small>にち</small></b></div>
         <div class="nkh-st"><span>といた もんだい</span><b class="num">${n}<small>もん</small></b></div>
         <div class="nkh-st"><span>せいかい</span><b class="num">${ok}<small>もん</small></b></div>
         <div class="nkh-st"><span>せいかいりつ</span><b class="num">${n ? rate : "-"}<small>${n ? "%" : ""}</small></b></div></div>`;
