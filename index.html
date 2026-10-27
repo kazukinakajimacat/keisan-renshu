@@ -1865,9 +1865,14 @@ body.course .levels.nrange .lv{padding:3px 2px;font-size:12px}
     return Object.entries(stats.facts).filter(([k,v])=>v.score>=1 && v.f).map(([k,v])=>({k, ...v}));
   }
 
+  // ずかんで まだ シールが ない しき を だす わりあい（いろいろ もんだい）
+  const ZK_TODO_P = 0.4;
   function makeProblem(){
     PT.use(nrange==="30" ? 30 : 10);
     const lt = levelTypes();
+    const hardSkip = f => LEVELS[level].hardFacts && (f.a<2 || f.b<2 || (f.op==="+" ? f.ans<7 : f.a<7));   // randomFact と おなじ よけかた
+    const todo = zkTodo(nrange).filter(t=>!recent.includes(fKey(t.f)) && !hardSkip(t.f));
+    const fTypes = lt.filter(k=>ARITH.has(k) && k!=="three");
     const big3 = f => Math.max(f.a, f.r1, f.ans) > MAX;
     const weak = weakFacts().filter(w=>!recent.includes(w.k) && (w.f.three ? threeAllowed(w.f) && (nrange==="30" || !big3(w.f)) : nrange==="30" || !isBigF(w.f)));
     const tu = LEVELS[level].hardFacts ? "mid" : tuning();
@@ -1883,6 +1888,8 @@ body.course .levels.nrange .lv{padding:3px 2px;font-size:12px}
           p = build(weightedPick(types, tunedWeight), f);
         }
         if(p) p.focus = true;
+      }else if(todo.length && fTypes.length && Math.random()<ZK_TODO_P){
+        p = build(weightedPick(fTypes, tunedWeight), {...weightedPick(todo, x=>x.w).f});
       }else{
         const type = weightedPick(lt, tunedWeight);
         p = build(type, type==="three" ? randomThree() : randomFact());
@@ -2036,6 +2043,13 @@ body.course .levels.nrange .lv{padding:3px 2px;font-size:12px}
     chEl.querySelectorAll("button").forEach(b=>{ b.disabled = true; });
   }
 
+  // もんだいの しき が わくに はいらない とき（30まで の 2けた が ならぶ とき など）だけ、もじを ちいさく して おさめる
+  function fitQ(){
+    qEl.style.fontSize = "";
+    const over = qEl.scrollWidth - qEl.clientWidth;
+    if(over > 0) qEl.style.fontSize = Math.floor(parseFloat(getComputedStyle(qEl).fontSize) * qEl.clientWidth / qEl.scrollWidth * 0.97) + "px";
+  }
+  window.addEventListener("resize", ()=>{ if(current) fitQ(); });
   function nextProblem(){
     if(tlGate()) return;
     qIndex++;
@@ -2059,6 +2073,7 @@ body.course .levels.nrange .lv{padding:3px 2px;font-size:12px}
     $("idkBtn").disabled = false;
     qEl.className = "q num " + (p.cls||"");
     qEl.innerHTML = p.html;
+    fitQ();
 
     chEl.innerHTML = ""; chEl.className = "choices"; chEl.style.gridTemplateColumns = "";
     if(p.order) renderOrder(p);
@@ -2207,7 +2222,7 @@ body.course .levels.nrange .lv{padding:3px 2px;font-size:12px}
       else if(streak%5===0) say(w, `${streak}もん れんぞく せいかい！${w==="cat"?"すごすぎるにゃ":"すごすぎる わん"}！`);
       else say(w, pick(LINES.ok[w]));
       if(nm) celebrateMaster(nm);
-      if(p.done) qEl.innerHTML = p.done;   // ただしい しきを みせてから つぎへ
+      if(p.done){ qEl.innerHTML = p.done; fitQ(); }   // ただしい しきを みせてから つぎへ
       setTimeout(afterAnswer, p.done ? 1900 : nm ? 1600 : 900);
     }else{
       streak = 0;
@@ -2871,9 +2886,22 @@ body.course .levels.nrange .lv{padding:3px 2px;font-size:12px}
     $("gbest").textContent = gbest[gbk()] ? fmtT(gbest[gbk()]) : "-";
   }
 
+  // ずかんで まだ シールが ない しき が おおく はいる ます を えらぶ（いくつか つくって いちばん おおい もの）。ますの かたち は かえない
+  const GRID_TRIES = 8;
+  function pickGrid(kind){
+    const w = new Map(zkTodo(grange).map(t=>[fKey(t.f), t.w]));
+    let best = null, bs = -1;
+    for(let i=0;i<GRID_TRIES;i++){
+      const g = makeGrid(kind);
+      let sc = 0;
+      g.rows.forEach(r=>g.cols.forEach(c=>{ sc += w.get(`${r}${c.op}${c.v}`) || 0; }));
+      if(sc > bs){ best = g; bs = sc; }
+    }
+    return best;
+  }
   function newGrid(){
     if(G && G.timer) clearInterval(G.timer);
-    const g = makeGrid(gkind);
+    const g = pickGrid(gkind);
     const cells=[];
     g.rows.forEach(r=>g.cols.forEach(c=>{ cells.push({a:r, op:c.op, b:c.v, ans:calc(r,c.op,c.v), chosen:null}); }));
     G = {...g, cells, idx:0, start:0, timer:null, running:false, cellAt:0}; gbuf = "";
@@ -3943,6 +3971,12 @@ body.course .levels.nrange .lv{padding:3px 2px;font-size:12px}
     return pages;
   }
   const ZK_PAGES = {"+": zkPages(ZK_ADD, ZK30X_ADD, "+"), "-": zkPages(ZK_SUB, ZK30X_SUB, "-")};
+  /* ずかんで まだ シールが ない しき（てんせん と みどり）。r は 10まで／30まで（その はんいの ずかん だけ）。
+     いちども といて いない（てんせん）を おもめ 3、といた けど すらすら まえ（みどり）を 1 に する */
+  function zkTodo(r){
+    const list = r==="30" ? [...ZK30_ADD.flat(), ...ZK30_SUB.flat()] : [...ZK_ADD.flat(), ...ZK_SUB.flat()];
+    return list.filter(f=>!zkLv(stats.facts[fKey(f)])).map(f=>({f, w: (stats.facts[fKey(f)]||{}).done ? 1 : 3}));
+  }
 
   /* すらすら シールは 3だんかい。いちど はった シールは けさない（まちがえても さげない）
        1 すらすら … つづけて 2かい、じかんないに せいかい
