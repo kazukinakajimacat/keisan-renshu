@@ -698,7 +698,7 @@ span.stkw > svg{position:absolute;left:0;top:0;width:100%;height:100%;display:bl
 .nk-mpic.ms{height:auto;padding:0}
 .ms-pic{width:min(100%,300px);aspect-ratio:1;border-radius:18px;display:block;animation:nkPop .6s ease-out}
 .ms-pic.wide{width:min(100%,420px);aspect-ratio:3/2}
-.nk-mpic .ms-pic{-webkit-touch-callout:default;-webkit-user-drag:auto;cursor:pointer}
+.nk-mpic .ms-pic{-webkit-touch-callout:default;-webkit-user-drag:auto}
 .alb small{font-size:11px;color:var(--muted);font-weight:700;white-space:nowrap}
 .alb:focus-visible{outline:3px solid var(--blue);outline-offset:1px}
 .cd.stk-day > svg.stk,.cd.stk-day > .stkw{position:absolute;left:auto;right:2px;bottom:2px;top:auto;width:62%;height:62%;transform:none}
@@ -3381,7 +3381,6 @@ body.course .levels.nrange .lv{padding:3px 2px;font-size:12px}
       text: again ? (m ? `${m}がつ ${d}にちに もらった<br>とくべつ シールだよ` : "とくべつ シールだよ") : (it.text ? it.text + "<br>シール ちょうに はって おくね" : "とくべつ シールを もらったよ。<br>シール ちょうに はって おくね"),
       buttons:[{label: again ? "とじる" : "やったー！", onClick:()=>{ if(mode==="zukan") renderMs(); }},
                {label:"ほぞんする", ghost:true, onClick:()=>{ msSave(prep); return false; }}]});
-    $("nkMPic").querySelector(".ms-pic").addEventListener("click", ()=>msSave(prep));   // え を おしても ほぞん できる
   }
   function renderMs(){
     const got = msData().got;
