@@ -487,7 +487,7 @@ button.oslot:disabled{cursor:default}
 .nkh li{display:grid;grid-template-columns:96px 1fr;align-items:center;gap:10px;padding:6px 0;position:relative}
 .nkh-d{justify-self:start;min-width:96px;text-align:center;font-size:13px;font-weight:900;color:#fff;background:var(--blue);border-radius:8px;padding:5px 6px;position:relative;z-index:1}
 .nkh-dot{justify-self:start;margin-left:40px;width:15px;height:15px;border-radius:50%;background:var(--blue);position:relative;z-index:1}   /* ひづけ が わからない できごと */
-.nkh-b{display:flex;align-items:center;gap:10px;background:var(--bg);border:2px solid var(--line);border-radius:16px;padding:10px 12px}
+.nkh-b{display:flex;align-items:center;gap:10px;word-break:keep-all;background:var(--bg);border:2px solid var(--line);border-radius:16px;padding:10px 12px}
 .nkh-i{font-size:24px;line-height:1}
 .nkh-b b{display:block;font-size:15px;font-weight:900;color:var(--ink)}
 .nkh-b small{display:block;font-size:12px;font-weight:700;color:var(--muted)}
@@ -3862,7 +3862,8 @@ body.course .levels.nrange .lv{padding:3px 2px;font-size:12px}
       ev.push({date:`${m}がつ`, icon:"🥚", title:"たまごが とどいた", sub:""});
       if(stage>0) ev.push({date:"", icon:"✨", title:`${nkLabel(sp, stage)}まで そだった`, sub:""});
     }
-    if(cur) ev.push({date:"いま", icon:"⭐", title:`${nkLabel(sp, stage)}で いっしょに いるよ`, sub:""});
+    // いま：であって なんにち か（とどいた ひ を 1にちめ と かぞえる。したの「いっしょに いた ひ」と おなじ かず）
+    if(cur) ev.push({date:"いま", icon:"⭐", title: known ? `であって ${dkDiff(e.start, T) + 1}にち だね` : "いっしょに いるよ", sub:"いっしょに べんきょう がんばろう"});
     else if(iede) ev.push({date:jpDay(e.at), icon:"💧", title:"いえで しちゃった", sub:"また あえると いいね"});
     else ev.push({date:jpDay(e.at), icon:"🌈", title:"たびだった", sub:`${nkLabel(sp, stage)}まで そだったよ`});
     const tl = `<ol class="nkh">${ev.map(x=>`<li>${x.date ? `<span class="nkh-d num">${x.date}</span>` : `<span class="nkh-dot" aria-hidden="true"></span>`}<div class="nkh-b"><span class="nkh-i" aria-hidden="true">${x.icon}</span><div><b>${x.title}</b>${x.sub ? `<small>${x.sub}</small>` : ""}</div></div></li>`).join("")}</ol>`;
