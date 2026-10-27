@@ -412,6 +412,8 @@ button.oslot:disabled{cursor:default}
 .goal-l b{font-size:19px;font-weight:900}
 .goal-st{background:var(--yellow);color:#2A2112;border-radius:999px;padding:0 10px;font-size:13px;font-weight:900}
 .goal-dots{display:flex;gap:4px}
+/* 「もくひょう」に して もじが ふえた ので、ちいさい スマホ（はば 380px いか）では「クリア！」と「つづけて ○にち」を 1ぎょう に おさめる */
+@media (max-width:380px){.goal-l{font-size:14px;gap:6px}.goal-st{font-size:12px;padding:0 8px}}
 .goal-dots i{width:12px;height:12px;border-radius:50%;background:var(--line)}
 .goal-dots i.on{background:var(--ok)}
 .gbanner{background:var(--surface);border:3px solid var(--ok);border-radius:20px;padding:16px;display:flex;flex-direction:column;align-items:center;gap:8px;text-align:center;animation:pop .3s ease-out}
@@ -931,7 +933,7 @@ body.course .levels.nrange .lv{padding:3px 2px;font-size:12px}
   </div></div>
   <div class="gbanner" id="goalBanner" hidden>
     <div class="gb-stamp" id="gbIcon"></div>
-    <div class="gb-t" id="gbTitle">きょうの めあて クリア！</div>
+    <div class="gb-t" id="gbTitle">きょうの もくひょう クリア！</div>
     <div class="gb-s" id="gbSub"></div>
     <div class="gb-btns"><button class="gb-b" id="gbStamp">スタンプを みる</button><button class="gb-b pri" id="gbGo">もっと やる</button></div>
   </div>
@@ -1151,7 +1153,7 @@ body.course .levels.nrange .lv{padding:3px 2px;font-size:12px}
       </div>
       <div class="cal" id="cal"></div>
     </section>
-    <p class="zk-note">おうちの方へ：すらすら＝続けて2回、時間内に正解した計算です（式・文章題・ます計算など形は問いません）。そのあと別の日にも時間内に正解すると「ぴかぴか」、さらに別の日に3秒以内で正解すると「きらきら」に進化します（日をまたいで覚えているかを見ています）。一度付いたシールは消しません。その後に間違えた計算は、苦手データ側で多めに出します。めあては1日10問で、達成するとカレンダーにスタンプが押されます。シールは、その日に20問解くとノーマル、50問でレア、75問でスーパーレア、150問でウルトラレアに進化します（ます計算は1枚やりきったら正解したますの数を足し、新記録なら+5問）。絵柄は日替わりで、毎日0問から数え直します。もらったシールはシールちょうに残ります。</p>
+    <p class="zk-note">おうちの方へ：すらすら＝続けて2回、時間内に正解した計算です（式・文章題・ます計算など形は問いません）。そのあと別の日にも時間内に正解すると「ぴかぴか」、さらに別の日に3秒以内で正解すると「きらきら」に進化します（日をまたいで覚えているかを見ています）。一度付いたシールは消しません。その後に間違えた計算は、苦手データ側で多めに出します。「きょうの もくひょう」は1日10問で、達成するとカレンダーにスタンプが押されます。シールは、その日に20問解くとノーマル、50問でレア、75問でスーパーレア、150問でウルトラレアに進化します（ます計算は1枚やりきったら正解したますの数を足し、新記録なら+5問）。絵柄は日替わりで、毎日0問から数え直します。もらったシールはシールちょうに残ります。</p>
   </div>
 
   <div class="save-state" id="saveState" aria-live="polite"></div>
@@ -1607,7 +1609,7 @@ body.course .levels.nrange .lv{padding:3px 2px;font-size:12px}
         frame:`<div class="xcol"><div class="${rc}">${emo(A[0],b,"dim")}${emo(A[0],a-b,"on")}</div><div class="${rc}">${emo(B[0],b,"dim")}</div></div>` };
     },
 
-    // ③ あと いくつ？（めあての かずまで）
+    // ③ あと いくつ？（もくひょうの かずまで）
     atoiku(){
       const r=lvRank(), big = NMAX() > MAX;
       const T = big ? rnd(11, NMAX()) : rnd([5,5,6,6][r], [7,10,10,10][r]);
@@ -2309,10 +2311,10 @@ body.course .levels.nrange .lv{padding:3px 2px;font-size:12px}
 
   /* ---------- わからない ボタン・わからなかった もんだい・にがて もんだい ----------
      ・いろいろ もんだい の「わからない」：こたえを 図で みせて、あとで もういちど だす。せいかい にも まちがい にも かぞえない
-       （シール・めあて・20もん にも はいらない）。その もんだいは「わからなかった もんだい」に のこる
+       （シール・もくひょう・20もん にも はいらない）。その もんだいは「わからなかった もんだい」に のこる
      ・わからなかった もんだい：のこった もんだいに もういちど ちょうせん。せいかい したら リストから けす
      ・にがて もんだい：これまでに 2かい いじょう といて、せいかいが 半分 より すくない けいさん（10までの たしざん・ひきざん・3つの かず）
-     どちらも 1かい 10もん まで。ふつうの もんだい と おなじく シール・めあて に かぞえる */
+     どちらも 1かい 10もん まで。ふつうの もんだい と おなじく シール・もくひょう に かぞえる */
   const IDK_MAX = 60, SET_N = 10;
   // にがて：weak が ある こ は それを つかう。まだ ない こ（まえの きろく）は「2かい いじょう といて せいかいが 半分 より すくない」
   const GRAD_RUN = 3;
@@ -2654,7 +2656,7 @@ body.course .levels.nrange .lv{padding:3px 2px;font-size:12px}
       try{ localStorage.removeItem(STORE); localStorage.removeItem(STATS); localStorage.removeItem(GBEST_KEY); }catch(e){}
       markDirty();
       renderHistory();
-      // がめんの うえの「きょうの めあて」「きょうの シール」なども すぐ もとに もどす
+      // がめんの うえの「きょうの もくひょう」「きょうの シール」なども すぐ もとに もどす
       renderGoal(); renderStickerRow(); nkTick(); renderNk(); applyMc();
       $("gbest").textContent = "-";
       if(mode==="zukan") renderZukan();
@@ -3078,7 +3080,7 @@ body.course .levels.nrange .lv{padding:3px 2px;font-size:12px}
   setGRange(grange, false);
 
 
-  /* ---------- きょうの めあて ---------- */
+  /* ---------- きょうの もくひょう ---------- */
   const GOAL = 10;
   if(!stats.days) stats.days = {};
   const dayKey = d => `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,"0")}-${String(d.getDate()).padStart(2,"0")}`;
@@ -3097,8 +3099,8 @@ body.course .levels.nrange .lv{padding:3px 2px;font-size:12px}
     $("goalDots").innerHTML = Array.from({length:GOAL},(_,i)=>`<i class="${i<n?"on":""}"></i>`).join("");
     const s = streakDays();
     $("goalText").innerHTML = t.done
-      ? `きょうの めあて クリア！`
-      : `きょうの めあて <b class="num">${n}</b> / ${GOAL}`;
+      ? `きょうの もくひょう クリア！`
+      : `きょうの もくひょう <b class="num">${n}</b> / ${GOAL}`;
     $("goalStreak").textContent = s>0 ? `つづけて ${s}にち` : "";
     $("goalStreak").hidden = s===0;
   }
@@ -3311,7 +3313,7 @@ body.course .levels.nrange .lv{padding:3px 2px;font-size:12px}
     const bn = $("goalBanner");
     bn.classList.remove("evo");
     $("gbIcon").innerHTML = PAW;
-    $("gbTitle").textContent = "きょうの めあて クリア！";
+    $("gbTitle").textContent = "きょうの もくひょう クリア！";
     $("gbSub").textContent = `${s>=2 ? `${s}にち つづけて できたよ！` : ""}ここで おわっても いいし、もっと やっても いいよ`;
     bn.hidden = false;
     setPets("happy","happy");
@@ -3453,11 +3455,11 @@ body.course .levels.nrange .lv{padding:3px 2px;font-size:12px}
   document.addEventListener("dragstart", e=>{ if(e.target.closest("img")) e.preventDefault(); });
 
   /* ---------- なかま そだて ----------
-     めあて（10もん）を クリアした ひの かずで そだつ。3にち やすむと いえで（よくじつ あたらしい たまご）。
+     もくひょう（10もん）を クリアした ひの かずで そだつ。3にち やすむと いえで（よくじつ あたらしい たまご）。
      つきが かわると たびだって、なかま ずかんに のる。きろくは この たんまつ だけ。 */
   const NK_LIST = window.NAKAMA || [];
   const NK_STAGES = ["egg","baby","child","young","adult","elder"];
-  // その だんかいに なる のに ひつような、めあてを クリアした ひの かず（ごうけい）。
+  // その だんかいに なる のに ひつような、もくひょうを クリアした ひの かず（ごうけい）。
   // いる きかん：たまご2・あかちゃん3・こども4・わかもの4・おとな10・おとしより（たびだつ まで）。2026-10-17 に かえた（まえは 0,2,6,11,17,23）
   const NK_BASE = [0, 2, 5, 9, 13, 23];
   const nkLabel = (sp, i) => ["たまご","あかちゃん","こども", (sp&&sp.young)||"わかもの","おとな","おとしより"][i];
@@ -3481,7 +3483,7 @@ body.course .levels.nrange .lv{padding:3px 2px;font-size:12px}
     return base.map((t,i)=>{ if(!i) return 0; const v = Math.max(prev+1, Math.round(t*f)); prev = v; return v; });
   }
   const nkRawStage = (cur, base) => { const th=nkThresholds(cur, base), n=cur.days.length; let s=0; th.forEach((t,i)=>{ if(n>=t) s=i; }); return s; };
-  // だんかい。cap が ある ときは、つぎに めあてを クリアする まで それより うえに しない（かってに おおきく ならない ように）
+  // だんかい。cap が ある ときは、つぎに もくひょうを クリアする まで それより うえに しない（かってに おおきく ならない ように）
   function nkStage(cur){ const s = nkRawStage(cur); return cur.cap != null ? Math.min(cur.cap, s) : s; }
   // 2026-10-17 18:11 に そだつ ひかずを へらした（まえは 0,2,6,11,17,23）。そのまえ から いる こ は、
   // まえの きまりで いた だんかい で いったん とめて、つぎに クリアした ひ に あたらしい だんかい まで あげる
@@ -3492,7 +3494,7 @@ body.course .levels.nrange .lv{padding:3px 2px;font-size:12px}
     const old = nkRawStage(c, NK_BASE_OLD);
     if(nkRawStage(c) > old) c.cap = old;
   }
-  // さいごに めあてを クリアした ひ から、なんにち やすんで いるか（つきの おわりまでで かぞえる）
+  // さいごに もくひょうを クリアした ひ から、なんにち やすんで いるか（つきの おわりまでで かぞえる）
   function nkMissed(cur, today){
     const last = cur.days.length ? cur.days[cur.days.length-1] : dkAdd(cur.start, -1);
     const lim = dkMonthEndNext(cur.start);
@@ -3567,14 +3569,14 @@ body.course .levels.nrange .lv{padding:3px 2px;font-size:12px}
       $("nkImg").hidden = true; $("nkStage").hidden = true; $("nkBar").parentElement.hidden = true;
       $("nkName").textContent = "つぎの たまご";
       $("nkNext").textContent = nk.nextEgg === dkAdd(todayKey(), 1) ? "あした とどくよ" : `${m}がつ ${d}にちに とどくよ`;
-      $("nkMood").textContent = "それまで めあてを クリアして まっててね"; $("nkMood").className = "nk-mood";
+      $("nkMood").textContent = "それまで もくひょうを クリアして まっててね"; $("nkMood").className = "nk-mood";
       return;
     }
     if(!NK_LIST.length || !nk || !nk.cur){ row.hidden = true; return; }
     row.classList.remove("wait"); $("nkImg").hidden = false; $("nkStage").hidden = false; $("nkBar").parentElement.hidden = false;
     const c = nk.cur, sp = nkSp(c.id), st = nkStage(c), T = todayKey();
     const doneToday = c.days.includes(T), miss = doneToday ? 0 : nkMissed(c, T);
-    // 1にち でも やすんだ ら、その ひ に めあてを クリア する まで しょんぼり の え（じかんたい の え は ださない）
+    // 1にち でも やすんだ ら、その ひ に もくひょうを クリア する まで しょんぼり の え（じかんたい の え は ださない）
     const mood = doneToday ? "h" : miss>=1 ? "s" : "n";
     row.hidden = false;
     const img = $("nkImg");
@@ -3590,14 +3592,14 @@ body.course .levels.nrange .lv{padding:3px 2px;font-size:12px}
     if(st < 5){
       const left = th[st+1] - n;
       $("nkNext").textContent = left <= 0
-        ? (st===0 ? "つぎに めあてを クリアすると うまれるよ！" : `つぎに めあてを クリアすると ${nkLabel(sp, st+1)}に なるよ！`)
+        ? (st===0 ? "つぎに もくひょうを クリアすると うまれるよ！" : `つぎに もくひょうを クリアすると ${nkLabel(sp, st+1)}に なるよ！`)
         : st===0 ? `うまれるまで あと ${left}にち` : `${nkLabel(sp, st+1)}まで あと ${left}にち`;
       $("nkBar").style.width = Math.min(100, Math.round((n - th[st]) / (th[st+1] - th[st]) * 100)) + "%";
     }else{ $("nkNext").textContent = "さいごまで そだったよ！"; $("nkBar").style.width = "100%"; }
     $("nkMood").textContent = doneToday ? "きょうも あえて うれしいな"
       : miss===1 ? (st===0 ? "はやく あいたいな…" : "さみしいな…")
-      : miss>=2 ? "あいたいな… きょう めあてを クリアしてね"
-      : st===0 ? "めあてを クリアすると そだつよ" : "きょうも いっしょに がんばろう";
+      : miss>=2 ? "あいたいな… きょう もくひょうを クリアしてね"
+      : st===0 ? "もくひょうを クリアすると そだつよ" : "きょうも いっしょに がんばろう";
     $("nkMood").className = "nk-mood" + (miss>=2 ? " warn" : "");
   }
   /* なかまの え：じかんたいで かわる（ホームの なかまカード だけ）
@@ -3728,7 +3730,7 @@ body.course .levels.nrange .lv{padding:3px 2px;font-size:12px}
     const c = nk.cur;
     if(ev.t==="egg"){
       nkModal({pic:nkPicHTML(nkImgSrc(c ? c.id : NK_LIST[0].id, 0, "h"), "wobble", 0), title:"あたらしい たまごが とどいたよ！",
-        text:"めあて（10もん）を クリアした ひが ふえると、たまごが そだつよ。<br>3にち つづけて やすむと、いえでしちゃうから きをつけてね。",
+        text:"もくひょう（10もん）を クリアした ひが ふえると、たまごが そだつよ。<br>3にち つづけて やすむと、いえでしちゃうから きをつけてね。",
         buttons:[{label:"たいせつに するね"}]});
     }else if(ev.t==="hatch" && c){
       nkAskName(c, true);
@@ -3875,7 +3877,7 @@ body.course .levels.nrange .lv{padding:3px 2px;font-size:12px}
       let n = 0, ok = 0;
       for(let k = e.start; k <= end; k = dkAdd(k, 1)){ const d = (stats.days||{})[k]; if(d){ n += d.n||0; ok += d.ok||0; } }
       const rate = n ? Math.round(ok / n * 100) : 0;
-      sum = `<div class="nkh-sum"><div class="nkh-st"><span>めあてを クリアした ひ</span><b class="num">${e.days.length}<small>にち</small></b></div>
+      sum = `<div class="nkh-sum"><div class="nkh-st"><span>もくひょうを クリアした ひ</span><b class="num">${e.days.length}<small>にち</small></b></div>
         <div class="nkh-st"><span>といた もんだい</span><b class="num">${n}<small>もん</small></b></div>
         <div class="nkh-st"><span>せいかい</span><b class="num">${ok}<small>もん</small></b></div>
         <div class="nkh-st"><span>せいかいりつ</span><b class="num">${n ? rate : "-"}<small>${n ? "%" : ""}</small></b></div></div>`;
@@ -4602,7 +4604,7 @@ body.course .levels.nrange .lv{padding:3px 2px;font-size:12px}
     const w = pick(["cat","dog"]), t = (stats.days[todayKey()]||{});
     if(tlOver()){ say(w, w==="cat" ? "きょうは ここまで だにゃ。また あした やろうね！" : "きょうは ここまで。また あした やろう わん！"); return; }
     if(tlResting()){ say(w, `いまは きゅうけい ${w==="cat" ? "だにゃ" : "だ わん"}。${tlClockText(tu.brk)}に なったら また できるよ`); return; }
-    say(w, mcOn() ? mcLine("greeting") : t.done ? (w==="cat" ? "きょうの めあては クリアずみ だにゃ！" : "きょうも よく がんばったね わん")
+    say(w, mcOn() ? mcLine("greeting") : t.done ? (w==="cat" ? "きょうの もくひょうは クリアずみ だにゃ！" : "きょうも よく がんばったね わん")
       : (w==="cat" ? "きょうは なにを するかにゃ？" : "どれで あそぶ？ わん"));
   }
   function setMode(m, keepSet){
