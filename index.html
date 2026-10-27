@@ -3342,13 +3342,44 @@ body.course .levels.nrange .lv{padding:3px 2px;font-size:12px}
     if(hit){ saveStats(); setTimeout(nkShowQueue, 1600); }
     return hit;
   }
+  /* とくべつ シール の え を ほぞん する。PNG に して、つかえる ところ（iPhone など）では きょうゆう メニュー を だす
+     （「がぞうを ほぞん」で しゃしん に はいる）。だせない ときは ファイル として ダウンロード する。
+     iPhone は おした すぐ あと でないと きょうゆう メニュー が でない ので、ポップアップ を ひらいた とき に さきに つくって おく */
+  function msFile(it){
+    return new Promise((ok, ng)=>{
+      const img = new Image();
+      img.onload = ()=>{
+        const c = document.createElement("canvas"); c.width = img.naturalWidth; c.height = img.naturalHeight;
+        c.getContext("2d").drawImage(img, 0, 0);
+        c.toBlob(b=> b ? ok(new File([b], `keisan-renshu-${it.img}.png`, {type:"image/png"})) : ng(new Error("png")), "image/png");
+      };
+      img.onerror = ng;
+      img.src = msImg(it);
+    });
+  }
+  function msDownload(file){
+    const a = document.createElement("a"), u = URL.createObjectURL(file);
+    a.href = u; a.download = file.name; document.body.appendChild(a); a.click(); a.remove();
+    setTimeout(()=>URL.revokeObjectURL(u), 4000);
+  }
+  function msSave(prep){
+    const go = file=>{
+      if(navigator.canShare && navigator.canShare({files:[file]})){
+        navigator.share({files:[file]}).catch(e=>{ if(e && e.name !== "AbortError") msDownload(file); });   // やめた とき は なにも しない
+      }else msDownload(file);
+    };
+    if(prep.file) go(prep.file);
+    else prep.p.then(go).catch(()=>{});
+  }
   function msShow(id, again){
     const it = msById(id); if(!it) return;
+    const prep = {}; prep.p = msFile(it).then(f=>(prep.file = f));
     const [y,m,d] = String(msData().got[it.id]||"").split("-").map(Number);
     nkModal({pic:`<img class="ms-pic${it.wide ? " wide" : ""}" src="${msImg(it)}" alt="${it.alt}" draggable="false">`,
       title: it.title,
       text: again ? (m ? `${m}がつ ${d}にちに もらった<br>とくべつ シールだよ` : "とくべつ シールだよ") : (it.text ? it.text + "<br>シール ちょうに はって おくね" : "とくべつ シールを もらったよ。<br>シール ちょうに はって おくね"),
-      buttons:[{label: again ? "とじる" : "やったー！", onClick:()=>{ if(mode==="zukan") renderMs(); }}]});
+      buttons:[{label: again ? "とじる" : "やったー！", onClick:()=>{ if(mode==="zukan") renderMs(); }},
+               {label:"ほぞんする", ghost:true, onClick:()=>{ msSave(prep); return false; }}]});
   }
   function renderMs(){
     const got = msData().got;
