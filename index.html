@@ -81,9 +81,7 @@ body{
 body.course .idk-btn{font-size:14px;padding:3px 14px}
 .msg.idk{color:var(--blue)}
 .miss-card.idk{border-color:var(--blue)}
-/* わからない は がめんの まんなか に だす（まちがい は したの まま） */
-.miss-pop:has(.miss-card.idk){top:0;align-items:center;padding:16px 12px;background:color-mix(in srgb,var(--bg) 55%,transparent)}
-.miss-card.idk{box-shadow:0 10px 32px rgba(0,0,0,.3);animation:nkPop .3s ease-out}
+/* まちがい（いろいろ・とけい）と わからない は がめんの まんなか に だす */
 .sets{display:grid;grid-template-columns:1fr 1fr;gap:10px}
 .set-btn{font:inherit;display:flex;flex-direction:column;align-items:center;gap:2px;background:var(--surface);border:2px solid var(--line);border-radius:16px;padding:10px 6px;cursor:pointer;color:var(--ink)}
 .set-btn b{font-size:15px;font-weight:900;text-align:center;line-height:1.35}
@@ -109,9 +107,9 @@ body.drill-set #drillTop .levels,body.drill-set #superNote,body.drill-set #drill
 .choice.kb-wait{border-color:var(--blue);background:var(--frame)}
 
 /* まちがえた ときの ポップアップ（したから でる） */
-.miss-pop{position:fixed;left:0;right:0;bottom:0;z-index:9;display:flex;justify-content:center;padding:12px 12px calc(env(safe-area-inset-bottom,0px) + 14px);background:linear-gradient(to top,color-mix(in srgb,var(--bg) 85%,transparent),transparent);pointer-events:none}
+.miss-pop{position:fixed;inset:0;z-index:9;display:flex;justify-content:center;align-items:center;padding:16px 12px;background:color-mix(in srgb,var(--bg) 55%,transparent);pointer-events:none}
 .miss-pop[hidden]{display:none}
-.miss-card{pointer-events:auto;width:100%;max-width:520px;background:var(--surface);border:3px solid var(--ng);border-radius:22px;padding:14px 16px 16px;display:flex;flex-direction:column;align-items:center;gap:10px;box-shadow:0 -6px 24px rgba(0,0,0,.25);animation:missUp .25s ease-out;max-height:70vh;overflow-y:auto}
+.miss-card{pointer-events:auto;width:100%;max-width:520px;background:var(--surface);border:3px solid var(--ng);border-radius:22px;padding:14px 16px 16px;display:flex;flex-direction:column;align-items:center;gap:10px;box-shadow:0 10px 32px rgba(0,0,0,.3);animation:nkPop .3s ease-out;max-height:calc(100vh - 32px);overflow-y:auto}
 .miss-card .msg{font-size:26px;font-weight:900}
 .miss-card .msg.ng{color:var(--ng)}
 .miss-card .explain{border:none;padding:0;background:none}
@@ -2227,7 +2225,7 @@ body.course .levels.nrange .lv{padding:3px 2px;font-size:12px}
     }else{
       streak = 0;
       fbEl.innerHTML = "";
-      // こたえと「つぎへ」は したから でる ポップアップで みせる（スクロール しなくて いい ように）
+      // こたえと「つぎへ」は がめんの まんなか の ポップアップで みせる（スクロール しなくて いい ように）
       const pop=$("missPop");
       pop.innerHTML = `<div class="miss-card" role="dialog" aria-modal="true" aria-labelledby="missTitle">
           <div class="msg ng" id="missTitle">${timeout ? "じかんぎれ！" : "おしい！"}</div>
