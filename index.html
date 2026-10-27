@@ -2869,8 +2869,8 @@ body.course .levels.nrange .lv{padding:3px 2px;font-size:12px}
         else if(k===G.idx && G.running && gbuf){ cls="cur"; txt = `<span class="gin">${gbuf}</span>`; }
         else if(k===G.idx && G.running){
           cls="cur";
-          // まぜまぜ：いま とく ますに「ひだりの かず ＋/− うえの かず」を うすく だす
-          if(gkind==="mix") txt = `<span class="gq">${r}${opText(c.op)}${c.v}</span>`;
+          // いま とく ますに「ひだりの かず ＋/− うえの かず」を うすく だす（たしざん・ひきざん・まぜまぜ ぜんぶ）
+          txt = `<span class="gq">${r}${opText(c.op)}${c.v}</span>`;
         }
         h += `<td id="gc${k}" class="${cls}">${txt}</td>`;
       });
