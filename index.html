@@ -476,9 +476,10 @@ button.oslot:disabled{cursor:default}
 .nk-mood.warn{color:var(--ng)}
 .nk-modal{position:fixed;inset:0;z-index:30;display:flex;align-items:center;justify-content:center;padding:16px;background:color-mix(in srgb,var(--bg) 72%,transparent);backdrop-filter:blur(3px)}
 .nk-modal[hidden]{display:none}
+.nk-modal{overscroll-behavior:contain}
 .nk-mcard{width:100%;max-width:420px;background:var(--surface);border:2px solid var(--line);border-radius:24px;padding:20px;display:flex;flex-direction:column;align-items:center;gap:10px;text-align:center;box-shadow:0 10px 30px rgba(0,0,0,.25);animation:missUp .3s ease-out}
 .nk-mcard h2{margin:0;font-size:21px;font-weight:900}
-.nk-mcard{max-height:calc(100vh - 32px);overflow-y:auto}
+.nk-mcard{max-height:calc(100vh - 32px);overflow-y:auto;overscroll-behavior:contain}
 /* なかま の れきし：まんなか の せん に そって、ひづけ と できごと を ならべる */
 .nkh-wrap{width:100%;display:flex;flex-direction:column;gap:14px;text-align:left}
 .nkh{list-style:none;margin:0;padding:4px 0;position:relative}
@@ -3666,6 +3667,21 @@ body.course .levels.nrange .lv{padding:3px 2px;font-size:12px}
   }
 
   let nkModalOpen = false;
+  // ポップアップを ひらいて いる あいだ は、うしろの がめん が いっしょに スクロール しない ように とめる
+  // （iPhone でも きく ように body を その ばしょ で こてい して、とじたら もとの いち に もどす）
+  let pageLockY = null;
+  function pageLock(on){
+    const b = document.body.style;
+    if(on){
+      if(pageLockY != null) return;
+      pageLockY = window.scrollY;
+      b.position = "fixed"; b.top = `-${pageLockY}px`; b.left = "0"; b.right = "0";
+    }else{
+      if(pageLockY == null) return;
+      b.position = ""; b.top = ""; b.left = ""; b.right = "";
+      window.scrollTo({top: pageLockY, behavior: "instant"}); pageLockY = null;
+    }
+  }
   function nkModal({pic, title, text, name, buttons, hist}){
     nkModalOpen = true;
     if(mode==="drill" && current) stopTimer();   // ひらいて いる あいだ は 10びょう タイマーを とめる
@@ -3677,12 +3693,12 @@ body.course .levels.nrange .lv{padding:3px 2px;font-size:12px}
     const bw = $("nkMBtns"); bw.innerHTML = "";
     buttons.forEach(b=>{
       const el=document.createElement("button"); el.className = b.ghost ? "nk-ghost" : "next"; el.textContent = b.label;
-      el.addEventListener("click", ()=>{ if(b.onClick && b.onClick()===false) return; $("nkModal").hidden = true; nkModalOpen = false;
+      el.addEventListener("click", ()=>{ if(b.onClick && b.onClick()===false) return; $("nkModal").hidden = true; nkModalOpen = false; pageLock(false);
         if(mode==="drill" && current && $("overlay").hidden){ shownAt = performance.now(); startTimer(); }   // ひらいて いた じかんは かぞえない
         setTimeout(nkShowQueue, 300); });
       bw.appendChild(el);
     });
-    $("nkModal").hidden = false;
+    $("nkModal").hidden = false; pageLock(true);
     if(name) setTimeout(()=>$("nkMInput").focus(), 50); else bw.firstChild.focus({preventScroll:true});
   }
   const nkPicHTML = (src, cls="", stage=3) => `<img class="nk-mimg ${cls}" src="${src}" alt="" draggable="false" style="scale:${NK_SCALE[stage]}">`;
