@@ -3871,19 +3871,83 @@ body.course .levels.nrange .lv{padding:3px 2px;font-size:12px}
     else ev.push({date:jpDay(e.at), icon:"🌈", title:"たびだった", sub:`${nkLabel(sp, stage)}まで そだったよ`});
     const tl = `<ol class="nkh">${ev.map(x=>`<li>${x.date ? `<span class="nkh-d num">${x.date}</span>` : `<span class="nkh-dot" aria-hidden="true"></span>`}<div class="nkh-b"><span class="nkh-i" aria-hidden="true">${x.icon}</span><div><b>${x.title}</b>${x.sub ? `<small>${x.sub}</small>` : ""}</div></div></li>`).join("")}</ol>`;
     // いっしょに いた あいだ の もんだい（たびだち は その つき の おわり まで、いえで は いなく なった ひ の まえ まで）
-    let sum = `<div class="nkh-sum"><small>この ころの もんだいの かずは のこって いないよ</small></div>`;
+    let sum = `<div class="nkh-sum"><small>この ころの もんだいの かずは のこって いないよ</small></div>`, st = null;
     if(known){
       const end = cur ? T : iede ? dkAdd(e.at, -1) : dkAdd(dkMonthEndNext(e.start), -1);
       let n = 0, ok = 0;
       for(let k = e.start; k <= end; k = dkAdd(k, 1)){ const d = (stats.days||{})[k]; if(d){ n += d.n||0; ok += d.ok||0; } }
       const rate = n ? Math.round(ok / n * 100) : 0;
-      sum = `<div class="nkh-sum"><div class="nkh-st"><span>もくひょうを クリアした ひ</span><b class="num">${e.days.length}<small>にち</small></b></div>
-        <div class="nkh-st"><span>といた もんだい</span><b class="num">${n}<small>もん</small></b></div>
-        <div class="nkh-st"><span>せいかい</span><b class="num">${ok}<small>もん</small></b></div>
-        <div class="nkh-st"><span>せいかいりつ</span><b class="num">${n ? rate : "-"}<small>${n ? "%" : ""}</small></b></div></div>`;
+      st = [["もくひょうを クリアした ひ", e.days.length, "にち"], ["といた もんだい", n, "もん"], ["せいかい", ok, "もん"], ["せいかいりつ", n ? rate : "-", n ? "%" : ""]];
+      sum = `<div class="nkh-sum">${st.map(([l, v, u])=>`<div class="nkh-st"><span>${l}</span><b class="num">${v}<small>${u}</small></b></div>`).join("")}</div>`;
     }
-    nkModal({pic: nkPicHTML(nkImgSrc(e.id, stage, iede ? "s" : "n"), "pop", stage), title:`${nm}の れきし`, hist: tl + sum,
-      buttons:[{label:"とじる"}]});
+    // たびだった こ は「ありがとう」の え と ことば（おとな・おとしより の え が まだ ない ときは いつもの え）
+    const bye = !cur && !iede && stage > 0, base = nkImgSrc(e.id, stage, iede ? "s" : "n");
+    const src = bye && stage >= 4 ? `nakama/${e.id}/farewell_${stage===5 ? "elder" : "adult"}.webp?v=${NK_IMG_VER}` : base;
+    const msg = bye ? "そだてて くれて ありがとう。<br>また あおうね！" : "";
+    const prep = {}; prep.p = nkHistFile({id:e.id, src, base, stage, title:`${nm}の れきし`, msg, ev, st}).then(f=>(prep.file = f));
+    nkModal({pic: nkPicHTML(src, "pop", stage).replace("<img ", `<img onerror="this.onerror=null;this.src='${base}'" `), title:`${nm}の れきし`,
+      text: msg ? `${nm}「${msg}」` : "", hist: tl + sum,
+      buttons:[{label:"とじる"}, {label:"ほぞんする", ghost:true, onClick:()=>{ msSave(prep); return false; }}]});
+  }
+  /* れきし を 1まいの え（PNG）に する。ほぞん の しかた は とくべつ シール と おなじ（msSave） */
+  function nkHistFile({id, src, base, stage, title, msg, ev, st}){
+    const load = u => new Promise((ok, ng)=>{ const i = new Image(); i.onload = ()=>ok(i); i.onerror = ng; i.src = u; });
+    const F = '"Zen Maru Gothic","Hiragino Maru Gothic ProN","Hiragino Sans",sans-serif';
+    const fonts = document.fonts ? Promise.all(["700 30px", "900 60px"].map(s=>document.fonts.load(`${s} "Zen Maru Gothic"`))).catch(()=>{}) : Promise.resolve();
+    return Promise.all([load(src).catch(()=>load(base)), fonts]).then(([img])=>{
+      const W = 1080, P = 70, lines = msg ? msg.split("<br>") : [];
+      const picH = 420, rowH = 132, stH = st ? 2 * 170 + 24 : 90;
+      const H = P + picH + 40 + 80 + (lines.length ? lines.length * 56 + 70 : 0) + ev.length * rowH + 40 + stH + 110;
+      const c = document.createElement("canvas"); c.width = W; c.height = H;
+      const g = c.getContext("2d");
+      const rr = (x, y, w, h, r, fill, line) => { g.beginPath(); if(g.roundRect) g.roundRect(x, y, w, h, r); else g.rect(x, y, w, h); if(fill){ g.fillStyle = fill; g.fill(); } if(line){ g.lineWidth = 4; g.strokeStyle = line; g.stroke(); } };
+      const ink = "#3b2f27", muted = "#8a7b6e", blue = "#5b8fd6", box = "#ffffff", edge = "#eadfcd";
+      g.fillStyle = "#fff8ec"; g.fillRect(0, 0, W, H);
+      // え（あしもと を そろえて まんなか に）
+      const s = Math.min(picH / img.naturalHeight, 520 / img.naturalWidth) * (NK_SCALE[stage] > 1 ? 0.9 : 1);
+      const iw = img.naturalWidth * s, ih = img.naturalHeight * s;
+      g.drawImage(img, (W - iw) / 2, P + picH - ih, iw, ih);
+      let y = P + picH + 40;
+      g.textAlign = "center"; g.textBaseline = "middle";
+      g.fillStyle = ink; g.font = `900 60px ${F}`; g.fillText(title, W / 2, y + 36); y += 80;
+      if(lines.length){
+        rr(P, y, W - 2 * P, lines.length * 56 + 44, 28, "#ffeef2", "#f6c9d4");
+        g.fillStyle = "#c2506e"; g.font = `900 40px ${F}`;
+        lines.forEach((t, i)=>g.fillText(t, W / 2, y + 22 + 28 + i * 56));
+        y += lines.length * 56 + 70;
+      }
+      // れきし（ひだり に ひづけ、みぎ に できごと）
+      g.fillStyle = blue; g.fillRect(P + 116, y + 20, 6, ev.length * rowH - 40);
+      ev.forEach((x, i)=>{
+        const cy = y + i * rowH + rowH / 2;
+        if(x.date){ rr(P, cy - 34, 236, 68, 16, blue); g.fillStyle = "#fff"; g.font = `900 32px ${F}`; g.textAlign = "center"; g.fillText(x.date, P + 118, cy + 2); }
+        else { g.beginPath(); g.arc(P + 119, cy, 14, 0, Math.PI * 2); g.fillStyle = blue; g.fill(); }
+        const bx = P + 266, bw = W - P - bx;
+        rr(bx, cy - 54, bw, 108, 26, box, edge);
+        g.textAlign = "left"; g.font = `44px ${F}`; g.fillText(x.icon, bx + 26, cy + 2);
+        g.fillStyle = ink; g.font = `900 36px ${F}`;
+        if(x.sub){ g.fillText(x.title, bx + 96, cy - 18); g.fillStyle = muted; g.font = `700 26px ${F}`; g.fillText(x.sub, bx + 96, cy + 26); }
+        else g.fillText(x.title, bx + 96, cy + 2);
+      });
+      y += ev.length * rowH + 40;
+      g.textAlign = "center";
+      if(st){
+        const cw = (W - 2 * P - 24) / 2;
+        st.forEach(([l, v, u], i)=>{
+          const x = P + (i % 2) * (cw + 24), yy = y + Math.floor(i / 2) * 194;
+          rr(x, yy, cw, 170, 26, box, edge);
+          g.fillStyle = muted; g.font = `700 28px ${F}`; g.fillText(l, x + cw / 2, yy + 46);
+          g.fillStyle = ink; g.font = `900 64px ${F}`; const vw = g.measureText(String(v)).width;
+          g.font = `700 30px ${F}`; const uw = u ? g.measureText(u).width + 6 : 0;
+          const sx = x + cw / 2 - (vw + uw) / 2;
+          g.textAlign = "left"; g.font = `900 64px ${F}`; g.fillText(String(v), sx, yy + 112);
+          if(u){ g.fillStyle = muted; g.font = `700 30px ${F}`; g.fillText(u, sx + vw + 6, yy + 122); }
+          g.textAlign = "center";
+        });
+      }else{ g.fillStyle = muted; g.font = `700 30px ${F}`; g.fillText("この ころの もんだいの かずは のこって いないよ", W / 2, y + 45); }
+      g.fillStyle = muted; g.font = `700 28px ${F}`; g.fillText("けいさん れんしゅう", W / 2, H - 50);
+      return new Promise((ok, ng)=>c.toBlob(b=> b ? ok(new File([b], `keisan-renshu-${id}-rekishi.png`, {type:"image/png"})) : ng(new Error("png")), "image/png"));
+    });
   }
 
 
