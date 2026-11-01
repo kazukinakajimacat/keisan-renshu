@@ -5,10 +5,10 @@
 <link rel="icon" type="image/png" sizes="64x64" href="favicon.png?v=3">
 <link rel="apple-touch-icon" href="apple-touch-icon.png?v=3">
 <link rel="manifest" href="manifest.json">
-<script src="stickers/stickers.js?v=202610280828"></script>
-<script src="nakama/nakama.js?v=202610280828"></script>
-<script src="clock/clock.js?v=202610280828"></script>
-<script src="drill/patterns.js?v=202610280828"></script>
+<script src="stickers/stickers.js?v=202610280829"></script>
+<script src="nakama/nakama.js?v=202610280829"></script>
+<script src="clock/clock.js?v=202610280829"></script>
+<script src="drill/patterns.js?v=202610280829"></script>
 <meta name="apple-mobile-web-app-title" content="けいさん">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -3827,7 +3827,8 @@ body.course .levels.nrange .lv{padding:3px 2px;font-size:12px}
     const items = [];
     if(nk.cur) items.push(card({id:nk.cur.id, name:nk.cur.name, stage:nkStage(nk.cur), month:nk.cur.start.slice(0,7), result:"cur"}, true));
     dex.forEach(e=>items.push(card(e, false)));
-    const shown = new Set([...(nk.dex||[]).map(e=>e.id), ...(nk.cur && nkStage(nk.cur)>0 ? [nk.cur.id] : [])]);
+    // いま そだてて いる こ は、たまご の うち も かげ を ださない（だすと 12しゅるい なのに 13まい に なる）
+    const shown = new Set([...(nk.dex||[]).map(e=>e.id), ...(nk.cur ? [nk.cur.id] : [])]);
     const unseen = NK_LIST.filter(sp=>!shown.has(sp.id)).map(sp=>`<div class="nkd unseen"><i class="nk-shadow" style="-webkit-mask-image:url(nakama/${sp.id}/adult_n.webp);mask-image:url(nakama/${sp.id}/adult_n.webp)" aria-hidden="true"></i><b>？？？</b><small>まだ あって いない</small></div>`);
     renderMcEntry();
     box.innerHTML = items.length || unseen.length ? items.join("") + unseen.join("")
