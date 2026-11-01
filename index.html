@@ -720,6 +720,8 @@ span.stkw > svg{position:absolute;left:0;top:0;width:100%;height:100%;display:bl
 .nk-mcard p b.num{color:var(--ink);font-size:1.2em}
 .nk-mpic.ms{height:auto;padding:0}
 .ms-pic{width:min(100%,300px);aspect-ratio:1;border-radius:18px;display:block;animation:nkPop .6s ease-out}
+.nkms-old{display:flex;flex-wrap:wrap;justify-content:center;gap:8px;max-width:320px}
+.nkms-old img{width:92px;aspect-ratio:1;border-radius:12px;animation:nkPop .6s ease-out}
 .ms-pic.wide{width:min(100%,420px);aspect-ratio:3/2}
 .nk-mpic .ms-pic{-webkit-touch-callout:default;-webkit-user-drag:auto}
 .alb small{font-size:11px;color:var(--muted);font-weight:700;white-space:nowrap}
@@ -3364,6 +3366,12 @@ body.course .levels.nrange .lv{padding:3px 2px;font-size:12px}
     if(!MS_ON) return false;
     const got = msData().got; let hit = false;
     MS_LIST.forEach(it=>{ if(!got[it.id] && !MS_HOLD.has(it.id) && it.ok()){ got[it.id] = todayKey(); nkData().queue.push({t:"ms", n:it.id}); hit = true; } });
+    // たびだち シール が はじまる まえ に たびだった なかま の ぶん は、NKMS_FROM より あと に はじめて ひらいた とき に まとめて わたす
+    if(Date.now() >= NKMS_FROM){
+      const g = nkMsGot(), T = todayKey();
+      const add = ((stats.nk && stats.nk.dex) || []).filter(e=>e.result==="tabidachi" && e.stage > 0 && !g[nkMsKey(e)]);
+      if(add.length){ add.forEach(e=>{ g[nkMsKey(e)] = T; }); nkData().queue.push({t:"nkmsOld", keys:add.map(nkMsKey)}); hit = true; }
+    }
     if(hit){ saveStats(); setTimeout(nkShowQueue, 1600); }
     return hit;
   }
@@ -3407,9 +3415,12 @@ body.course .levels.nrange .lv{padding:3px 2px;font-size:12px}
                {label:"ほぞんする", ghost:true, onClick:()=>{ msSave(prep); return false; }}]});
   }
   /* たびだち シール：なかま が たびだつ と、たびだつ ときの え と そだてた きかん の シール を くれる
-     （たまご の まま たびだった とき は なし）。ずかん の きろく（stats.nk.dex）から つくる ので、もらった きろく は もたない。
-     え は その ばで canvas に かく（その だんかい の farewell の え、まだ ない ときは いつもの え） */
-  const nkMsList = () => ((stats.nk && stats.nk.dex) || []).map((e, i)=>({e, i})).filter(({e})=>e.result==="tabidachi" && e.stage > 0);
+     （たまご の まま たびだった とき は なし）。え は ずかん の きろく（stats.nk.dex）から その ばで canvas に かく
+     （その だんかい の farewell の え、まだ ない ときは いつもの え）。もらった ひ は msData().nk に「id:たびだった ひ」で のこす */
+  const NKMS_FROM = new Date(2026, 10, 3, 7, 0).getTime();   // 2026-11-03 7:00（この とき より まえ は わたさない）
+  const nkMsKey = e => `${e.id}:${e.at}`;
+  const nkMsGot = () => msData().nk || (msData().nk = {});
+  const nkMsList = () => ((stats.nk && stats.nk.dex) || []).map((e, i)=>({e, i})).filter(({e})=>e.result==="tabidachi" && e.stage > 0 && nkMsGot()[nkMsKey(e)]);
   // そだてた きかん：たまごが とどいた ひ 〜 その つき の おわり（2026-10-28 より まえ の きろく は つき だけ）
   function nkMsSpan(e){
     if(e.start){
@@ -3464,7 +3475,7 @@ body.course .levels.nrange .lv{padding:3px 2px;font-size:12px}
     const e = ((stats.nk && stats.nk.dex) || [])[i]; if(!e) return;
     const nm = e.name || nkSp(e.id).name, prep = {};
     prep.p = nkMsMake(i).then(r=>(prep.file = r.file));
-    const [, m, d] = String(e.at||"").split("-").map(Number);
+    const [, m, d] = String(nkMsGot()[nkMsKey(e)] || e.at || "").split("-").map(Number);
     nkModal({pic:`<img class="ms-pic" id="nkMsPic" alt="${nm}の たびだち シール">`,
       title:`${nm}の たびだち シール`,
       text: again ? (m ? `${m}がつ ${d}にちに もらった<br>とくべつ シールだよ` : "とくべつ シールだよ") : `${nm}が たびだつ まえに<br>とくべつ シールを くれたよ。<br>シール ちょうに はって おくね`,
@@ -3477,7 +3488,7 @@ body.course .levels.nrange .lv{padding:3px 2px;font-size:12px}
     // もらった じゅん（おなじ ひ なら MS_LIST の じゅん、たびだち シール は たびだった ひ）
     const have = !MS_ON ? [] : [
       ...MS_LIST.filter(it=>got[it.id] && !MS_HOLD.has(it.id)).map(it=>({at:String(got[it.id]), it})),
-      ...nkMsList().map(({e, i})=>({at:String(e.at||""), nk:i, nm:e.name || nkSp(e.id).name}))
+      ...nkMsList().map(({e, i})=>({at:String(nkMsGot()[nkMsKey(e)]), nk:i, nm:e.name || nkSp(e.id).name}))
     ].sort((a, b)=>a.at.localeCompare(b.at));
     [$("msCount").parentElement, $("msGrid")].forEach(el=>{ el.style.display = have.length ? "" : "none"; });
     if(!have.length){ $("msGrid").innerHTML = ""; return; }
@@ -3611,7 +3622,7 @@ body.course .levels.nrange .lv{padding:3px 2px;font-size:12px}
       const c = nk.cur, e = {id:c.id, name:c.name, stage:nkStage(c), month:c.start.slice(0,7), result:"tabidachi", at:T, ...nkHistKeep(c)};
       nk.dex.push(e); nk.cur = null; nk.nextEgg = null;
       nk.queue.push({t:"depart", e});
-      if(e.stage > 0) nk.queue.push({t:"nkms", i:nk.dex.length-1});   // たびだち シール
+      if(e.stage > 0 && Date.now() >= NKMS_FROM){ nkMsGot()[nkMsKey(e)] = T; nk.queue.push({t:"nkms", i:nk.dex.length-1}); }   // たびだち シール
       if(mcUnlocked() && !mcData().announced) nk.queue.push({t:"mcUnlock"});
     }
     // 12しゅるい ぜんぶ あつめたら そだては おしまい（あたらしい たまごは こない）
@@ -3825,6 +3836,15 @@ body.course .levels.nrange .lv{padding:3px 2px;font-size:12px}
       if(MS_ON) msShow(ev.n); else { delete msData().got[ev.n]; saveStats(); setTimeout(nkShowQueue, 0); }
     }else if(ev.t==="nkms"){
       if(MS_ON) nkMsShow(ev.i); else setTimeout(nkShowQueue, 0);
+    }else if(ev.t==="nkmsOld"){
+      // まえ に たびだった なかま の たびだち シール を まとめて わたす
+      const dex = (stats.nk && stats.nk.dex) || [], idx = (ev.keys||[]).map(k=>dex.findIndex(e=>nkMsKey(e)===k)).filter(i=>i>=0);
+      if(!MS_ON || !idx.length){ setTimeout(nkShowQueue, 0); return; }
+      nkModal({pic:`<div class="nkms-old">${idx.map(i=>`<img data-i="${i}" alt="">`).join("")}</div>`,
+        title:"とくべつ シールが ふえたよ！",
+        text:"これまでに たびだった なかまを<br>とくべつ シールに いれたよ。<br>シール ちょうで みてね",
+        buttons:[{label:"やったー！", onClick:()=>{ if(mode==="zukan") renderMs(); }}]});
+      document.querySelectorAll(".nkms-old img").forEach(im=>nkMsMake(Number(im.dataset.i)).then(r=>{ im.src = r.url; }).catch(()=>{}));
     }else if(ev.t==="depart"){
       const e = ev.e, sp = nkSp(e.id), nm = e.name || sp.name;
       const pic = e.stage===0 ? nkPicHTML(nkImgSrc(e.id, 0, "n"), "", 0) : nkPicHTML(`nakama/${e.id}/depart.webp`, "pop");
@@ -4990,6 +5010,7 @@ body.course .levels.nrange .lv{padding:3px 2px;font-size:12px}
 
   backfillSessions();   // まえの きろくを かずに して ひきつぐ（1かい だけ）
   nkTick(); renderNk(); msCheck(); accYday(); setTimeout(nkShowQueue, 900);
+  document.addEventListener("visibilitychange", ()=>{ if(document.visibilityState==="visible") msCheck(); });   // ひらいた まま あさに なった ときも わたす
   applyMc(); if(mcOn()){ setPets(null,null); say("cat", mcLine("greeting")); }
   setLevel(level, false);
   renderHistory();
