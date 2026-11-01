@@ -3847,8 +3847,9 @@ body.course .levels.nrange .lv{padding:3px 2px;font-size:12px}
       document.querySelectorAll(".nkms-old img").forEach(im=>nkMsMake(Number(im.dataset.i)).then(r=>{ im.src = r.url; }).catch(()=>{}));
     }else if(ev.t==="depart"){
       const e = ev.e, sp = nkSp(e.id), nm = e.name || sp.name;
-      // え は たびだち シール・れきし と おなじ、その だんかい の おわかれの え（ない ときは いつもの え）
+      // おとな は リュック の え（depart は おとな の すがた で かいて ある）。ほかの だんかい は たびだち シール・れきし と おなじ おわかれの え（ない ときは いつもの え）
       const pic = e.stage===0 ? nkPicHTML(nkImgSrc(e.id, 0, "n"), "", 0)
+        : e.stage===4 ? nkPicHTML(`nakama/${e.id}/depart.webp`, "pop")
         : nkPicHTML(`nakama/${e.id}/farewell_${NK_STAGES[e.stage]}.webp?v=${NK_IMG_VER}`, "pop", e.stage).replace("<img ", `<img onerror="this.onerror=null;this.src='${nkImgSrc(e.id, e.stage, "h")}'" `);
       nkModal({pic, title: e.stage===0 ? "たまごが たびだって いったよ" : `${nm}が たびだって いったよ`,
         text: e.stage===0 ? "こんどは うまれるまで いっしょに いようね。なかま ずかんに のったよ"
