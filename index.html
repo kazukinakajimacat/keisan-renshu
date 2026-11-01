@@ -714,7 +714,7 @@ span.stkw > svg{position:absolute;left:0;top:0;width:100%;height:100%;display:bl
 .ms-grid{display:grid;grid-template-columns:repeat(5,1fr);gap:6px;margin-bottom:16px}
 .ms-it{font:inherit;display:flex;flex-direction:column;align-items:center;gap:1px;background:var(--bg);border:2px dashed var(--line);border-radius:12px;padding:4px 3px 2px;color:var(--muted);min-width:0}
 .ms-it img{width:100%;aspect-ratio:1;border-radius:8px;display:block}
-.ms-it span{font-size:12px;font-weight:900;white-space:nowrap}
+.ms-it span{font-size:12px;font-weight:900;white-space:nowrap;max-width:100%;overflow:hidden;text-overflow:ellipsis}
 .ms-it{cursor:pointer;touch-action:manipulation}
 .ms-it.got{border:2px solid var(--yellow);color:var(--ink)}
 .nk-mcard p b.num{color:var(--ink);font-size:1.2em}
@@ -3406,15 +3406,91 @@ body.course .levels.nrange .lv{padding:3px 2px;font-size:12px}
       buttons:[{label: again ? "とじる" : "やったー！", onClick:()=>{ if(mode==="zukan") renderMs(); }},
                {label:"ほぞんする", ghost:true, onClick:()=>{ msSave(prep); return false; }}]});
   }
+  /* たびだち シール：なかま が たびだつ と、たびだつ ときの え と そだてた きかん の シール を くれる
+     （たまご の まま たびだった とき は なし）。ずかん の きろく（stats.nk.dex）から つくる ので、もらった きろく は もたない。
+     え は その ばで canvas に かく（その だんかい の farewell の え、まだ ない ときは いつもの え） */
+  const nkMsList = () => ((stats.nk && stats.nk.dex) || []).map((e, i)=>({e, i})).filter(({e})=>e.result==="tabidachi" && e.stage > 0);
+  // そだてた きかん：たまごが とどいた ひ 〜 その つき の おわり（2026-10-28 より まえ の きろく は つき だけ）
+  function nkMsSpan(e){
+    if(e.start){
+      const [y, m, d] = e.start.split("-").map(Number), [, m2, d2] = dkAdd(dkMonthEndNext(e.start), -1).split("-").map(Number);
+      return {y, text:`${m}/${d} 〜 ${m2}/${d2}`};
+    }
+    const [y, m] = e.month.split("-").map(Number);
+    return {y, text:`${m}がつ`};
+  }
+  const nkMsCache = {};
+  function nkMsMake(i){
+    const e = stats.nk.dex[i], key = `${i}:${e.id}:${e.at}`;
+    if(nkMsCache[key]) return nkMsCache[key];
+    const base = nkImgSrc(e.id, e.stage, "h");
+    const src = `nakama/${e.id}/farewell_${NK_STAGES[e.stage]}.webp?v=${NK_IMG_VER}`;
+    const load = u => new Promise((ok, ng)=>{ const im = new Image(); im.onload = ()=>ok(im); im.onerror = ng; im.src = u; });
+    const F = '"Zen Maru Gothic","Hiragino Maru Gothic ProN","Hiragino Sans",sans-serif';
+    const fonts = document.fonts ? document.fonts.load(`900 60px "Zen Maru Gothic"`).catch(()=>{}) : Promise.resolve();
+    return nkMsCache[key] = Promise.all([load(src).catch(()=>load(base)), fonts]).then(([img])=>{
+      const W = 900, c = document.createElement("canvas"); c.width = W; c.height = W;
+      const g = c.getContext("2d");
+      const rr = (x, y, w, h, r) => { g.beginPath(); if(g.roundRect) g.roundRect(x, y, w, h, r); else g.rect(x, y, w, h); };
+      const bg = g.createLinearGradient(0, 0, 0, W); bg.addColorStop(0, "#fff6dc"); bg.addColorStop(1, "#ffe3ee");
+      g.fillStyle = bg; g.fillRect(0, 0, W, W);
+      rr(22, 22, W - 44, W - 44, 48); g.lineWidth = 12; g.strokeStyle = "#ffffff"; g.stroke();
+      // きらきら
+      g.fillStyle = "#ffd45c";
+      [[110, 120, 22], [790, 150, 28], [150, 560, 16], [770, 520, 18]].forEach(([x, y, r])=>{
+        g.beginPath(); g.moveTo(x, y - r); g.quadraticCurveTo(x, y, x + r, y); g.quadraticCurveTo(x, y, x, y + r);
+        g.quadraticCurveTo(x, y, x - r, y); g.quadraticCurveTo(x, y, x, y - r); g.fill();
+      });
+      // え（まわり の すきま を きって、だんかい に かかわらず おなじ 大きさ で まんなか に）
+      const t = document.createElement("canvas"); t.width = img.naturalWidth; t.height = img.naturalHeight;
+      const tg = t.getContext("2d"); tg.drawImage(img, 0, 0);
+      const a = tg.getImageData(0, 0, t.width, t.height).data;
+      let x0 = t.width, y0 = t.height, x1 = -1, y1 = -1;
+      for(let y = 0; y < t.height; y++) for(let x = 0; x < t.width; x++) if(a[(y * t.width + x) * 4 + 3] > 100){ if(x < x0) x0 = x; if(x > x1) x1 = x; if(y < y0) y0 = y; if(y > y1) y1 = y; }
+      if(x1 < 0){ x0 = 0; y0 = 0; x1 = t.width - 1; y1 = t.height - 1; }
+      const bw = x1 - x0 + 1, bh = y1 - y0 + 1, boxH = 580, s = Math.min(boxH / bh, 620 / bw);
+      const iw = bw * s, ih = bh * s;
+      g.drawImage(img, x0, y0, bw, bh, (W - iw) / 2, 70 + (boxH - ih) / 2, iw, ih);
+      // そだてた きかん
+      const sp = nkMsSpan(e);
+      rr(90, 690, W - 180, 160, 40); g.fillStyle = "#ffffff"; g.fill(); g.lineWidth = 6; g.strokeStyle = "#f6c9d4"; g.stroke();
+      g.textAlign = "center"; g.textBaseline = "middle";
+      g.fillStyle = "#8a7b6e"; g.font = `700 38px ${F}`; g.fillText(`${sp.y}ねん`, W / 2, 735);
+      g.fillStyle = "#3b2f27"; g.font = `900 72px ${F}`; g.fillText(sp.text, W / 2, 800);
+      return new Promise((ok, ng)=>c.toBlob(b=> b ? ok({url:URL.createObjectURL(b), file:new File([b], `keisan-renshu-${e.id}-tabidachi.png`, {type:"image/png"})}) : ng(new Error("png")), "image/png"));
+    });
+  }
+  function nkMsShow(i, again){
+    const e = ((stats.nk && stats.nk.dex) || [])[i]; if(!e) return;
+    const nm = e.name || nkSp(e.id).name, prep = {};
+    prep.p = nkMsMake(i).then(r=>(prep.file = r.file));
+    const [, m, d] = String(e.at||"").split("-").map(Number);
+    nkModal({pic:`<img class="ms-pic" id="nkMsPic" alt="${nm}の たびだち シール">`,
+      title:`${nm}の たびだち シール`,
+      text: again ? (m ? `${m}がつ ${d}にちに もらった<br>とくべつ シールだよ` : "とくべつ シールだよ") : `${nm}が たびだつ まえに<br>とくべつ シールを くれたよ。<br>シール ちょうに はって おくね`,
+      buttons:[{label: again ? "とじる" : "ありがとう！", onClick:()=>{ if(mode==="zukan") renderMs(); }},
+               {label:"ほぞんする", ghost:true, onClick:()=>{ msSave(prep); return false; }}]});
+    nkMsMake(i).then(r=>{ const p = $("nkMsPic"); if(p) p.src = r.url; }).catch(()=>{});
+  }
   function renderMs(){
     const got = msData().got;
-    // もらった じゅん（おなじ ひ なら MS_LIST の じゅん）
-    const have = MS_ON ? MS_LIST.filter(it=>got[it.id] && !MS_HOLD.has(it.id)).sort((a,b)=>String(got[a.id]).localeCompare(String(got[b.id]))) : [];
+    // もらった じゅん（おなじ ひ なら MS_LIST の じゅん、たびだち シール は たびだった ひ）
+    const have = !MS_ON ? [] : [
+      ...MS_LIST.filter(it=>got[it.id] && !MS_HOLD.has(it.id)).map(it=>({at:String(got[it.id]), it})),
+      ...nkMsList().map(({e, i})=>({at:String(e.at||""), nk:i, nm:e.name || nkSp(e.id).name}))
+    ].sort((a, b)=>a.at.localeCompare(b.at));
     [$("msCount").parentElement, $("msGrid")].forEach(el=>{ el.style.display = have.length ? "" : "none"; });
     if(!have.length){ $("msGrid").innerHTML = ""; return; }
     $("msCount").textContent = `${have.length}まい`;
-    $("msGrid").innerHTML = have.map(it=>`<button class="ms-it got" data-id="${it.id}" aria-label="${it.alt}"><img src="${msImg(it,true)}" alt="" loading="lazy" draggable="false"><span class="num">${it.label}</span></button>`).join("");
-    $("msGrid").querySelectorAll(".ms-it").forEach(b=>b.addEventListener("click",()=>msShow(b.dataset.id, true)));
+    $("msGrid").innerHTML = have.map(({it, nk, nm})=> it
+      ? `<button class="ms-it got" data-id="${it.id}" aria-label="${it.alt}"><img src="${msImg(it,true)}" alt="" loading="lazy" draggable="false"><span class="num">${it.label}</span></button>`
+      : `<button class="ms-it got" data-nk="${nk}" aria-label="${nm}の たびだち シール"><img alt="" draggable="false"><span>${nm}</span></button>`).join("");
+    $("msGrid").querySelectorAll(".ms-it").forEach(b=>{
+      if(b.dataset.nk == null){ b.addEventListener("click", ()=>msShow(b.dataset.id, true)); return; }
+      const i = Number(b.dataset.nk);
+      b.addEventListener("click", ()=>nkMsShow(i, true));
+      nkMsMake(i).then(r=>{ b.querySelector("img").src = r.url; }).catch(()=>{});
+    });
   }
 
   const ALB_PAGE = 12;   // シール ちょう は 12まいで 1ページ（あたらしい シール から）
@@ -3535,6 +3611,7 @@ body.course .levels.nrange .lv{padding:3px 2px;font-size:12px}
       const c = nk.cur, e = {id:c.id, name:c.name, stage:nkStage(c), month:c.start.slice(0,7), result:"tabidachi", at:T, ...nkHistKeep(c)};
       nk.dex.push(e); nk.cur = null; nk.nextEgg = null;
       nk.queue.push({t:"depart", e});
+      if(e.stage > 0) nk.queue.push({t:"nkms", i:nk.dex.length-1});   // たびだち シール
       if(mcUnlocked() && !mcData().announced) nk.queue.push({t:"mcUnlock"});
     }
     // 12しゅるい ぜんぶ あつめたら そだては おしまい（あたらしい たまごは こない）
@@ -3746,6 +3823,8 @@ body.course .levels.nrange .lv{padding:3px 2px;font-size:12px}
     }else if(ev.t==="ms"){
       // おやすみ ちゅう は みせない。もらった ことも とりけして、さいかい した ときに あらためて わたす
       if(MS_ON) msShow(ev.n); else { delete msData().got[ev.n]; saveStats(); setTimeout(nkShowQueue, 0); }
+    }else if(ev.t==="nkms"){
+      if(MS_ON) nkMsShow(ev.i); else setTimeout(nkShowQueue, 0);
     }else if(ev.t==="depart"){
       const e = ev.e, sp = nkSp(e.id), nm = e.name || sp.name;
       const pic = e.stage===0 ? nkPicHTML(nkImgSrc(e.id, 0, "n"), "", 0) : nkPicHTML(`nakama/${e.id}/depart.webp`, "pop");
@@ -3881,9 +3960,9 @@ body.course .levels.nrange .lv{padding:3px 2px;font-size:12px}
       st = [["もくひょうを クリアした ひ", e.days.length, "にち"], ["といた もんだい", n, "もん"], ["せいかい", ok, "もん"], ["せいかいりつ", n ? rate : "-", n ? "%" : ""]];
       sum = `<div class="nkh-sum">${st.map(([l, v, u])=>`<div class="nkh-st"><span>${l}</span><b class="num">${v}<small>${u}</small></b></div>`).join("")}</div>`;
     }
-    // たびだった こ は「ありがとう」の え と ことば（おとな・おとしより の え が まだ ない ときは いつもの え）
+    // たびだった こ は「ありがとう」の え と ことば（その だんかい の おわかれの え が まだ ない ときは いつもの え）
     const bye = !cur && !iede && stage > 0, base = nkImgSrc(e.id, stage, iede ? "s" : "n");
-    const src = bye && stage >= 4 ? `nakama/${e.id}/farewell_${stage===5 ? "elder" : "adult"}.webp?v=${NK_IMG_VER}` : base;
+    const src = bye ? `nakama/${e.id}/farewell_${NK_STAGES[stage]}.webp?v=${NK_IMG_VER}` : base;
     const msg = bye ? "そだてて くれて ありがとう。<br>また あおうね！" : "";
     const prep = {}; prep.p = nkHistFile({id:e.id, src, base, stage, title:`${nm}の れきし`, msg, ev, st}).then(f=>(prep.file = f));
     nkModal({pic: nkPicHTML(src, "pop", stage).replace("<img ", `<img onerror="this.onerror=null;this.src='${base}'" `), title:`${nm}の れきし`,
