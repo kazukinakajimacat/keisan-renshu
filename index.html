@@ -3417,7 +3417,7 @@ body.course .levels.nrange .lv{padding:3px 2px;font-size:12px}
   /* たびだち シール：なかま が たびだつ と、たびだつ ときの え と そだてた きかん の シール を くれる
      （たまご の まま たびだった とき は なし）。え は ずかん の きろく（stats.nk.dex）から その ばで canvas に かく
      （その だんかい の farewell の え、まだ ない ときは いつもの え）。もらった ひ は msData().nk に「id:たびだった ひ」で のこす */
-  const NKMS_FROM = new Date(2026, 10, 3, 7, 0).getTime();   // 2026-11-03 7:00（この とき より まえ は わたさない）
+  const NKMS_FROM = new Date(2026, 10, 2, 0, 0).getTime();   // 2026-11-02 0:00（この とき より まえ は わたさない）
   const nkMsKey = e => `${e.id}:${e.at}`;
   const nkMsGot = () => msData().nk || (msData().nk = {});
   const nkMsList = () => ((stats.nk && stats.nk.dex) || []).map((e, i)=>({e, i})).filter(({e})=>e.result==="tabidachi" && e.stage > 0 && nkMsGot()[nkMsKey(e)]);
