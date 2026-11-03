@@ -5,7 +5,7 @@
 .kj-steps i.done{border-color:var(--ok);color:var(--ok)}
 .kj-steps i.now{background:var(--blue);border-color:var(--blue);color:#fff}
 .kj-card{display:flex;flex-direction:column;align-items:center;gap:8px}
-.kj-card .tags{align-self:stretch}
+.kj-card .tags{align-self:stretch;justify-content:flex-start;padding-right:72px}   /* 右上の「ノート」と かさならない ように、ふだ は ひだり よせ */
 .kj-ex{display:flex;align-items:flex-end;justify-content:center;flex-wrap:wrap;gap:4px;font-size:22px;font-weight:700;min-height:52px}
 .kj-tgt{display:inline-flex;flex-direction:column-reverse;align-items:center;line-height:1.1}
 .kj-y{color:var(--red);border-bottom:3px solid var(--red);padding:0 2px}
