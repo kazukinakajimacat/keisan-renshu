@@ -9,6 +9,9 @@
 <script src="nakama/nakama.js?v=202610280830"></script>
 <script src="clock/clock.js?v=202610280830"></script>
 <script src="drill/patterns.js?v=202610280830"></script>
+<script src="kanji/strokes.js?v=202611032045"></script>
+<script src="kanji/kanji.js?v=202611032045"></script>
+<link rel="stylesheet" href="kanji/kanji.css?v=202611032045">
 <meta name="apple-mobile-web-app-title" content="けいさん">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -662,12 +665,14 @@ body.course .ck-ans{gap:6px}
 body.course .ck-go{padding-top:10px;padding-bottom:10px}
 body.course .ck-ctl .choice{padding:4px 0;font-size:24px}
 /* ホーム */
-.navbar{container-type:inline-size;display:grid;grid-template-columns:auto repeat(4,1fr);gap:5px;position:sticky;top:0;z-index:5;background:var(--bg);padding:6px 0;margin:-6px 0}
+.navbar{container-type:inline-size;display:grid;grid-template-columns:auto repeat(5,1fr);gap:5px;position:sticky;top:0;z-index:5;background:var(--bg);padding:6px 0;margin:-6px 0}
 .navbar .nv{font-size:clamp(11px,4.5cqi,15px)!important;padding:8px 0;border-radius:12px;min-width:0;white-space:nowrap;letter-spacing:-.04em;overflow:hidden}
 .navbar .home-btn{padding:6px 8px;display:flex;align-items:center;justify-content:center;letter-spacing:0}
 .tiles{display:grid;grid-template-columns:1fr 1fr;gap:10px}
 .tile{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px;padding:14px 6px!important;min-height:112px;color:var(--ink)!important}
 .tile b{font-size:17px;font-weight:900}
+.tile.wide{grid-column:1/-1;flex-direction:row;gap:12px;min-height:0;padding:10px 6px!important}
+.tile.wide .ti{width:44px;height:44px;font-size:24px}
 .ti{display:flex;align-items:center;justify-content:center;width:56px;height:56px;border-radius:16px;font-weight:900}
 .ti-drill{background:color-mix(in srgb,var(--blue) 18%,transparent);color:var(--blue);font-size:22px}
 .ti-grid{display:grid;grid-template-columns:1fr 1fr;gap:4px;padding:10px;background:color-mix(in srgb,var(--ok) 18%,transparent)}
@@ -912,6 +917,7 @@ body.course .levels.nrange .lv{padding:3px 2px;font-size:12px}
     <button class="md nv" data-md="drill">いろいろ</button>
     <button class="md nv" data-md="grid">ます</button>
     <button class="md nv" data-md="clock">とけい</button>
+    <button class="md nv" data-md="kanji">かんじ</button>
     <button class="md nv" data-md="zukan">ずかん</button>
   </div>
   <div class="nk-modal" id="mcModal" hidden><div class="nk-mcard mc-card" role="dialog" aria-modal="true" aria-labelledby="mcTitle">
@@ -990,6 +996,7 @@ body.course .levels.nrange .lv{padding:3px 2px;font-size:12px}
       <div class="chips"><div class="chip">せいかい <span class="v num" id="ckOk">0</span></div></div></div>
     <div class="track ck-track" id="ckTrack" aria-hidden="true"></div>
   </div>
+  <div id="kanjiTop" class="stack" hidden></div>
 
   <div class="buddies">
     <div class="pet" id="cat"></div>
@@ -1019,7 +1026,8 @@ body.course .levels.nrange .lv{padding:3px 2px;font-size:12px}
       <button class="md tile" data-md="drill" id="md-drill"><span class="ti ti-drill">1+2</span><b>いろいろ もんだい</b></button>
       <button class="md tile" data-md="grid" id="md-grid"><span class="ti ti-grid"><i></i><i></i><i></i><i></i></span><b>ます けいさん</b></button>
       <button class="md tile" data-md="clock" id="md-clock"><span class="ti ti-clock" id="tileClock"></span><b>とけい</b></button>
-      <button class="md tile" data-md="zukan" id="md-zukan"><span class="ti ti-zukan">★</span><b>ずかん</b></button>
+      <button class="md tile" data-md="kanji" id="md-kanji"><span class="ti ti-kanji">字</span><b>かんじ</b></button>
+      <button class="md tile wide" data-md="zukan" id="md-zukan"><span class="ti ti-zukan">★</span><b>ずかん</b></button>
     </div>
     <div class="sets" id="setRow" hidden>
       <button type="button" class="set-btn" id="setIdk"><b><i>わからなかった</i> <i>もんだい</i></b><span id="setIdkN"></span></button>
@@ -1030,6 +1038,10 @@ body.course .levels.nrange .lv{padding:3px 2px;font-size:12px}
     <div class="pg-box" id="pgBox"></div>
     <div class="tl-box" id="tlBox"></div>
     <div class="hist-body" id="histBody"></div>
+  </details>
+  <details class="hist" id="kjSet">
+    <summary>おうちの方へ：かんじ（習った字）</summary>
+    <div class="tl-box" id="kjBox"></div>
   </details>
   <details class="hist" id="news" hidden>
     <summary>おうちの方へ：更新情報<em class="new" id="newsNew" hidden>New</em></summary>
@@ -1116,6 +1128,7 @@ body.course .levels.nrange .lv{padding:3px 2px;font-size:12px}
       <button class="next" id="ckAgain">もういちど</button>
     </div>
   </div>
+  <div id="kanjiMain" class="stack" hidden></div>
 
   <div id="zukanMain" class="stack" hidden>
     <div class="zk-head">
@@ -1131,6 +1144,10 @@ body.course .levels.nrange .lv{padding:3px 2px;font-size:12px}
     <section class="zk-panel">
       <h3>ひきざん ずかん <span class="num" id="zkSubN"></span></h3>
       <div class="zgrid" id="zkSub"></div>
+    </section>
+    <section class="zk-panel" id="knZkSec" hidden>
+      <h3>かんじ ノート <span class="num" id="knZkN"></span></h3>
+      <div id="knZk"></div>
     </section>
     <section class="zk-panel">
       <h3>なかま ずかん <span id="nkDexCount"></span></h3>
@@ -2645,7 +2662,7 @@ body.course .levels.nrange .lv{padding:3px 2px;font-size:12px}
     const cal = calHTML(histSt, counts), sel = byDay[histSt.sel] || [];
     body.innerHTML = note + cal + `<div class="hc-title">${calDayLabel(histSt.sel)}の記録　${sel.length}件</div>` + sel.map(h=>`
       <div class="hist-item">
-        <div class="h num">${h.at}　${h.lv?`【${h.lv}】`:""}${h.ok}/${h.total||20}問正解　<span style="font-weight:500;color:var(--muted)">${h.clock ? `とけい・平均 ${h.avg}` : h.total===25 ? `タイム ${h.avg}` : `たし算 ${h.add}・ひき算 ${h.sub}・平均 ${h.avg}`}</span></div>
+        <div class="h num">${h.at}　${h.lv?`【${h.lv}】`:""}${h.kanji ? `${h.ok}/${h.total}回 いいね以上` : `${h.ok}/${h.total||20}問正解`}　<span style="font-weight:500;color:var(--muted)">${h.kanji ? `${h.chars}・1回 平均 ${h.avg}` : h.clock ? `とけい・平均 ${h.avg}` : h.total===25 ? `タイム ${h.avg}` : `たし算 ${h.add}・ひき算 ${h.sub}・平均 ${h.avg}`}</span></div>
         <ul>${h.findings.map(x=>`<li>${x}</li>`).join("")}</ul>
       </div>`).join("") + `<button class="clear" id="clearBtn">記録と苦手データを消す</button>`;
     calBind(body, histSt, renderHistory);
@@ -2656,7 +2673,8 @@ body.course .levels.nrange .lv{padding:3px 2px;font-size:12px}
       history=[]; stats={facts:{}, types:{}}; histSt.sel = histSt.mon = null;
       stats.album={}; stats.days={};
       gbest={};   // ます けいさんの さいこう タイムも けす
-      tlog = {}; try{ localStorage.removeItem(TLOG_KEY); }catch(e){}   // あそんだ じかんの グラフも けす（きょうの じかんの くぎりは のこす）
+      tlog = {}; try{ localStorage.removeItem(TLOG_KEY); }catch(e){}
+      KJ.wipeNotes();   // かんじ ノート（みないで かいた じ）も けす   // あそんだ じかんの グラフも けす（きょうの じかんの くぎりは のこす）
       try{ localStorage.removeItem(STORE); localStorage.removeItem(STATS); localStorage.removeItem(GBEST_KEY); }catch(e){}
       markDirty();
       renderHistory();
@@ -4382,6 +4400,7 @@ body.course .levels.nrange .lv{padding:3px 2px;font-size:12px}
           : `${txt} は まだ でて いないよ`);
   }));
   function renderZukan(){
+    KJ.renderZukan($("knZkSec"), $("knZk"), $("knZkN"));
     // かず は ぜんぶ（たしざん 225・ひきざん 225）で かぞえる
     const FA = ZK30_ADD.flat(), FS = ZK30_SUB.flat();
     const ZK_TOTAL = FA.length + FS.length;
@@ -4665,7 +4684,7 @@ body.course .levels.nrange .lv{padding:3px 2px;font-size:12px}
     }
   };
   const tuDay = () => { if(tu.d !== todayKey()){ tu.d = todayKey(); tu.s = 0; tu.ext = 0; tlWarned = {}; tuSave(); } };
-  const isCourse = m => m==="drill" || m==="grid" || m==="clock";
+  const isCourse = m => m==="drill" || m==="grid" || m==="clock" || m==="kanji";
   const tlLimit = () => (tlMin + tu.ext) * 60;
   const tlOver = () => tlMin > 0 && tu.s >= tlLimit();
   const tlResting = () => Date.now() < tu.brk;
@@ -4737,7 +4756,7 @@ body.course .levels.nrange .lv{padding:3px 2px;font-size:12px}
       : `今の回：${ses}分（あと${Math.max(1, Math.ceil((tlSes*60-tu.ss)/60))}分で休憩）`;
     const opts = (list, cur, attr, lab) => list.map(m=>`<button type="button" data-${attr}="${m}" aria-pressed="${m===cur}">${lab(m)}</button>`).join("");
     box.innerHTML = `<h4>遊ぶ時間と休憩</h4>
-      <p>問題の画面（いろいろ・ます・とけい）を使った時間を数えます。1回の時間になると、${TL_BREAK}分の休憩に入ります（休憩は飛ばせません）。1日の合計に達すると「きょうは ここまで」と出て、その日は問題に進めなくなります。ホームと ずかん はいつでも見られます。解いている途中の問題は最後まで答えられます。</p>
+      <p>問題の画面（いろいろ・ます・とけい・かんじ）を使った時間を数えます。1回の時間になると、${TL_BREAK}分の休憩に入ります（休憩は飛ばせません）。1日の合計に達すると「きょうは ここまで」と出て、その日は問題に進めなくなります。ホームと ずかん はいつでも見られます。解いている途中の問題は最後まで答えられます。</p>
       <div class="tl-row"><span>1回の時間</span><div class="tl-opts" role="group" aria-label="1回の時間">${opts(TL_SES, tlSes, "ses", m=>m+"分")}</div></div>
       <div class="tl-row"><span>1日の合計</span><div class="tl-opts" role="group" aria-label="1日の合計">${opts(TL_DAY, tlMin, "min", m=>m ? m+"分" : "区切りなし")}</div></div>
       <p>${dayState}${sesState ? "<br>"+sesState : ""}</p>
@@ -4764,10 +4783,22 @@ body.course .levels.nrange .lv{padding:3px 2px;font-size:12px}
     }
   }
 
+  /* ---------- かんじ（なかみ は kanji/kanji.js）。もくひょう・シール・なかま・あそぶ じかん は ここと おなじ ものを つかう ---------- */
+  const KJ = window.KanjiCourse({
+    stats: () => stats, saveStats, onAnswered, stickerStep, tlGate, say, setPets, mcOn, mcLine, pickCheer, logSession,
+    pendingSticker: () => pendingSticker, showStickerBanner,
+    pushHistory(e){
+      const d = new Date();
+      history.unshift({d:dayKey(d), at:`${d.getMonth()+1}/${d.getDate()} ${d.getHours()}:${String(d.getMinutes()).padStart(2,"0")}`, ...e});
+      history = history.slice(0,HIST_MAX); try{ lsSet(STORE, JSON.stringify(history)); }catch(err){}
+      renderHistory();
+    }
+  });
+
   let mode = "home";
   try{ const m=localStorage.getItem(MODE_KEY); /* さいしょは いつも ホームから */ }catch(e){}
   function renderHome(){
-    renderGoal(); renderStickerRow(); renderNk(); renderHistory(); tlRefresh(); renderPg(); renderSets();
+    renderGoal(); renderStickerRow(); renderNk(); renderHistory(); tlRefresh(); renderPg(); renderSets(); KJ.renderParent($("kjBox"));
     if(!$("tileClock").firstChild) $("tileClock").innerHTML = clockSVG(3, 0, {size:52});
     setPets(null,null);
     const w = pick(["cat","dog"]), t = (stats.days[todayKey()]||{});
@@ -4782,7 +4813,7 @@ body.course .levels.nrange .lv{padding:3px 2px;font-size:12px}
     if(m !== mode){ calmReset(); const mp = $("missPop"); mp.hidden = true; mp.innerHTML = ""; }
     mode=m; try{ lsSet(MODE_KEY,m); }catch(e){}
     document.querySelectorAll(".md").forEach(b=>b.setAttribute("aria-pressed", b.dataset.md===m?"true":"false"));
-    const g = m==="grid", z = m==="zukan", d = m==="drill", c = m==="clock", h = m==="home";
+    const g = m==="grid", z = m==="zukan", d = m==="drill", c = m==="clock", h = m==="home", kj = m==="kanji";
     $("homeMain").hidden = !h; $("navbar").hidden = h;
     document.body.classList.toggle("course", !h);   // もんだいの がめんは つめて スクロールを へらす
     window.scrollTo({top:0});
@@ -4791,12 +4822,15 @@ body.course .levels.nrange .lv{padding:3px 2px;font-size:12px}
     $("gridTop").hidden=!g; $("gridMain").hidden=!g;
     $("zukanMain").hidden=!z;
     $("clockTop").hidden=!c; $("clockMain").hidden=!c;
+    $("kanjiTop").hidden=!kj; $("kanjiMain").hidden=!kj;
     if(!c){ clearTimeout(ckNextTimer); $("ckPop").hidden = true; }
+    if(!kj) KJ.stop();
     if(!g && G && G.timer){ clearInterval(G.timer); G.running=false; }
     if(!d) stopTimer();
     if(g) setGKind(gkind);
     else if(d){ nextProblem(); renderStickerRow(); }
     else if(c) ckStart();
+    else if(kj) KJ.start();
     else if(h) renderHome();
     else renderZukan();
   }
