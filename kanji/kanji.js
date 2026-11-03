@@ -449,17 +449,20 @@
       const body = $("knBody"), has = noteHas();
       if(noteSel && notes[noteSel]){
         const a = notes[noteSel], first = a[0], last = a[a.length-1];
-        // つぎへ：ノートに ある つぎの じ（さいごの じ の つぎは さいしょ に もどる）。1じ だけ の ときは ださない
-        const nx = has.length > 1 ? has[(has.indexOf(noteSel) + 1) % has.length] : null;
-        body.innerHTML = `<div class="kn-nav"><button type="button" class="kn-back" id="knBack">← もどる</button>
-          ${nx ? `<button type="button" class="kn-back" id="knNext">つぎへ →</button>` : ""}</div>
+        // もどる：ノートに ある まえの じ ／ つぎへ：つぎの じ（はしまで いったら はんたいの はしに まわる）。1じ だけ の ときは どちらも ださない
+        const at = has.indexOf(noteSel), many = has.length > 1;
+        const pv = many ? has[(at - 1 + has.length) % has.length] : null, nx = many ? has[(at + 1) % has.length] : null;
+        body.innerHTML = `${many ? `<div class="kn-nav"><button type="button" class="kn-back" id="knBack">← もどる</button>
+          <button type="button" class="kn-back" id="knNext">つぎへ →</button></div>` : ""}
           <h3 class="kn-k">${noteSel}</h3>
           ${a.length > 1 ? `<div class="kn-cmp">${fig(first, "はじめて")}<span class="kn-arr" aria-hidden="true">→</span>${fig(last, "いま")}</div>`
             : `<div class="kn-cmp">${fig(first, "はじめて")}</div><p class="kn-sub">また みないで かくと、くらべられるよ</p>`}
           <h4 class="kn-h">ぜんぶ（${a.length}まい）</h4>
           <div class="kn-list">${a.map(e=>fig(e)).join("")}</div>`;
-        $("knBack").addEventListener("click", ()=>{ noteSel = null; noteRender(); });
-        if(nx) $("knNext").addEventListener("click", ()=>{ noteSel = nx; noteRender(); body.scrollTop = 0; });
+        if(many){
+          $("knBack").addEventListener("click", ()=>{ noteSel = pv; noteRender(); body.scrollTop = 0; });
+          $("knNext").addEventListener("click", ()=>{ noteSel = nx; noteRender(); body.scrollTop = 0; });
+        }
       }else{
         noteSel = null;
         body.innerHTML = has.length
