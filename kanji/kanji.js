@@ -127,10 +127,32 @@
      かきあがった じ の かたち だけ で きめる（やりなおし の かずは みない）。
      ばしょ と おおきさ の ちがい は そろえて から（かいた じ を おてほん に かさねて）、てん ごと の ずれ の へいきん を みる */
   const GRADES = {
-    kanpeki:{label:"かんぺきだね！", short:"かんぺき", max:3.5},
-    iine:   {label:"いいね！",       short:"いいね",   max:6.5},
-    oshii:  {label:"おしい！",       short:"おしい",   max:Infinity}
+    kanpeki:{label:"かんぺきだね！", short:"かんぺき", max:3.5, c:"k"},
+    iine:   {label:"いいね！",       short:"いいね",   max:6.5, c:"i"},
+    oshii:  {label:"おしい！",       short:"おしい",   max:Infinity, c:"o"}
   };
+
+  /* ---------- だす じゅんばん ----------
+     ① まだ かいて いない → ② かいた かずが すくない（FEW かい みまん。すくない じゅん）→
+     ③ おしい が おおい → ④ いいね が おおい → ⑤ かんぺき が おおい。
+     おおい かは さいきん の RECENT かい（kj[字].r に k・i・o で のこす）で かぞえ、いちばん おおい もの で わける
+     （おなじ かずの ときは わるい ほう）。③④ は その かずが おおい じゅん、⑤ は かんぺき が すくない じゅん。
+     ならびが おなじ じ どうし は ランダム */
+  const FEW = 6, RECENT = 6;
+  function rankKanji(pool, kj){
+    const key = k => {
+      const s = kj[k] || {n:0}, r = s.r || "";
+      if(!s.n) return [0, 0];
+      if(s.n < FEW) return [1, s.n];
+      const o = (r.match(/o/g)||[]).length, i = (r.match(/i/g)||[]).length, kp = (r.match(/k/g)||[]).length;
+      if(o >= i && o >= kp) return [2, -o];
+      if(i >= kp) return [3, -i];
+      return [4, kp];
+    };
+    return pool.map(k=>({k, key:key(k), rnd:Math.random()}))
+      .sort((a,b)=>a.key[0]-b.key[0] || a.key[1]-b.key[1] || a.rnd-b.rnd)
+      .map(x=>x.k);
+  }
   function tidy(inks, refs){
     const U = [], R = [];
     inks.forEach((u,i)=>{ resample(u, N).forEach(p=>U.push(p)); refs[i].pts.forEach(p=>R.push(p)); });
@@ -194,18 +216,7 @@
 
     /* ---------- えらぶ ---------- */
     const kjStat = k => { const s = api.stats(); const t = s.kj || (s.kj = {}); return t[k] || (t[k] = {n:0, miss:0, memo:0, last:0}); };
-    function pickRound(){
-      const pool = ALL.split("").filter(k=>on.includes(k));
-      const now = Date.now(), out = [];
-      const wt = k => { const s = (api.stats().kj || {})[k] || {n:0, miss:0, memo:0, last:0}; return (s.n===0 ? 4 : 1) + 4*(s.miss/Math.max(1,s.n)) + Math.min(3, (now - s.last)/864e5*0.3) + (s.memo<2 ? 1 : 0); };
-      const left = [...pool];
-      while(out.length < Math.min(ROUND, pool.length)){
-        const ws = left.map(wt), sum = ws.reduce((a,b)=>a+b,0);
-        let r = Math.random()*sum, i = 0; while(i < ws.length-1 && (r -= ws[i]) > 0) i++;
-        out.push(left.splice(i,1)[0]);
-      }
-      return out;
-    }
+    const pickRound = () => rankKanji(ALL.split("").filter(k=>on.includes(k)), api.stats().kj || {}).slice(0, ROUND);
 
     /* ---------- かく ところ ---------- */
     let size = 260;
@@ -354,6 +365,7 @@
       const g = gradeOf(tidy(w.inks, w.refs)), ok = g !== "oshii", ms = performance.now() - w.t0;
       cur.res[ri].push({st, g, ok, miss:w.miss, log:w.log, ms});
       const s = kjStat(w.k); s.n++; if(!ok) s.miss++; if(st===2 && g==="kanpeki") s.memo++; s.last = Date.now();
+      s.r = ((s.r || "") + GRADES[g].c).slice(-RECENT);   // さいきん の けっか（だす じゅんばん に つかう）
       if(st===2) noteAdd(w.k, w.inks, w.miss, g);
       api.onAnswered(ok); api.stickerStep();
       const who = pick(["cat","dog"]);
@@ -487,7 +499,7 @@
     function renderParent(box){
       if(!box) return;
       box.innerHTML = `<h4>習った字を選ぶ</h4>
-        <p>「かんじ」で出す字を選んでください（1年生の80字）。選んだ字から、まだ書いていない字・「おしい」が多い字を多めに出します。1字につき「なぞる→見て書く→見ないで書く」の3回書き、1回を1問として「きょうの もくひょう」やシールに数えます。</p>
+        <p>「かんじ」で出す字を選んでください（1年生の80字）。選んだ字から、①まだ書いていない字 → ②書いた回数が少ない字（6回未満）→ ③最近6回で「おしい」が多い字 → ④「いいね」が多い字 → ⑤「かんぺき」が多い字 の順に出します（同じ順の字どうしはランダム）。1字につき「なぞる→見て書く→見ないで書く」の3回書き、1回を1問として「きょうの もくひょう」やシールに数えます。</p>
         <p>書き順・向きが違う画や、形が大きく違う画は、その画だけ書き直しになります。書き上がった字は、位置と大きさをそろえて手本と形を比べ、「かんぺき」「いいね」「おしい」を出します（書き直しの回数は判定に入れません）。「かんぺき」「いいね」を正解として数えます。</p>
         <p>「見ないで書く」で書いた字は、書いたままの形で「かんじ ノート」（「ずかん」と、かんじ の画面の「ノート」）に残り、はじめての1まいと いまを並べて見られます（1字につき、はじめての1まいと新しい${NOTE_MAX}まい）。</p>
         <p class="kj-on-n">いま選んでいる字：<b class="num">${on.length}</b> / 80</p>
@@ -503,6 +515,6 @@
       $("kjAllOff").addEventListener("click", ()=>{ on = []; saveOn(); re(); });
     }
 
-    return {start, stop, renderParent, renderZukan, wipeNotes, _test:{score, decide, refsOf, ALL, enc, dec, tidy, gradeOf}};
+    return {start, stop, renderParent, renderZukan, wipeNotes, _test:{score, decide, refsOf, ALL, enc, dec, tidy, gradeOf, rankKanji}};
   };
 })();
