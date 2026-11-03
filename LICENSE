@@ -11,3 +11,11 @@ This repository is NOT open source. No permission is granted to copy, modify,
 redistribute, or use the code, illustrations, or text in this repository,
 in whole or in part, without prior written permission from the author.
 Using the published service itself is free for everyone.
+
+例外：kanji/strokes.js（漢字の書き順データ）
+  KanjiVG（https://kanjivg.tagaini.net、Copyright (C) 2009-2011 Ulrich Apel）から
+  必要な部分を取り出したもので、作者の権利には含まれません。
+  Creative Commons Attribution-Share Alike 3.0
+  （https://creativecommons.org/licenses/by-sa/3.0/）の条件で配布します。
+Exception: kanji/strokes.js is derived from KanjiVG by Ulrich Apel and is
+distributed under CC BY-SA 3.0, not under the terms above.
