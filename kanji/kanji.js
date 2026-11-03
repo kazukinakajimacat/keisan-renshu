@@ -1,5 +1,5 @@
 /* ---------- かんじ（1ねんせい の 80じ を かく れんしゅう） ----------
-   1もじ ずつ「なぞる → みて かく → みないで かく」の 3かい かく。1かい かくごとに 1もん と かぞえる
+   1もじ ずつ「なぞる → みて かく → みないで かく」の 3かい かく。なぞる は れんしゅう で かぞえず、みて かく・みないで かく を 1かい 1もん と かぞえる（1じ で 2もん）
    （きょうの もくひょう・シール・なかま・あそぶ じかん は けいさん と おなじ ものを つかう）。
    ひとふで ずつ、かきじゅん・むき・かたち を みる。ちがったら その ふでだけ やりなおし（2かい ちがうと ヒント）。
    ならった かんじ は「おうちの方へ」で えらぶ（この たんまつ に のこる。きろくを けしても のこる）。
@@ -138,7 +138,7 @@
      おおい かは さいきん の RECENT かい（kj[字].r に k・i・o で のこす）で かぞえ、いちばん おおい もの で わける
      （おなじ かずの ときは わるい ほう）。③④ は その かずが おおい じゅん、⑤ は かんぺき が すくない じゅん。
      ならびが おなじ じ どうし は ランダム */
-  const FEW = 6, RECENT = 6;
+  const FEW = 4, RECENT = 6;   // FEW：2セット（なぞる は かぞえない ので 1セット 2かい）
   function rankKanji(pool, kj){
     const key = k => {
       const s = kj[k] || {n:0}, r = s.r || "";
@@ -335,7 +335,7 @@
       $("kjSteps").querySelectorAll("i").forEach((el,i)=>{ el.className = i<st ? "done" : i===st ? "now" : ""; });
       $("kjNo").textContent = Math.min(ri+1, round.length); $("kjTot").textContent = round.length;
       const t = $("kjTrack"); t.innerHTML = "";
-      round.forEach((_,i)=>{ const d = document.createElement("i"); d.className = i<ri ? (cur.res[i].every(x=>x.ok) ? "ok" : "ng") : i===ri ? "now" : ""; t.appendChild(d); });
+      round.forEach((_,i)=>{ const d = document.createElement("i"); d.className = i<ri ? (cur.res[i].every(x=>x.st===0 || x.ok) ? "ok" : "ng") : i===ri ? "now" : ""; t.appendChild(d); });
     }
     function exHTML(k){
       const e = parseEx(k), y = st===2 ? `<b class="kj-y">${e.yomi}</b>` : `<b class="kj-y kj-k">${k}</b><small class="kj-rb">${e.yomi}</small>`;
@@ -364,10 +364,13 @@
       // かんぺき・いいね は せいかい、おしい は まちがい と して かぞえる
       const g = gradeOf(tidy(w.inks, w.refs)), ok = g !== "oshii", ms = performance.now() - w.t0;
       cur.res[ri].push({st, g, ok, miss:w.miss, log:w.log, ms});
-      const s = kjStat(w.k); s.n++; if(!ok) s.miss++; if(st===2 && g==="kanpeki") s.memo++; s.last = Date.now();
-      s.r = ((s.r || "") + GRADES[g].c).slice(-RECENT);   // さいきん の けっか（だす じゅんばん に つかう）
+      // なぞる は れんしゅう：もくひょう・シール・なかま・せいかい・かいた かず・だす じゅんばん の どれ にも かぞえない（1じ で 2もん）
+      if(st > 0){
+        const s = kjStat(w.k); s.n++; if(!ok) s.miss++; if(st===2 && g==="kanpeki") s.memo++; s.last = Date.now();
+        s.r = ((s.r || "") + GRADES[g].c).slice(-RECENT);   // さいきん の けっか（だす じゅんばん に つかう）
+        api.onAnswered(ok); api.stickerStep();
+      }
       if(st===2) noteAdd(w.k, w.inks, w.miss, g);
-      api.onAnswered(ok); api.stickerStep();
       const who = pick(["cat","dog"]);
       fb(GRADES[g].label, "g-" + g);
       if(g==="kanpeki"){ api.setPets("happy","happy"); api.say(who, api.mcOn() ? (api.mcLine("correct") || "かんぺき！") : (who==="cat" ? "おてほん みたいだにゃ！" : "かんぺき だわん！")); }
@@ -387,20 +390,22 @@
        5じ かきおわった とき と、とちゅう で やめた とき（ほかの がめん に うつる・アプリ を とじる・かくれる）に のこす。
        1かい ぶん は rid（その かい の ばんごう）で 1けん に まとめ、とちゅう の きろく は あとで うわがき する（ふえない） */
     function record(part){
-      const res = cur.res, ks = round.filter((k,i)=>res[i].length), n = res.reduce((a,r)=>a+r.length, 0), ok = res.reduce((a,r)=>a+r.filter(x=>x.ok).length, 0);
-      const f = [], cnt = g => res.flat().filter(x=>x.g===g).length;
-      f.push(`練習した字：${ks.join("・")}（1字ずつ なぞる→見て書く→見ないで書く${part ? "。途中でやめました" : ""}）。${n}回書いて、かんぺき ${cnt("kanpeki")}回・いいね ${cnt("iine")}回・おしい ${cnt("oshii")}回（できあがった字の形を手本と比べて判定）。`);
+      const res = cur.res, cnted = r => r.filter(x=>x.st>0);   // なぞる は かぞえない
+      const ks = round.filter((k,i)=>cnted(res[i]).length), n = res.reduce((a,r)=>a+cnted(r).length, 0), ok = res.reduce((a,r)=>a+cnted(r).filter(x=>x.ok).length, 0);
+      const cw = {}; round.forEach((k,i)=>{ const c = cnted(res[i]).length; if(c) cw[k] = c; });
+      const f = [], cnt = g => res.flat().filter(x=>x.st>0 && x.g===g).length;
+      f.push(`練習した字：${ks.join("・")}（1字ずつ なぞる→見て書く→見ないで書く${part ? "。途中でやめました" : ""}）。見て書く・見ないで書く の${n}回で、かんぺき ${cnt("kanpeki")}回・いいね ${cnt("iine")}回・おしい ${cnt("oshii")}回（できあがった字の形を手本と比べて判定。なぞる は練習なので数えません）。`);
       const memo = round.filter((k,i)=>res[i][2] && res[i][2].g==="kanpeki");
       if(memo.length) f.push(`見ないで「かんぺき」に書けた字：${memo.join("・")}。`);
-      const osh = []; round.forEach((k,i)=>res[i].forEach(x=>{ if(x.g==="oshii") osh.push(`${k}（${STAGES[x.st].label}）`); }));
+      const osh = []; round.forEach((k,i)=>res[i].forEach(x=>{ if(x.st>0 && x.g==="oshii") osh.push(`${k}（${STAGES[x.st].label}）`); }));
       if(osh.length) f.push(`「おしい」だった字：${osh.join("、")}。形のバランス（画の長さ・位置）を手本と見比べるのがおすすめです。`);
       const det = [];
       round.forEach((k,i)=>res[i].forEach(x=>x.log.forEach(l=>det.push(`${k}（${STAGES[x.st].label}・${l.i+1}画目・${l.kind==="order" ? "書き順" : "形"}）`))));
       if(det.length) f.push(`やり直した画：${det.slice(0,12).join("、")}${det.length>12 ? " ほか" : ""}。`);
       const ord = round.filter((k,i)=>res[i].some(x=>x.log.some(l=>l.kind==="order")));
       if(ord.length) f.push(`書き順のまちがいがあった字：${ord.join("・")}。おうちでも空書き（指で空中に書く）で確かめるのがおすすめです。`);
-      const avg = res.flat().reduce((a,x)=>a+x.ms,0) / Math.max(1,n);
-      return {rid:cur.rid, lv: part ? "かんじ・途中まで" : "かんじ", ok, total:n, kanji:true, chars:ks.join(""), avg:(avg/1000).toFixed(1)+"秒", findings:f,
+      const avg = res.flat().filter(x=>x.st>0).reduce((a,x)=>a+x.ms,0) / Math.max(1,n);
+      return {rid:cur.rid, lv: part ? "かんじ・途中まで" : "かんじ", ok, total:n, kanji:true, chars:ks.join(""), cw, avg:(avg/1000).toFixed(1)+"秒", findings:f,
         gc:{k:cnt("kanpeki"), i:cnt("iine"), o:cnt("oshii")}, ms:Math.round(avg)};   // gc：学習のようす で きかん ごと に かぞえる
     }
     function saveRecord(rec){
@@ -410,7 +415,7 @@
     }
     // とちゅう：1かい でも かいて いて、まだ おわって いない とき だけ
     function savePartial(final){
-      if(!cur || cur.done || !cur.res.some(r=>r.length)) return;
+      if(!cur || cur.done || !cur.res.some(r=>r.some(x=>x.st>0))) return;
       const rec = record(true);
       api.pushHistory((({ms, ...e})=>e)(rec));
       if(final && !cur.logged){ cur.logged = true; api.logSession({k:"kanji", n:rec.total, ok:rec.ok, ms:rec.ms}); }
@@ -432,7 +437,7 @@
       api.setPets("happy","happy"); api.say("cat", api.mcOn() ? (api.mcLine("finish") || "おつかれさま！") : "かんじ おつかれさまにゃ！");
       saveRecord(rec);
       steps(); $("kjNo").textContent = round.length;
-      $("kjTrack").querySelectorAll("i").forEach((d,i)=>{ d.className = res[i].every(x=>x.ok) ? "ok" : "ng"; });
+      $("kjTrack").querySelectorAll("i").forEach((d,i)=>{ d.className = res[i].every(x=>x.st===0 || x.ok) ? "ok" : "ng"; });
       if(api.pendingSticker()) setTimeout(api.showStickerBanner, 600);
       $("kjResult").scrollIntoView({behavior:"smooth", block:"start"});
     }
@@ -536,7 +541,7 @@
     function renderParent(box){
       if(!box) return;
       box.innerHTML = `<h4>習った字を選ぶ</h4>
-        <p>「かんじ」で出す字を選んでください（1年生の80字）。選んだ字から、①まだ書いていない字 → ②書いた回数が少ない字（6回未満）→ ③最近6回で「おしい」が多い字 → ④「いいね」が多い字 → ⑤「かんぺき」が多い字 の順に出します（同じ順の字どうしはランダム）。1字につき「なぞる→見て書く→見ないで書く」の3回書き、1回を1問として「きょうの もくひょう」やシールに数えます。</p>
+        <p>「かんじ」で出す字を選んでください（1年生の80字）。選んだ字から、①まだ書いていない字 → ②書いた回数が少ない字（2セット＝4回未満）→ ③最近6回で「おしい」が多い字 → ④「いいね」が多い字 → ⑤「かんぺき」が多い字 の順に出します（同じ順の字どうしはランダム）。1字につき「なぞる→見て書く→見ないで書く」の3回書きます。なぞる は練習なので数えず、見て書く・見ないで書く の1回を1問として「きょうの もくひょう」やシールに数えます（1字で2問）。</p>
         <p>書き順・向きが違う画や、形が大きく違う画は、その画だけ書き直しになります。書き上がった字は、位置と大きさをそろえて手本と形を比べ、「かんぺき」「いいね」「おしい」を出します（書き直しの回数は判定に入れません）。「かんぺき」「いいね」を正解として数えます。</p>
         <p>「見ないで書く」で書いた字は、書いたままの形で「かんじ ノート」（「ずかん」と、かんじ の画面の「ノート」）に残り、はじめての1まいと いまを並べて見られます（1字につき、はじめての1まいと新しい${NOTE_MAX}まい）。</p>
         <p class="kj-on-n">いま選んでいる字：<b class="num">${on.length}</b> / 80</p>

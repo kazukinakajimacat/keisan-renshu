@@ -5,13 +5,13 @@
 <link rel="icon" type="image/png" sizes="64x64" href="favicon.png?v=3">
 <link rel="apple-touch-icon" href="apple-touch-icon.png?v=3">
 <link rel="manifest" href="manifest.json">
-<script src="stickers/stickers.js?v=202611032250"></script>
-<script src="nakama/nakama.js?v=202611032250"></script>
-<script src="clock/clock.js?v=202611032250"></script>
-<script src="drill/patterns.js?v=202611032250"></script>
-<script src="kanji/strokes.js?v=202611032250"></script>
-<script src="kanji/kanji.js?v=202611032250"></script>
-<link rel="stylesheet" href="kanji/kanji.css?v=202611032250">
+<script src="stickers/stickers.js?v=202611032320"></script>
+<script src="nakama/nakama.js?v=202611032320"></script>
+<script src="clock/clock.js?v=202611032320"></script>
+<script src="drill/patterns.js?v=202611032320"></script>
+<script src="kanji/strokes.js?v=202611032320"></script>
+<script src="kanji/kanji.js?v=202611032320"></script>
+<link rel="stylesheet" href="kanji/kanji.css?v=202611032320">
 <meta name="apple-mobile-web-app-title" content="しゅぎょう">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -4624,7 +4624,8 @@ body.course .levels.nrange .lv{padding:3px 2px;font-size:12px}
     const overcame = allF.filter(e=>(e.miss||0)>0 && (e.score||0)===0 && e.master).sort((x,y)=>(y.miss||0)-(x.miss||0)).map(e=>e.f);
     // ④ かんじ：きかん の なか の かんじ の きろく（history の 1かい ぶん。1じ を 3かい かく）と、いまの じょうたい
     const kjH = history.filter(h=>h.kanji && inR(histDay(h)));
-    const kjCnt = {}; kjH.forEach(h=>[...(h.chars||"")].forEach(c=>{ kjCnt[c] = (kjCnt[c]||0) + 3; }));
+    // cw：じ ごと の かいた かず（なぞる は かぞえない）。cw が ない まえ の きろく は 1じ 3かい と みる
+    const kjCnt = {}; kjH.forEach(h=>[...(h.chars||"")].forEach(c=>{ kjCnt[c] = (kjCnt[c]||0) + (h.cw ? (h.cw[c]||0) : 3); }));
     const kjChars = Object.entries(kjCnt).sort((a,b)=>b[1]-a[1]), kjN = kjH.reduce((a,h)=>a+(h.total||0), 0);
     const kjGc = {k:0, i:0, o:0}; kjH.forEach(h=>{ if(h.gc){ kjGc.k += h.gc.k; kjGc.i += h.gc.i; kjGc.o += h.gc.o; } });
     const kjGcN = kjGc.k + kjGc.i + kjGc.o, kjG = KJ.gradeGroups();
@@ -4686,7 +4687,7 @@ body.course .levels.nrange .lv{padding:3px 2px;font-size:12px}
         ${kjG.kanpeki.length + kjG.iine.length + kjG.oshii.length ? [["kanpeki","「かんぺき」がいちばん多い漢字","ok","k"],["iine","「いいね」がいちばん多い漢字","mid","i"],["oshii","「おしい」がいちばん多い漢字","ng","o"]].map(([g,t,cls,c])=>
           `<div class="tr-sub">${t}：${kjG[g].length}字</div>${kjG[g].length ? `<div class="pg-chips ${cls}">${kjG[g].map(x=>`<span>${x.ch}<small>${x.n}回中${x[c]}</small></span>`).join("")}</div>` : ""}`).join("")
           : `<p>まだ記録がありません。</p>`}
-        <p>書き上がった字の形を手本と比べた判定です（なぞる・見て書く・見ないで書く の どれも数えます）。「いまの状態」は、1字ごとに最近6回の結果で いちばん多い判定に分けています（同じ数のときは下の判定）。同じ順に、かんじ で出す字も決めています（まだ書いていない → 書いた回数が少ない → おしい → いいね → かんぺき）。</p></div>`;
+        <p>書き上がった字の形を手本と比べた判定です（見て書く・見ないで書く を数えます。なぞる は練習なので数えません）。「いまの状態」は、1字ごとに最近6回の結果で いちばん多い判定に分けています（同じ数のときは下の判定）。同じ順に、かんじ で出す字も決めています（まだ書いていない → 書いた回数が少ない → おしい → いいね → かんぺき）。</p></div>`;
     box.querySelectorAll("[data-pg]").forEach(b=>b.addEventListener("click",()=>{
       const v = b.dataset.pg;
       if(v==="custom"){ const r = pgRange(); pgSel = {preset:"custom", from:r.from, to:r.to}; } else pgSel = {preset:v, from:null, to:null};
