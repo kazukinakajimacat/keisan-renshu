@@ -68,6 +68,7 @@
 .kn-t{display:flex;flex-direction:column;align-items:center;gap:3px;padding:6px;border-radius:14px;border:2px solid var(--line);background:var(--surface);color:var(--ink);font-family:inherit;cursor:pointer}
 .kn-t b{font-size:18px;line-height:1.1}
 .kn-t small{font-size:11px;color:var(--muted);font-weight:700}
+.kn-nav{display:flex;justify-content:space-between;gap:8px}
 .kn-back{display:block;padding:6px 12px;border-radius:12px;border:2px solid var(--line);background:var(--surface);color:var(--ink);font-family:inherit;font-weight:700;cursor:pointer}
 .kn-k{margin:4px 0 8px;font-size:32px;font-weight:900}
 .kn-cmp{display:flex;align-items:center;justify-content:center;gap:8px}
