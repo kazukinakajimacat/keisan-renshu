@@ -1,15 +1,15 @@
 <!doctype html><html><head><meta charset="utf-8"><meta name=viewport content="width=device-width,initial-scale=1,viewport-fit=cover"><style>:root{color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}html{scroll-padding-top:env(safe-area-inset-top,0px)}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#faf9f5;color:#141413}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}</style>
-<title>けいさん れんしゅう</title>
+<title>まいにち しゅぎょう</title>
 <link rel="icon" href="favicon.ico?v=3" sizes="any">
 <link rel="icon" type="image/png" sizes="32x32" href="favicon-32.png?v=3">
 <link rel="icon" type="image/png" sizes="64x64" href="favicon.png?v=3">
 <link rel="apple-touch-icon" href="apple-touch-icon.png?v=3">
 <link rel="manifest" href="manifest.json">
-<script src="stickers/stickers.js?v=202611032005"></script>
-<script src="nakama/nakama.js?v=202611032005"></script>
-<script src="clock/clock.js?v=202611032005"></script>
-<script src="drill/patterns.js?v=202611032005"></script>
-<meta name="apple-mobile-web-app-title" content="けいさん">
+<script src="stickers/stickers.js?v=202611032030"></script>
+<script src="nakama/nakama.js?v=202611032030"></script>
+<script src="clock/clock.js?v=202611032030"></script>
+<script src="drill/patterns.js?v=202611032030"></script>
+<meta name="apple-mobile-web-app-title" content="しゅぎょう">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Zen+Maru+Gothic:wght@500;700;900&display=swap">
@@ -4103,7 +4103,7 @@ body.course .levels.nrange .lv{padding:3px 2px;font-size:12px}
           g.textAlign = "center";
         });
       }else{ g.fillStyle = muted; g.font = `700 30px ${F}`; g.fillText("この ころの もんだいの かずは のこって いないよ", W / 2, y + 45); }
-      g.fillStyle = muted; g.font = `700 28px ${F}`; g.fillText("けいさん れんしゅう", W / 2, H - 50);
+      g.fillStyle = muted; g.font = `700 28px ${F}`; g.fillText("まいにち しゅぎょう", W / 2, H - 50);
       return new Promise((ok, ng)=>c.toBlob(b=> b ? ok(new File([b], `keisan-renshu-${id}-rekishi.png`, {type:"image/png"})) : ng(new Error("png")), "image/png"));
     });
   }
