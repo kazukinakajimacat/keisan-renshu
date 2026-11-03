@@ -5,13 +5,13 @@
 <link rel="icon" type="image/png" sizes="64x64" href="favicon.png?v=3">
 <link rel="apple-touch-icon" href="apple-touch-icon.png?v=3">
 <link rel="manifest" href="manifest.json">
-<script src="stickers/stickers.js?v=202611032210"></script>
-<script src="nakama/nakama.js?v=202611032210"></script>
-<script src="clock/clock.js?v=202611032210"></script>
-<script src="drill/patterns.js?v=202611032210"></script>
-<script src="kanji/strokes.js?v=202611032210"></script>
-<script src="kanji/kanji.js?v=202611032210"></script>
-<link rel="stylesheet" href="kanji/kanji.css?v=202611032210">
+<script src="stickers/stickers.js?v=202611032250"></script>
+<script src="nakama/nakama.js?v=202611032250"></script>
+<script src="clock/clock.js?v=202611032250"></script>
+<script src="drill/patterns.js?v=202611032250"></script>
+<script src="kanji/strokes.js?v=202611032250"></script>
+<script src="kanji/kanji.js?v=202611032250"></script>
+<link rel="stylesheet" href="kanji/kanji.css?v=202611032250">
 <meta name="apple-mobile-web-app-title" content="しゅぎょう">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -4622,6 +4622,12 @@ body.course .levels.nrange .lv{padding:3px 2px;font-size:12px}
     const allF = Object.values(stats.facts||{}).filter(e=>e && e.f && !e.f.three && !e.f.x);
     const weakNow = allF.filter(e=>(e.score||0)>=1).sort((x,y)=>y.score-x.score).map(e=>e.f);
     const overcame = allF.filter(e=>(e.miss||0)>0 && (e.score||0)===0 && e.master).sort((x,y)=>(y.miss||0)-(x.miss||0)).map(e=>e.f);
+    // ④ かんじ：きかん の なか の かんじ の きろく（history の 1かい ぶん。1じ を 3かい かく）と、いまの じょうたい
+    const kjH = history.filter(h=>h.kanji && inR(histDay(h)));
+    const kjCnt = {}; kjH.forEach(h=>[...(h.chars||"")].forEach(c=>{ kjCnt[c] = (kjCnt[c]||0) + 3; }));
+    const kjChars = Object.entries(kjCnt).sort((a,b)=>b[1]-a[1]), kjN = kjH.reduce((a,h)=>a+(h.total||0), 0);
+    const kjGc = {k:0, i:0, o:0}; kjH.forEach(h=>{ if(h.gc){ kjGc.k += h.gc.k; kjGc.i += h.gc.i; kjGc.o += h.gc.o; } });
+    const kjGcN = kjGc.k + kjGc.i + kjGc.o, kjG = KJ.gradeGroups();
     const chips = (list, cls, note) => `<div class="pg-chips ${cls}">${list.slice(0,12).map(k=>`<span>${txt(k)}${note ? `<small>${note(k)}</small>` : ""}</span>`).join("")}${list.length>12 ? `<span>ほか${list.length-12}こ</span>` : ""}</div>`;
     const fchips = (list, cls) => `<div class="pg-chips ${cls}">${list.slice(0,12).map(f=>`<span>${factText(f)}</span>`).join("")}${list.length>12 ? `<span>ほか${list.length-12}こ</span>` : ""}</div>`;
     const tip = id => `<div class="pg-tip none">グラフにカーソルを合わせるか、指で触れると、その${weekly ? "週" : "日"}の数字が出ます</div>`;
@@ -4646,7 +4652,7 @@ body.course .levels.nrange .lv{padding:3px 2px;font-size:12px}
         <div class="tr-tiles"><div class="tr-tile"><small>期間全体</small><b>${totN ? Math.round(totOk/totN*100)+"%" : "-"}</b>${totN && pN ? pgDelta(totOk/totN*100, pOk/pN*100, {len, unit:"%", dunit:"ポイント", digits:1, tone:true}) : ""}</div>
           <div class="tr-tile"><small>正解した数</small><b>${totOk}問</b><i>${totN}問中</i></div></div>
         ${pgChart(B, acc, {id:"a", color:"#E08A00", line:true, max:100, unit:"%", label:"正答率（％）"})}${tip("a")}
-        <p>いろいろ もんだい・ます けいさん・とけい の合計です。</p></div>
+        <p>いろいろ もんだい・ます けいさん・とけい・かんじ の合計です（かんじ は「かんぺき」「いいね」を正解として数えます）。</p></div>
 
       <div class="pg-sec"><h5>すらすら解ける計算・苦手な計算</h5>
         <div class="tr-tiles"><div class="tr-tile"><small>すらすら になった</small><b>${g1.length}こ</b></div>
@@ -4667,7 +4673,20 @@ body.course .levels.nrange .lv{padding:3px 2px;font-size:12px}
         <h5 style="margin-top:6px">いまの状態（期間に関係なく、これまで全体）</h5>
         <div class="tr-sub">いま苦手として多めに出している計算：${weakNow.length}こ</div>${weakNow.length ? fchips(weakNow, "ng") : `<p>いま、多めに出している計算はありません。</p>`}
         ${overcame.length ? `<div class="tr-sub">前は間違えていたけれど、今はすらすら解ける計算：${overcame.length}こ</div>${fchips(overcame, "ok")}` : ""}
-        <p>10までのたし算・ひき算（90こ）が対象です。式・文章題・ます計算など、どの形で解いても数えます。計算ごとの記録は${flFirst ? pgMD(flFirst) : "きょう"}から残しています（${FL_KEEP}日分）。「すらすら」などになった日は、はじめから記録があります。</p></div>`;
+        <p>10までのたし算・ひき算（90こ）が対象です。式・文章題・ます計算など、どの形で解いても数えます。計算ごとの記録は${flFirst ? pgMD(flFirst) : "きょう"}から残しています（${FL_KEEP}日分）。「すらすら」などになった日は、はじめから記録があります。</p></div>
+
+      <div class="pg-sec"><h5>かんじ</h5>
+        <div class="tr-tiles"><div class="tr-tile"><small>勉強した漢字</small><b>${kjChars.length}字</b><i>${kjN}回 書いた</i></div></div>
+        <div class="tr-tiles"><div class="tr-tile"><small>かんぺき</small><b>${kjGcN ? kjGc.k+"回" : "-"}</b></div>
+          <div class="tr-tile"><small>いいね</small><b>${kjGcN ? kjGc.i+"回" : "-"}</b></div>
+          <div class="tr-tile"><small>おしい</small><b>${kjGcN ? kjGc.o+"回" : "-"}</b></div></div>
+        ${kjChars.length ? `<div class="tr-sub">この期間に勉強した漢字（書いた回数）</div><div class="pg-chips">${kjChars.map(([c,n])=>`<span>${c}<small>${n}回</small></span>`).join("")}</div>`
+          : `<p>この期間は、かんじ を書いていません。</p>`}
+        <h5 style="margin-top:6px">いまの状態（期間に関係なく、最近6回の結果）</h5>
+        ${kjG.kanpeki.length + kjG.iine.length + kjG.oshii.length ? [["kanpeki","「かんぺき」がいちばん多い漢字","ok","k"],["iine","「いいね」がいちばん多い漢字","mid","i"],["oshii","「おしい」がいちばん多い漢字","ng","o"]].map(([g,t,cls,c])=>
+          `<div class="tr-sub">${t}：${kjG[g].length}字</div>${kjG[g].length ? `<div class="pg-chips ${cls}">${kjG[g].map(x=>`<span>${x.ch}<small>${x.n}回中${x[c]}</small></span>`).join("")}</div>` : ""}`).join("")
+          : `<p>まだ記録がありません。</p>`}
+        <p>書き上がった字の形を手本と比べた判定です（なぞる・見て書く・見ないで書く の どれも数えます）。「いまの状態」は、1字ごとに最近6回の結果で いちばん多い判定に分けています（同じ数のときは下の判定）。同じ順に、かんじ で出す字も決めています（まだ書いていない → 書いた回数が少ない → おしい → いいね → かんぺき）。</p></div>`;
     box.querySelectorAll("[data-pg]").forEach(b=>b.addEventListener("click",()=>{
       const v = b.dataset.pg;
       if(v==="custom"){ const r = pgRange(); pgSel = {preset:"custom", from:r.from, to:r.to}; } else pgSel = {preset:v, from:null, to:null};
@@ -4840,9 +4859,11 @@ body.course .levels.nrange .lv{padding:3px 2px;font-size:12px}
   const KJ = window.KanjiCourse({
     stats: () => stats, saveStats, onAnswered, stickerStep, tlGate, say, setPets, mcOn, mcLine, pickCheer, logSession,
     pendingSticker: () => pendingSticker, showStickerBanner,
+    // おなじ rid（おなじ かい）の きろく が あれば うわがき（とちゅう の きろく → おわった きろく）。なければ あたらしく いれる
     pushHistory(e){
-      const d = new Date();
-      history.unshift({d:dayKey(d), at:`${d.getMonth()+1}/${d.getDate()} ${d.getHours()}:${String(d.getMinutes()).padStart(2,"0")}`, ...e});
+      const d = new Date(), ent = {d:dayKey(d), at:`${d.getMonth()+1}/${d.getDate()} ${d.getHours()}:${String(d.getMinutes()).padStart(2,"0")}`, ...e};
+      const i = e.rid ? history.findIndex(h=>h.rid===e.rid) : -1;
+      if(i >= 0) history[i] = ent; else history.unshift(ent);
       history = history.slice(0,HIST_MAX); try{ lsSet(STORE, JSON.stringify(history)); }catch(err){}
       renderHistory();
     }

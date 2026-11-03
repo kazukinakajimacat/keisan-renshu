@@ -79,3 +79,5 @@
 .kn-f figcaption b{font-size:15px;color:var(--ink)}
 .kn-h{margin:16px 0 8px;font-size:15px;font-weight:900;text-align:left}
 .kn-list{display:grid;grid-template-columns:repeat(auto-fill,minmax(72px,1fr));gap:8px}
+/* 学習のようす：かんじ の「いいね」 */
+.pg-chips.mid span{background:color-mix(in srgb,var(--blue) 16%,transparent)}

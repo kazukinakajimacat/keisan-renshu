@@ -383,16 +383,13 @@
       startWrite();
       if(api.pendingSticker()) api.showStickerBanner();
     }
-    function finish(){
-      w = null;
-      $("kjCard").hidden = true; fb("");
-      $("kjCheer").src = api.pickCheer();
-      const res = cur.res, n = res.reduce((a,r)=>a+r.length, 0), ok = res.reduce((a,r)=>a+r.filter(x=>x.ok).length, 0);
-      $("kjRTitle").textContent = `${round.length}もじ かけたね！`;
-      // みないで かいた ときの けっか を だす
-      $("kjRList").innerHTML = round.map((k,i)=>{ const m = res[i][2]; return `<span class="kj-ri ${m ? "g-"+m.g : ""}"><b>${k}</b><small>${m ? GRADES[m.g].short : ""}</small></span>`; }).join("");
+    /* ---------- おうちの方へ の きろく ----------
+       5じ かきおわった とき と、とちゅう で やめた とき（ほかの がめん に うつる・アプリ を とじる・かくれる）に のこす。
+       1かい ぶん は rid（その かい の ばんごう）で 1けん に まとめ、とちゅう の きろく は あとで うわがき する（ふえない） */
+    function record(part){
+      const res = cur.res, ks = round.filter((k,i)=>res[i].length), n = res.reduce((a,r)=>a+r.length, 0), ok = res.reduce((a,r)=>a+r.filter(x=>x.ok).length, 0);
       const f = [], cnt = g => res.flat().filter(x=>x.g===g).length;
-      f.push(`練習した字：${round.join("・")}（1字ずつ なぞる→見て書く→見ないで書く）。${n}回書いて、かんぺき ${cnt("kanpeki")}回・いいね ${cnt("iine")}回・おしい ${cnt("oshii")}回（できあがった字の形を手本と比べて判定）。`);
+      f.push(`練習した字：${ks.join("・")}（1字ずつ なぞる→見て書く→見ないで書く${part ? "。途中でやめました" : ""}）。${n}回書いて、かんぺき ${cnt("kanpeki")}回・いいね ${cnt("iine")}回・おしい ${cnt("oshii")}回（できあがった字の形を手本と比べて判定）。`);
       const memo = round.filter((k,i)=>res[i][2] && res[i][2].g==="kanpeki");
       if(memo.length) f.push(`見ないで「かんぺき」に書けた字：${memo.join("・")}。`);
       const osh = []; round.forEach((k,i)=>res[i].forEach(x=>{ if(x.g==="oshii") osh.push(`${k}（${STAGES[x.st].label}）`); }));
@@ -402,12 +399,38 @@
       if(det.length) f.push(`やり直した画：${det.slice(0,12).join("、")}${det.length>12 ? " ほか" : ""}。`);
       const ord = round.filter((k,i)=>res[i].some(x=>x.log.some(l=>l.kind==="order")));
       if(ord.length) f.push(`書き順のまちがいがあった字：${ord.join("・")}。おうちでも空書き（指で空中に書く）で確かめるのがおすすめです。`);
-      $("kjRFind").innerHTML = f.map(x=>`<li>${x}</li>`).join("");
+      const avg = res.flat().reduce((a,x)=>a+x.ms,0) / Math.max(1,n);
+      return {rid:cur.rid, lv: part ? "かんじ・途中まで" : "かんじ", ok, total:n, kanji:true, chars:ks.join(""), avg:(avg/1000).toFixed(1)+"秒", findings:f,
+        gc:{k:cnt("kanpeki"), i:cnt("iine"), o:cnt("oshii")}, ms:Math.round(avg)};   // gc：学習のようす で きかん ごと に かぞえる
+    }
+    function saveRecord(rec){
+      const {ms, ...e} = rec;
+      api.pushHistory(e);
+      if(!cur.logged){ cur.logged = true; api.logSession({k:"kanji", n:rec.total, ok:rec.ok, ms}); }
+    }
+    // とちゅう：1かい でも かいて いて、まだ おわって いない とき だけ
+    function savePartial(final){
+      if(!cur || cur.done || !cur.res.some(r=>r.length)) return;
+      const rec = record(true);
+      api.pushHistory((({ms, ...e})=>e)(rec));
+      if(final && !cur.logged){ cur.logged = true; api.logSession({k:"kanji", n:rec.total, ok:rec.ok, ms:rec.ms}); }
+    }
+    document.addEventListener("visibilitychange", ()=>{ if(document.visibilityState==="hidden" && active) savePartial(false); });
+    window.addEventListener("pagehide", ()=>{ if(active) savePartial(false); });
+
+    function finish(){
+      w = null;
+      $("kjCard").hidden = true; fb("");
+      $("kjCheer").src = api.pickCheer();
+      const res = cur.res; cur.done = true;
+      $("kjRTitle").textContent = `${round.length}もじ かけたね！`;
+      // みないで かいた ときの けっか を だす
+      $("kjRList").innerHTML = round.map((k,i)=>{ const m = res[i][2]; return `<span class="kj-ri ${m ? "g-"+m.g : ""}"><b>${k}</b><small>${m ? GRADES[m.g].short : ""}</small></span>`; }).join("");
+      const rec = record(false);
+      $("kjRFind").innerHTML = rec.findings.map(x=>`<li>${x}</li>`).join("");
       $("kjResult").hidden = false;
       api.setPets("happy","happy"); api.say("cat", api.mcOn() ? (api.mcLine("finish") || "おつかれさま！") : "かんじ おつかれさまにゃ！");
-      const avg = res.flat().reduce((a,x)=>a+x.ms,0) / Math.max(1,n);
-      api.pushHistory({lv:"かんじ", ok, total:n, kanji:true, chars:round.join(""), avg:(avg/1000).toFixed(1)+"秒", findings:f});
-      api.logSession({k:"kanji", n, ok, ms:Math.round(avg)});
+      saveRecord(rec);
       steps(); $("kjNo").textContent = round.length;
       $("kjTrack").querySelectorAll("i").forEach((d,i)=>{ d.className = res[i].every(x=>x.ok) ? "ok" : "ng"; });
       if(api.pendingSticker()) setTimeout(api.showStickerBanner, 600);
@@ -415,7 +438,7 @@
     }
     function start(){
       active = true; clearTimeout(timer);
-      round = pickRound(); ri = 0; st = 0; cur = {res: round.map(()=>[])};
+      round = pickRound(); ri = 0; st = 0; cur = {res: round.map(()=>[]), rid: Date.now().toString(36), done:false, logged:false};
       if(!round.length){
         w = null; $("kjCard").hidden = true; $("kjResult").hidden = true; $("kjEmpty").hidden = false;
         $("kjTrack").innerHTML = ""; $("kjNo").textContent = 0;
@@ -425,7 +448,7 @@
       }
       startWrite();
     }
-    function stop(){ active = false; clearTimeout(timer); cancelAnimationFrame(anim); anim = null; ink = null; pid = null; $("kjNote").hidden = true; }
+    function stop(){ if(active) savePartial(true); active = false; clearTimeout(timer); cancelAnimationFrame(anim); anim = null; ink = null; pid = null; $("kjNote").hidden = true; }
     $("kjAgain").addEventListener("click", ()=>{ start(); window.scrollTo({top:0}); });
 
     /* ---------- かんじ ノート ---------- */
@@ -493,6 +516,20 @@
     $("kjNoteBtn").addEventListener("click", ()=>noteOpen());
     $("kjNoteBtn2").addEventListener("click", ()=>noteOpen());
     function wipeNotes(){ notes = {}; try{ localStorage.removeItem(NOTE_KEY); }catch(e){} }
+
+    // 学習のようす：いま かんぺき・いいね・おしい の どれ が いちばん おおいか（さいきん RECENT かい。おなじ かず は わるい ほう）。
+    // さいきん の けっか が まだ ない じ は いれない
+    function gradeGroups(){
+      const kj = api.stats().kj || {}, out = {kanpeki:[], iine:[], oshii:[]};
+      ALL.split("").forEach(k=>{
+        const r = (kj[k] || {}).r; if(!r) return;
+        const c = {o:(r.match(/o/g)||[]).length, i:(r.match(/i/g)||[]).length, k:(r.match(/k/g)||[]).length, n:r.length};
+        const g = c.o >= c.i && c.o >= c.k ? "oshii" : c.i >= c.k ? "iine" : "kanpeki";
+        out[g].push({ch:k, ...c});   // ch：じ（k は かんぺき の かず）
+      });
+      out.oshii.sort((a,b)=>b.o-a.o); out.iine.sort((a,b)=>b.i-a.i); out.kanpeki.sort((a,b)=>b.k-a.k);
+      return out;
+    }
     window.addEventListener("resize", ()=>{ if(active && w) fit(); });
 
     /* ---------- おうちの方へ：ならった かんじ ---------- */
@@ -515,6 +552,6 @@
       $("kjAllOff").addEventListener("click", ()=>{ on = []; saveOn(); re(); });
     }
 
-    return {start, stop, renderParent, renderZukan, wipeNotes, _test:{score, decide, refsOf, ALL, enc, dec, tidy, gradeOf, rankKanji}};
+    return {start, stop, renderParent, renderZukan, wipeNotes, gradeGroups, _test:{score, decide, refsOf, ALL, enc, dec, tidy, gradeOf, rankKanji}};
   };
 })();
