@@ -1,18 +1,18 @@
 <!doctype html><html><head><meta charset="utf-8"><meta name=viewport content="width=device-width,initial-scale=1,viewport-fit=cover"><style>:root{color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}html{scroll-padding-top:env(safe-area-inset-top,0px)}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#faf9f5;color:#141413}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}</style>
-<title>けいさん れんしゅう</title>
+<title>まいにち しゅぎょう</title>
 <link rel="icon" href="favicon.ico?v=3" sizes="any">
 <link rel="icon" type="image/png" sizes="32x32" href="favicon-32.png?v=3">
 <link rel="icon" type="image/png" sizes="64x64" href="favicon.png?v=3">
 <link rel="apple-touch-icon" href="apple-touch-icon.png?v=3">
 <link rel="manifest" href="manifest.json">
-<script src="stickers/stickers.js?v=202610280830"></script>
-<script src="nakama/nakama.js?v=202610280830"></script>
-<script src="clock/clock.js?v=202610280830"></script>
-<script src="drill/patterns.js?v=202610280830"></script>
-<script src="kanji/strokes.js?v=202611032045"></script>
-<script src="kanji/kanji.js?v=202611032045"></script>
-<link rel="stylesheet" href="kanji/kanji.css?v=202611032045">
-<meta name="apple-mobile-web-app-title" content="けいさん">
+<script src="stickers/stickers.js?v=202611032100"></script>
+<script src="nakama/nakama.js?v=202611032100"></script>
+<script src="clock/clock.js?v=202611032100"></script>
+<script src="drill/patterns.js?v=202611032100"></script>
+<script src="kanji/strokes.js?v=202611032100"></script>
+<script src="kanji/kanji.js?v=202611032100"></script>
+<link rel="stylesheet" href="kanji/kanji.css?v=202611032100">
+<meta name="apple-mobile-web-app-title" content="しゅぎょう">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Zen+Maru+Gothic:wght@500;700;900&display=swap">
@@ -2650,7 +2650,8 @@ body.course .levels.nrange .lv{padding:3px 2px;font-size:12px}
   }
   function renderHistory(){
     const body=$("histBody");
-    const note = `<div class="empty">間違えた問題と時間がかかった問題は、数問後にもう一度出すほか、次回以降も多めに出します。解くたびに早く正解できた問題は、出る回数が元に戻ります（この端末のブラウザにのみ保存）。</div>`;
+    const note = `<div class="empty">間違えた問題と時間がかかった問題は、数問後にもう一度出すほか、次回以降も多めに出します。解くたびに早く正解できた問題は、出る回数が元に戻ります（この端末のブラウザにのみ保存）。</div>
+      <div class="empty">使われ方を知るため、アプリを開いた・閉じた時刻、端末とブラウザの種類、端末ごとのランダムな番号を作者に送っています。学習の記録や名前は送りません。</div>`;
     if(!history.length){
       body.innerHTML = note + `<div class="empty">20問ごとに、正解数とミスの傾向がここに残ります。</div>`;
       return;
@@ -2673,8 +2674,8 @@ body.course .levels.nrange .lv{padding:3px 2px;font-size:12px}
       history=[]; stats={facts:{}, types:{}}; histSt.sel = histSt.mon = null;
       stats.album={}; stats.days={};
       gbest={};   // ます けいさんの さいこう タイムも けす
-      tlog = {}; try{ localStorage.removeItem(TLOG_KEY); }catch(e){}
-      KJ.wipeNotes();   // かんじ ノート（みないで かいた じ）も けす   // あそんだ じかんの グラフも けす（きょうの じかんの くぎりは のこす）
+      tlog = {}; try{ localStorage.removeItem(TLOG_KEY); }catch(e){}   // あそんだ じかんの グラフも けす（きょうの じかんの くぎりは のこす）
+      KJ.wipeNotes();   // かんじ ノート（みないで かいた じ）も けす
       try{ localStorage.removeItem(STORE); localStorage.removeItem(STATS); localStorage.removeItem(GBEST_KEY); }catch(e){}
       markDirty();
       renderHistory();
@@ -2808,6 +2809,58 @@ body.course .levels.nrange .lv{padding:3px 2px;font-size:12px}
     }
     btn.disabled = false;
   });
+
+  /* ---------- アクセスの きろく（作者が つかわれかたを しる ため） ----------
+     ご意見 と おなじ Apps Script に おくり、スプレッドシート の「アクセス」シートに 1かい ぶん を 1ぎょうで のこす。
+     おくるのは：端末ID（はじめて ひらいた ときに つくる ランダムな ばんごう）・セッションID・端末の しゅるい・ブラウザ・
+     ひらきかた（ホーム画面／ブラウザ）・アプリの 版 だけ。時刻は うけとった がわ で つける。学習の 記録 や なまえ は おくらない。
+     がめんが みえて いる あいだ を 1かい と する（みえたら start、かくれたら end）。
+     end が とどかなかった ときの ため に、つぎの start に まえの回 の「とじた（さいごに うごいて いた）時刻」を つけて おぎなう。
+     GitHub Pages で ひらいた とき だけ おくる（localhost の ためし では おくらず、window.__acc に ためる） */
+  (function(){
+    const DID_KEY = "sansu-drill-did-v1", PEND_KEY = "sansu-drill-acc-v1", ALIVE_MS = 30000;
+    const live = /\.github\.io$/.test(location.hostname);
+    const hex = n => { const a = new Uint8Array(n/2); try{ crypto.getRandomValues(a); }catch(e){ for(let i=0;i<a.length;i++) a[i] = Math.random()*256|0; } return [...a].map(b=>b.toString(16).padStart(2,"0")).join(""); };
+    let did = ""; try{ did = localStorage.getItem(DID_KEY) || ""; }catch(e){}
+    if(!/^[0-9a-f]{32}$/.test(did)){ did = hex(32); try{ localStorage.setItem(DID_KEY, did); }catch(e){} }
+    const u = navigator.userAgent || "";
+    const br = navigator.brave ? "Brave" : /Edg(e|A|iOS)?\//.test(u) ? "Edge" : /Firefox|FxiOS/.test(u) ? "Firefox" : /CriOS|Chrome\//.test(u) ? "Chrome" : /Safari\//.test(u) ? "Safari" : "その他";
+    const how = () => (window.matchMedia && matchMedia("(display-mode: standalone)").matches) || navigator.standalone ? "ホーム画面" : "ブラウザ";
+    const getPend = () => { try{ return JSON.parse(localStorage.getItem(PEND_KEY) || "null"); }catch(e){ return null; } };
+    const setPend = p => { try{ p ? localStorage.setItem(PEND_KEY, JSON.stringify(p)) : localStorage.removeItem(PEND_KEY); }catch(e){} };
+    // fetch（keepalive：ページを とじても おくりきる）で おくる。sendBeacon は Brave など で とめられる ことが ある ので、
+    // fetch が つかえない とき だけ つかう
+    function send(d){
+      d = {t:"access", id:did, ...d};
+      if(!live){ (window.__acc = window.__acc || []).push(d); return; }
+      if(!VOICE_URL) return;
+      const body = JSON.stringify(d);
+      try{ fetch(VOICE_URL, {method:"POST", mode:"no-cors", keepalive:true, headers:{"Content-Type":"text/plain;charset=utf-8"}, body}).catch(()=>{}); return; }catch(e){}
+      try{ if(navigator.sendBeacon) navigator.sendBeacon(VOICE_URL, new Blob([body], {type:"text/plain;charset=utf-8"})); }catch(e){}
+    }
+    let sid = null, aliveTimer = null;
+    function begin(){
+      if(sid) return;
+      const prev = getPend();
+      sid = hex(16);
+      send({ev:"start", sid, dev:devKind(), br, mode:how(), ver:appVer(), ...(prev && prev.sid ? {prev:{sid:prev.sid, alive:prev.alive}} : {})});
+      setPend({sid, alive:Date.now()});
+      clearInterval(aliveTimer);
+      aliveTimer = setInterval(()=>{ if(sid) setPend({sid, alive:Date.now()}); }, ALIVE_MS);
+    }
+    // end が とどいたか は わからない ので、ひかえ（いつ とじたか）は のこして おき、つぎの start に つける。
+    // うけとる がわ は、もう とじた時刻が はいって いる 行 には かかない
+    function end(){
+      if(!sid) return;
+      send({ev:"end", sid});
+      setPend({sid, alive:Date.now()});
+      sid = null; clearInterval(aliveTimer);
+    }
+    document.addEventListener("visibilitychange", ()=>{ document.visibilityState === "visible" ? begin() : end(); });
+    window.addEventListener("pagehide", end);
+    window.addEventListener("pageshow", ()=>{ if(document.visibilityState === "visible") begin(); });
+    if(document.visibilityState === "visible") begin();
+  })();
 
   /* ---------- 1かいごとの けっかの きろく ----------
      20もん・ます1まい ごとの けっかを かずで のこす（stats.sess）。
@@ -4068,7 +4121,7 @@ body.course .levels.nrange .lv{padding:3px 2px;font-size:12px}
           g.textAlign = "center";
         });
       }else{ g.fillStyle = muted; g.font = `700 30px ${F}`; g.fillText("この ころの もんだいの かずは のこって いないよ", W / 2, y + 45); }
-      g.fillStyle = muted; g.font = `700 28px ${F}`; g.fillText("けいさん れんしゅう", W / 2, H - 50);
+      g.fillStyle = muted; g.font = `700 28px ${F}`; g.fillText("まいにち しゅぎょう", W / 2, H - 50);
       return new Promise((ok, ng)=>c.toBlob(b=> b ? ok(new File([b], `keisan-renshu-${id}-rekishi.png`, {type:"image/png"})) : ng(new Error("png")), "image/png"));
     });
   }
