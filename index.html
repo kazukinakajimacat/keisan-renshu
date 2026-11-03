@@ -5,10 +5,10 @@
 <link rel="icon" type="image/png" sizes="64x64" href="favicon.png?v=3">
 <link rel="apple-touch-icon" href="apple-touch-icon.png?v=3">
 <link rel="manifest" href="manifest.json">
-<script src="stickers/stickers.js?v=202610280830"></script>
-<script src="nakama/nakama.js?v=202610280830"></script>
-<script src="clock/clock.js?v=202610280830"></script>
-<script src="drill/patterns.js?v=202610280830"></script>
+<script src="stickers/stickers.js?v=202611031950"></script>
+<script src="nakama/nakama.js?v=202611031950"></script>
+<script src="clock/clock.js?v=202611031950"></script>
+<script src="drill/patterns.js?v=202611031950"></script>
 <meta name="apple-mobile-web-app-title" content="けいさん">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -2633,7 +2633,8 @@ body.course .levels.nrange .lv{padding:3px 2px;font-size:12px}
   }
   function renderHistory(){
     const body=$("histBody");
-    const note = `<div class="empty">間違えた問題と時間がかかった問題は、数問後にもう一度出すほか、次回以降も多めに出します。解くたびに早く正解できた問題は、出る回数が元に戻ります（この端末のブラウザにのみ保存）。</div>`;
+    const note = `<div class="empty">間違えた問題と時間がかかった問題は、数問後にもう一度出すほか、次回以降も多めに出します。解くたびに早く正解できた問題は、出る回数が元に戻ります（この端末のブラウザにのみ保存）。</div>
+      <div class="empty">使われ方を知るため、アプリを開いた・閉じた時刻、端末とブラウザの種類、端末ごとのランダムな番号を作者に送っています。学習の記録や名前は送りません。</div>`;
     if(!history.length){
       body.innerHTML = note + `<div class="empty">20問ごとに、正解数とミスの傾向がここに残ります。</div>`;
       return;
@@ -2790,6 +2791,53 @@ body.course .levels.nrange .lv{padding:3px 2px;font-size:12px}
     }
     btn.disabled = false;
   });
+
+  /* ---------- アクセスの きろく（作者が つかわれかたを しる ため） ----------
+     ご意見 と おなじ Apps Script に おくり、スプレッドシート の「アクセス」シートに 1かい ぶん を 1ぎょうで のこす。
+     おくるのは：端末ID（はじめて ひらいた ときに つくる ランダムな ばんごう）・セッションID・端末の しゅるい・ブラウザ・
+     ひらきかた（ホーム画面／ブラウザ）・アプリの 版 だけ。時刻は うけとった がわ で つける。学習の 記録 や なまえ は おくらない。
+     がめんが みえて いる あいだ を 1かい と する（みえたら start、かくれたら end）。
+     end が とどかずに おわった ときは、つぎの start に「さいごに うごいて いた 時刻」を つけて おぎなう。
+     GitHub Pages で ひらいた とき だけ おくる（localhost の ためし では おくらず、window.__acc に ためる） */
+  (function(){
+    const DID_KEY = "sansu-drill-did-v1", PEND_KEY = "sansu-drill-acc-v1", ALIVE_MS = 30000;
+    const live = /\.github\.io$/.test(location.hostname);
+    const hex = n => { const a = new Uint8Array(n/2); try{ crypto.getRandomValues(a); }catch(e){ for(let i=0;i<a.length;i++) a[i] = Math.random()*256|0; } return [...a].map(b=>b.toString(16).padStart(2,"0")).join(""); };
+    let did = ""; try{ did = localStorage.getItem(DID_KEY) || ""; }catch(e){}
+    if(!/^[0-9a-f]{32}$/.test(did)){ did = hex(32); try{ localStorage.setItem(DID_KEY, did); }catch(e){} }
+    const u = navigator.userAgent || "";
+    const br = navigator.brave ? "Brave" : /Edg(e|A|iOS)?\//.test(u) ? "Edge" : /Firefox|FxiOS/.test(u) ? "Firefox" : /CriOS|Chrome\//.test(u) ? "Chrome" : /Safari\//.test(u) ? "Safari" : "その他";
+    const how = () => (window.matchMedia && matchMedia("(display-mode: standalone)").matches) || navigator.standalone ? "ホーム画面" : "ブラウザ";
+    const getPend = () => { try{ return JSON.parse(localStorage.getItem(PEND_KEY) || "null"); }catch(e){ return null; } };
+    const setPend = p => { try{ p ? localStorage.setItem(PEND_KEY, JSON.stringify(p)) : localStorage.removeItem(PEND_KEY); }catch(e){} };
+    function send(d, beacon){
+      d = {t:"access", id:did, ...d};
+      if(!live){ (window.__acc = window.__acc || []).push(d); return; }
+      if(!VOICE_URL) return;
+      const body = JSON.stringify(d);
+      try{ if(beacon && navigator.sendBeacon && navigator.sendBeacon(VOICE_URL, new Blob([body], {type:"text/plain;charset=utf-8"}))) return; }catch(e){}
+      try{ fetch(VOICE_URL, {method:"POST", mode:"no-cors", keepalive:true, headers:{"Content-Type":"text/plain;charset=utf-8"}, body}).catch(()=>{}); }catch(e){}
+    }
+    let sid = null, aliveTimer = null;
+    function begin(){
+      if(sid) return;
+      const prev = getPend();
+      sid = hex(16);
+      send({ev:"start", sid, dev:devKind(), br, mode:how(), ver:appVer(), ...(prev && prev.sid ? {prev:{sid:prev.sid, alive:prev.alive}} : {})});
+      setPend({sid, alive:Date.now()});
+      clearInterval(aliveTimer);
+      aliveTimer = setInterval(()=>{ if(sid) setPend({sid, alive:Date.now()}); }, ALIVE_MS);
+    }
+    function end(){
+      if(!sid) return;
+      send({ev:"end", sid}, true);
+      sid = null; clearInterval(aliveTimer); setPend(null);
+    }
+    document.addEventListener("visibilitychange", ()=>{ document.visibilityState === "visible" ? begin() : end(); });
+    window.addEventListener("pagehide", end);
+    window.addEventListener("pageshow", ()=>{ if(document.visibilityState === "visible") begin(); });
+    if(document.visibilityState === "visible") begin();
+  })();
 
   /* ---------- 1かいごとの けっかの きろく ----------
      20もん・ます1まい ごとの けっかを かずで のこす（stats.sess）。
