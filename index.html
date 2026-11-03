@@ -5,10 +5,10 @@
 <link rel="icon" type="image/png" sizes="64x64" href="favicon.png?v=3">
 <link rel="apple-touch-icon" href="apple-touch-icon.png?v=3">
 <link rel="manifest" href="manifest.json">
-<script src="stickers/stickers.js?v=202611031950"></script>
-<script src="nakama/nakama.js?v=202611031950"></script>
-<script src="clock/clock.js?v=202611031950"></script>
-<script src="drill/patterns.js?v=202611031950"></script>
+<script src="stickers/stickers.js?v=202611032005"></script>
+<script src="nakama/nakama.js?v=202611032005"></script>
+<script src="clock/clock.js?v=202611032005"></script>
+<script src="drill/patterns.js?v=202611032005"></script>
 <meta name="apple-mobile-web-app-title" content="けいさん">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -2797,7 +2797,7 @@ body.course .levels.nrange .lv{padding:3px 2px;font-size:12px}
      おくるのは：端末ID（はじめて ひらいた ときに つくる ランダムな ばんごう）・セッションID・端末の しゅるい・ブラウザ・
      ひらきかた（ホーム画面／ブラウザ）・アプリの 版 だけ。時刻は うけとった がわ で つける。学習の 記録 や なまえ は おくらない。
      がめんが みえて いる あいだ を 1かい と する（みえたら start、かくれたら end）。
-     end が とどかずに おわった ときは、つぎの start に「さいごに うごいて いた 時刻」を つけて おぎなう。
+     end が とどかなかった ときの ため に、つぎの start に まえの回 の「とじた（さいごに うごいて いた）時刻」を つけて おぎなう。
      GitHub Pages で ひらいた とき だけ おくる（localhost の ためし では おくらず、window.__acc に ためる） */
   (function(){
     const DID_KEY = "sansu-drill-did-v1", PEND_KEY = "sansu-drill-acc-v1", ALIVE_MS = 30000;
@@ -2810,13 +2810,15 @@ body.course .levels.nrange .lv{padding:3px 2px;font-size:12px}
     const how = () => (window.matchMedia && matchMedia("(display-mode: standalone)").matches) || navigator.standalone ? "ホーム画面" : "ブラウザ";
     const getPend = () => { try{ return JSON.parse(localStorage.getItem(PEND_KEY) || "null"); }catch(e){ return null; } };
     const setPend = p => { try{ p ? localStorage.setItem(PEND_KEY, JSON.stringify(p)) : localStorage.removeItem(PEND_KEY); }catch(e){} };
-    function send(d, beacon){
+    // fetch（keepalive：ページを とじても おくりきる）で おくる。sendBeacon は Brave など で とめられる ことが ある ので、
+    // fetch が つかえない とき だけ つかう
+    function send(d){
       d = {t:"access", id:did, ...d};
       if(!live){ (window.__acc = window.__acc || []).push(d); return; }
       if(!VOICE_URL) return;
       const body = JSON.stringify(d);
-      try{ if(beacon && navigator.sendBeacon && navigator.sendBeacon(VOICE_URL, new Blob([body], {type:"text/plain;charset=utf-8"}))) return; }catch(e){}
-      try{ fetch(VOICE_URL, {method:"POST", mode:"no-cors", keepalive:true, headers:{"Content-Type":"text/plain;charset=utf-8"}, body}).catch(()=>{}); }catch(e){}
+      try{ fetch(VOICE_URL, {method:"POST", mode:"no-cors", keepalive:true, headers:{"Content-Type":"text/plain;charset=utf-8"}, body}).catch(()=>{}); return; }catch(e){}
+      try{ if(navigator.sendBeacon) navigator.sendBeacon(VOICE_URL, new Blob([body], {type:"text/plain;charset=utf-8"})); }catch(e){}
     }
     let sid = null, aliveTimer = null;
     function begin(){
@@ -2828,10 +2830,13 @@ body.course .levels.nrange .lv{padding:3px 2px;font-size:12px}
       clearInterval(aliveTimer);
       aliveTimer = setInterval(()=>{ if(sid) setPend({sid, alive:Date.now()}); }, ALIVE_MS);
     }
+    // end が とどいたか は わからない ので、ひかえ（いつ とじたか）は のこして おき、つぎの start に つける。
+    // うけとる がわ は、もう とじた時刻が はいって いる 行 には かかない
     function end(){
       if(!sid) return;
-      send({ev:"end", sid}, true);
-      sid = null; clearInterval(aliveTimer); setPend(null);
+      send({ev:"end", sid});
+      setPend({sid, alive:Date.now()});
+      sid = null; clearInterval(aliveTimer);
     }
     document.addEventListener("visibilitychange", ()=>{ document.visibilityState === "visible" ? begin() : end(); });
     window.addEventListener("pagehide", end);
