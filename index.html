@@ -171,7 +171,27 @@ details.hist summary{cursor:pointer;font-weight:700;color:var(--muted);font-size
 /* おうちの方へ：ホーム の ボタン と ポップアップ。パスワード・おしらせ（z-index 30）は この うえ に でる */
 .pa-open{display:flex;align-items:center;justify-content:space-between;width:100%;font:inherit;text-align:left;cursor:pointer;background:var(--surface);border:2px solid var(--line);border-radius:16px;padding:12px 16px;font-weight:700;color:var(--muted);font-size:15px}
 .pa-open i{font-style:normal;font-size:22px;line-height:1}
-#paModal{z-index:25}   /* .nk-modal（30）より した */
+#paModal{z-index:25}
+/* つかいかた の あんない：せつめい する ところ だけ あかるく（tour-hole の かげ で まわり を くらく）、みー・ころ の カード で じゅんに */
+.tour{position:fixed;inset:0;z-index:27}
+.tour[hidden]{display:none}
+.tour.full{background:rgba(0,0,0,.6)}
+.tour-hole{position:fixed;border-radius:16px;box-shadow:0 0 0 9999px rgba(0,0,0,.6);outline:3px solid var(--yellow);outline-offset:2px;transition:left .25s,top .25s,width .25s,height .25s;pointer-events:none}
+.tour-hole[hidden]{display:none}
+.tour-card{position:fixed;left:50%;transform:translateX(-50%);width:min(380px,calc(100% - 24px));background:var(--surface);border:2px solid var(--line);border-radius:20px;padding:12px 14px;display:flex;flex-direction:column;gap:10px;box-shadow:0 10px 30px rgba(0,0,0,.35);animation:missUp .25s ease-out}
+.tour-row{display:flex;align-items:center;gap:10px}
+.tour-face{width:56px;height:56px;flex:0 0 56px;user-select:none;-webkit-user-select:none;-webkit-touch-callout:none}
+.tour-text{margin:0;font-size:16px;font-weight:700;line-height:1.55;white-space:pre-line}
+.tour-card.parent .tour-text{font-size:15px;font-weight:500;line-height:1.7}
+.tour-pa{font-size:13px;font-weight:900;color:var(--muted)}
+.tour-btns{display:flex;align-items:center;gap:6px}
+.tour-sp{flex:1}
+.tour-btns button{font:inherit;font-size:15px;font-weight:900;border-radius:999px;padding:8px 14px;cursor:pointer;border:2px solid var(--line);background:var(--btn);color:var(--ink);white-space:nowrap}
+.tour-btns .tour-next{background:var(--blue);border-color:var(--blue);color:#fff;min-width:88px}
+.tour-btns .tour-skip{color:var(--muted)}
+.tour-btns .tour-skip[hidden],.tour-btns .tour-back[hidden]{visibility:hidden;display:inline-block}
+.tour-n{font-size:13px;font-weight:700;color:var(--muted)}
+.pa-tour{font:inherit;font-size:14px;font-weight:700;color:var(--ink);background:var(--btn);border:2px solid var(--line);border-radius:14px;padding:10px 14px;cursor:pointer;text-align:left}   /* .nk-modal（30）より した */
 .pa-card{width:100%;max-width:640px;background:var(--bg);border:2px solid var(--line);border-radius:24px;padding:14px;display:flex;flex-direction:column;gap:10px;box-shadow:0 10px 30px rgba(0,0,0,.25);animation:missUp .3s ease-out;max-height:calc(100vh - 32px);max-height:calc(100dvh - 32px);overflow-y:auto;overscroll-behavior:contain}
 .pa-head{display:flex;align-items:center;justify-content:space-between;gap:8px;padding:0 4px}
 .pa-head h2{margin:0;font-size:19px;font-weight:900}
@@ -1164,6 +1184,7 @@ body.course .levels.lvsel .lv{padding:3px 2px;font-size:12px}
   <div class="save-state" id="saveState" aria-live="polite"></div>
   <div class="nk-modal pa-modal" id="paModal" hidden><div class="pa-card" role="dialog" aria-modal="true" aria-labelledby="paTitle">
     <div class="pa-head"><h2 id="paTitle">おうちの方へ</h2><button type="button" class="pa-close" id="paClose">とじる</button></div>
+    <button type="button" class="pa-tour" id="paTour">▶ 使い方の案内をもう一度見る</button>
       <details class="hist" id="hist">
         <summary>これまでの記録</summary>
         <div class="pg-box" id="pgBox"></div>
@@ -1230,6 +1251,12 @@ body.course .levels.lvsel .lv{padding:3px 2px;font-size:12px}
         </form>
       </details>
   </div></div>
+  <div class="tour" id="tour" hidden><div class="tour-hole" id="tourHole" hidden></div>
+    <div class="tour-card" id="tourCard" role="dialog" aria-modal="true" aria-live="polite">
+      <div class="tour-row"><img class="tour-face" id="tourFace" alt="" draggable="false"><div><div class="tour-pa" id="tourPa" hidden>おうちの方へ</div><p class="tour-text" id="tourText"></p></div></div>
+      <div class="tour-btns"><button type="button" class="tour-skip" id="tourSkip">とばす</button><span class="tour-n num" id="tourN"></span><span class="tour-sp"></span><button type="button" class="tour-back" id="tourBack">もどる</button><button type="button" class="tour-next" id="tourNext">つぎへ</button></div>
+    </div>
+  </div>
   <div class="pin-pop" id="pinPop" hidden><div class="pin-box" id="pinGate" role="dialog" aria-modal="true" aria-label="おうちの方の パスワード"></div></div>
   <div class="tl-toast" id="tlToast" role="status" hidden></div>
 </div>
@@ -1471,6 +1498,17 @@ body.course .levels.lvsel .lv{padding:3px 2px;font-size:12px}
   let stats = {facts:{}, types:{}};
   try{ const s = JSON.parse(localStorage.getItem(STATS) || "null"); if(s && s.facts && s.types) stats = s; }catch(e){}
   function saveStats(){ try{ lsSet(STATS, JSON.stringify(stats)); }catch(e){} }
+  // つかいかた の あんない を みた がめん（"home"・"drill" など）。はじめて ひらいた たんまつ だけ {} から はじめる。
+  // いままで の きろく（といた もんだい・あそんだ ひ）が ある たんまつ は ぜんぶ みた こと に する（おうちの方へ から もう一度 みられる）
+  const TOUR_KEY = "sansu-drill-tour-v1", TOUR_ALL = ["home","drill","grid","clock","kanji","kanji0","zukan"];   // kanji0：かんじ の じが まだ ない とき の あんない
+  let tourDone = null;
+  try{ tourDone = JSON.parse(localStorage.getItem(TOUR_KEY) || "null"); }catch(e){}
+  if(!tourDone || typeof tourDone !== "object"){
+    let old = Object.keys(stats.facts).length > 0 || Object.keys(stats.days || {}).length > 0;
+    try{ const h = JSON.parse(localStorage.getItem(STORE) || "[]"); if(Array.isArray(h) && h.length) old = true; }catch(e){}
+    tourDone = {}; if(old) TOUR_ALL.forEach(k=>tourDone[k] = 1);
+    try{ localStorage.setItem(TOUR_KEY, JSON.stringify(tourDone)); }catch(e){}
+  }
   function typeStat(t){ return stats.types[t] || (stats.types[t] = {seen:0, miss:0, slow:0, times:[]}); }
 
   function median(arr){ if(!arr.length) return 0; const s=[...arr].sort((x,y)=>x-y); return s[Math.floor(s.length/2)]; }
@@ -2268,7 +2306,7 @@ body.course .levels.lvsel .lv{padding:3px 2px;font-size:12px}
   document.addEventListener("visibilitychange", ()=>{
     // がめんを はなれた ときは とめて、もどったら 10びょう から やりなおす
     if(document.visibilityState==="hidden") stopTimer();
-    else if(current && mode==="drill" && $("overlay").hidden) startTimer();
+    else if(current && mode==="drill" && $("overlay").hidden && !tourOn) startTimer();
   });
 
   function updateFact(p, ok, slow, ms){
@@ -4012,6 +4050,144 @@ body.course .levels.lvsel .lv{padding:3px 2px;font-size:12px}
   $("paModal").addEventListener("click", e=>{ if(e.target === $("paModal")) paShow(false); });
   document.addEventListener("keydown", e=>{ if(e.key==="Escape" && !$("paModal").hidden && $("pinPop").hidden && $("nkModal").hidden) paShow(false); });
 
+  /* ---------- つかいかた の あんない（はじめて ひらいた たんまつ） ----------
+     ほんもの の がめん の うえ で、せつめい する ところ だけ あかるく して、みー・ころ が じゅんに おしえる。
+     ホーム は はじめて ひらいた とき、コース は はじめて その がめん を ひらいた とき に 1かい だけ（TOUR_KEY）。
+     おしらせ（たまご など）が でて いる あいだ は まって、おわって から だす。
+     el：あかるく する ところ（なし なら まんなか に カード だけ）。みえて いない ところ の だん は とばす。who：cat・dog・parent */
+  const TOURS = {
+    home: [
+      {who:"cat", text:"はじめまして！ ねこの みー だよ。こっちは いぬの ころ。つかいかたを おしえるにゃ"},
+      {who:"dog", el:".goal", text:"まいにち 10もん とくと「きょうの もくひょう」クリア！ カレンダーに スタンプが つくよ わん"},
+      {who:"cat", el:".stkrow", text:"もんだいを とくと シールが もらえるよ。たくさん とくと シールが しんか するにゃ"},
+      {who:"dog", el:"#nkRow", text:"これは なかまの たまご。もくひょうを クリアした ひが ふえると、うまれて そだつよ わん"},
+      {who:"cat", el:".tiles", text:"ここで あそぶものを えらぶにゃ。けいさん・とけい・かんじ と、あつめた シールを みる ずかん が あるよ"},
+      {who:"dog", el:"#setRow", text:"まちがえた もんだいや「わからない」に した もんだいは、ここで もういちど ちょうせん できるよ わん"},
+      {who:"parent", el:"#paOpen", text:"学習の記録とグラフ、遊ぶ時間の設定、「かんじ」で出す字の選択、計算のむずかしさの説明はここにあります。この案内も、ここからもう一度見られます。"},
+      {who:"dog", text:"じゃあ さっそく やってみよう わん！", last:"はじめる"}
+    ],
+    drill: [
+      {who:"cat", el:"#drillTop .lvsel", text:"ここで むずかしさを えらぶにゃ。はじめは「10まで」が おすすめ"},
+      {who:"dog", el:"#drillMain .card", text:"もんだいは ここに でるよ。よく よんでね わん"},
+      {who:"cat", el:"#choices", text:"こたえの ボタンを おすにゃ"},
+      {who:"dog", el:"#idkBtn", text:"わからない ときは ここを おしてね。あてずっぽう より ずっと いいよ わん"},
+      {who:"cat", el:"#track", text:"20もん といたら おわり。がんばるにゃ！", last:"はじめる"}
+    ],
+    grid: [
+      {who:"cat", el:"#gridTop .gk", text:"たしざん・ひきざん・まぜまぜ から えらぶにゃ"},
+      {who:"dog", el:"#gridTop .lvsel", text:"むずかしさも えらべるよ わん"},
+      {who:"cat", el:"#gridMain .gwrap", text:"ひだりの かずと うえの かずを けいさん して、ますを じゅんばんに うめていくにゃ"},
+      {who:"dog", el:"#gstart", text:"「よーい スタート！」で じかんが はかられるよ。さいこう きろくに ちょうせん しよう わん", last:"はじめる"}
+    ],
+    clock: [
+      {who:"cat", el:"#clockTop .ck-lv", text:"ここで むずかしさを えらぶにゃ"},
+      {who:"dog", el:"#clockMain .ck-card", text:"とけいの もんだいは ここに でるよ わん"},
+      {who:"cat", el:"#ckAns", text:"こたえは ここで えらぶにゃ。10もん といたら おわり", last:"はじめる"}
+    ],
+    kanji: [
+      {who:"cat", el:"#kjEmpty", text:"かんじは、おうちの ひとが ならった じを えらぶと できるように なるにゃ", last:"わかった"},
+      {who:"dog", el:"#kjSteps", text:"1つの じを 3かい かくよ。「なぞる」→「みて かく」→「みないで かく」の じゅんばん だよ わん"},
+      {who:"cat", el:"#kanjiMain .kj-pad", text:"「なぞる」は、うすく でている じを ゆびで なぞるにゃ。かきじゅんや むきが ちがう せんは、その せんだけ かきなおし だよ"},
+      {who:"dog", el:"#kanjiMain .kj-row", text:"「みて かく」の ときは、ここの よこに おてほんが でるよ。それを みながら じぶんで かいてね わん"},
+      {who:"cat", el:"#kjEx", text:"「みないで かく」は おてほんが かくれるにゃ。ことばの あかい ところを かんじで かいてね"},
+      {who:"dog", text:"かきおわると おてほんと くらべるよ\n「かんぺき」… おてほん みたい！\n「いいね」… じょうずに かけた！\n「おしい」… もう すこし！\nかんぺき・いいね は せいかい わん"},
+      {who:"cat", el:"#kjNoteBtn", text:"みないで かいた じは「ノート」に のこるにゃ。まえ と くらべて みてね", last:"はじめる"}
+    ],
+    zukan: [
+      {who:"cat", el:"#zukanMain .zk-head", text:"はやく ただしく とけた けいさんに シールが つくよ。べつの ひにも できると しんか するにゃ"},
+      {who:"dog", el:()=>$("nkDex").closest("section").querySelector("h3"), text:"そだてた なかまは この したに のるよ わん"},   // ばしょ が たかい ので みだし だけ
+      {who:"cat", el:()=>$("msGrid").closest("section"), text:"もらった シールは ここで みられるにゃ", last:"わかった"}
+    ]
+  };
+  let tourOn = null;   // {key, steps, i}
+  const tourEl = st => { const e = typeof st.el === "function" ? st.el() : st.el ? document.querySelector(st.el) : null;
+    return e && e.getClientRects().length && !e.closest("[hidden]") ? e : null; };
+  // おしらせ・ポップアップ が でて いる あいだ は まつ
+  const tourBusy = () => !$("nkModal").hidden || !$("mcModal").hidden || !$("overlay").hidden || !$("paModal").hidden || !$("pinPop").hidden
+    || !$("missPop").hidden || !$("ckPop").hidden || tlShowing || !!(stats.nk && stats.nk.queue && stats.nk.queue.length);
+  // かんじ は「じが まだ えらばれて いない」とき（kanji0）と ふつう（kanji）を べつに おぼえる。
+  // じを えらぶ まえ に ひらいて も、えらんだ あと に ひらいた とき に ふつう の あんない が でる
+  const tourKjEmpty = () => { const e = $("kjEmpty"); return !!(e && !e.hidden && e.getClientRects().length); };
+  const tourDoneKey = key => key === "kanji" && tourKjEmpty() ? "kanji0" : key;
+  function tourKick(key){
+    if(tourOn || !TOURS[key] || (key !== "kanji" && tourDone[key])) return;
+    setTimeout(()=>{
+      if(tourOn || mode !== key || tourDone[tourDoneKey(key)]) return;
+      if(tourBusy()){ tourKick(key); return; }
+      tourStart(key);
+    }, 700);
+  }
+  function tourStart(key){
+    const dk = tourDoneKey(key);
+    // かんじ：じが まだ えらばれて いない ときは その せつめい だけ、えらんで あれば その せつめい は ださない
+    const steps = TOURS[key].filter(st=>(!st.el || tourEl(st)) && (key !== "kanji" || (st.el === "#kjEmpty") === (dk === "kanji0")));
+    if(!steps.length){ tourDone[dk] = 1; lsSet(TOUR_KEY, JSON.stringify(tourDone)); return; }
+    tourOn = {key, dk, steps, i:0};
+    if(key === "drill") stopTimer();
+    $("tour").hidden = false;
+    tourShow();
+  }
+  function tourShow(){
+    const st = tourOn.steps[tourOn.i], n = tourOn.steps.length, e = tourEl(st), parent = st.who === "parent";
+    $("tourFace").hidden = parent;
+    if(!parent) $("tourFace").src = `chars/${st.who === "cat" ? "mii" : "koro"}_happy.webp`;
+    $("tourPa").hidden = !parent;
+    $("tourCard").classList.toggle("parent", parent);
+    $("tourText").textContent = st.text;
+    $("tourN").textContent = n > 1 ? `${tourOn.i + 1} / ${n}` : "";
+    const lastStep = tourOn.i === n - 1;
+    $("tourNext").textContent = lastStep ? (st.last || "おわり") : "つぎへ";
+    $("tourSkip").hidden = lastStep;
+    $("tourBack").hidden = tourOn.i === 0;   // さいしょ の 1まい は もどれない
+    if(e){
+      e.scrollIntoView({block:"center", behavior:"instant"});
+      // たかい ところ は、まんなか だと カード が うえ にも した にも はいらない ので、うえ に よせて した を あける
+      const r = e.getBoundingClientRect(), ch = $("tourCard").offsetHeight, vh = window.innerHeight;
+      if(vh - r.bottom - 20 < ch + 8 && r.top - 20 < ch + 8 && r.height + ch + 40 <= vh) window.scrollBy({top: r.top - 16, behavior:"instant"});
+    }
+    tourPlace();
+    $("tourNext").focus({preventScroll:true});
+  }
+  function tourPlace(){
+    if(!tourOn) return;
+    const st = tourOn.steps[tourOn.i], e = tourEl(st), hole = $("tourHole"), card = $("tourCard");
+    const vh = window.innerHeight, ch = card.offsetHeight, P = 6, G = 14;
+    $("tour").classList.toggle("full", !e);
+    hole.hidden = !e;
+    if(!e){ card.style.top = Math.max(12, (vh - ch) / 2) + "px"; return; }
+    const r = e.getBoundingClientRect();
+    const top = Math.max(4, r.top - P), bot = Math.min(vh - 4, r.bottom + P);
+    Object.assign(hole.style, {left:(r.left - P) + "px", top:top + "px", width:(r.width + P*2) + "px", height:Math.max(0, bot - top) + "px"});
+    // カード は したに はいれば した、だめ なら うえ、どちらも だめ なら がめんの した に かさねる
+    const y = vh - bot - G >= ch + 8 ? bot + G : top - G - ch >= 8 ? top - G - ch : vh - ch - 12;
+    card.style.top = y + "px";
+  }
+  function tourEnd(){
+    if(!tourOn) return;
+    tourDone[tourOn.dk] = 1; lsSet(TOUR_KEY, JSON.stringify(tourDone));
+    const key = tourOn.key; tourOn = null;
+    $("tour").hidden = true; $("tourHole").hidden = true;
+    if(key === "drill" && mode === "drill" && current && $("overlay").hidden){ shownAt = performance.now(); startTimer(); }
+  }
+  $("tourNext").addEventListener("click", ()=>{ if(!tourOn) return; if(++tourOn.i >= tourOn.steps.length) tourEnd(); else tourShow(); });
+  $("tourSkip").addEventListener("click", tourEnd);
+  $("tourBack").addEventListener("click", ()=>{ if(tourOn && tourOn.i > 0){ tourOn.i--; tourShow(); } });
+  ["resize","scroll"].forEach(ev=>window.addEventListener(ev, ()=>{ if(tourOn) tourPlace(); }, {passive:true}));
+  // キーボード：Enter・→ で つぎへ、← で もどる、Esc で とばす（ほかの キー は もんだい に とどけない）
+  document.addEventListener("keydown", e=>{
+    if(!tourOn) return;
+    if(e.key === "Escape"){ e.preventDefault(); tourEnd(); }
+    else if(e.key === "ArrowLeft"){ e.preventDefault(); $("tourBack").click(); }
+    else if(e.key === "ArrowRight" || (e.key === "Enter" && ![$("tourNext"), $("tourSkip"), $("tourBack")].includes(e.target))){ e.preventDefault(); $("tourNext").click(); }
+    e.stopImmediatePropagation();
+  }, true);
+  // おうちの方へ の「使い方の案内をもう一度見る」：ぜんぶ みて いない こと に して、ホーム から
+  $("paTour").addEventListener("click", ()=>{
+    paShow(false);
+    tourDone = {}; lsSet(TOUR_KEY, JSON.stringify(tourDone));
+    if(mode !== "home") setMode("home"); else tourKick("home");
+  });
+
   let nkModalOpen = false;
   // ポップアップを ひらいて いる あいだ は、うしろの がめん が いっしょに スクロール しない ように とめる
   // （iPhone でも きく ように body を その ばしょ で こてい して、とじたら もとの いち に もどす）
@@ -4068,7 +4244,7 @@ body.course .levels.lvsel .lv{padding:3px 2px;font-size:12px}
   }
   function nkShowQueue(){
     const nk = stats.nk; if(!nk || !nk.queue || !nk.queue.length || nkModalOpen) return;
-    if(!$("overlay").hidden || !$("missPop").hidden || !$("mcModal").hidden || !$("ckPop").hidden || (mode==="grid" && G && G.running)){ setTimeout(nkShowQueue, 1500); return; }
+    if(tourOn || !$("overlay").hidden || !$("missPop").hidden || !$("mcModal").hidden || !$("ckPop").hidden || (mode==="grid" && G && G.running)){ setTimeout(nkShowQueue, 1500); return; }
     const ev = nk.queue.shift(); saveStats();
     const c = nk.cur;
     if(ev.t==="egg"){
@@ -4981,7 +5157,7 @@ body.course .levels.lvsel .lv{padding:3px 2px;font-size:12px}
   function tlGate(){ if(!tlBlock()) return false; tlShow(); return true; }
   function tlShow(){
     if(tlShowing) return;
-    if(nkModalOpen || !$("overlay").hidden){ setTimeout(()=>{ if(tlBlock()) tlShow(); }, 800); return; }
+    if(nkModalOpen || tourOn || !$("overlay").hidden){ setTimeout(()=>{ if(tlBlock()) tlShow(); }, 800); return; }
     const kind = tlBlock(); if(!kind) return;
     tlShowing = true; stopTimer(); $("tlToast").hidden = true;
     const close = () => { tlShowing = false; if(isCourse(mode)) setMode("home"); else if(mode==="home") renderHome(); else tlRefresh(); };
@@ -5091,6 +5267,7 @@ body.course .levels.lvsel .lv{padding:3px 2px;font-size:12px}
     else if(kj) KJ.start();
     else if(h) renderHome();
     else renderZukan();
+    tourKick(m);
   }
   document.querySelectorAll(".md").forEach(b=>b.addEventListener("click",()=>{ if(b.dataset.md!==mode) setMode(b.dataset.md); }));
 
