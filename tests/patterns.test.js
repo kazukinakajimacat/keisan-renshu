@@ -171,4 +171,48 @@ assert.ok(big30 > N * 0.5, "30まで：10を こえる かず が でる");
 assert.equal(P.use(10), 10);
 { const p = P.target(); assert.ok(p.n <= 10, "use(10) で もとに もどる"); }
 
-console.log(`pattern tests: all passed（10パターン × ${N}もん、10まで と 30まで）`);
+// ---------- けた で わける（P.use(30, "11"／"12"／"22")） ----------
+// 11：1けた＋1けた と その ひきざん（13 − 7 など）、12：2けた＋1けた と その ひきざん、22：2けた＋2けた と ひく かず が 2けた の ひきざん
+const isCls = {
+  "11": e => e.op === "+" ? e.a <= 9 && e.b <= 9 : e.b <= 9 && e.v <= 9,
+  "12": e => e.op === "+" ? e.a >= 10 && e.b <= 9 : e.b <= 9 && e.v >= 10,
+  "22": e => e.op === "+" ? e.a >= 10 && e.b >= 10 : e.b >= 10,
+};
+const POOL_N = { "11": [81, 81], "12": [144, 144], "22": [66, 210] };   // [たしざん, ひきざん]
+// 30まで の 450 は 11 と 12 に ちょうど わかれる
+assert.equal(P.POOLS[30].EXPRS.filter(e => P.digCls(e) === "11").length + P.POOLS[30].EXPRS.filter(e => P.digCls(e) === "12").length, 450);
+for(const cls of ["11", "12", "22"]){
+  const okC = (e, label) => {
+    assert.ok(in30(e.a) && in30(e.b) && in30(e.v), `${label}: 1〜30 では ない ${JSON.stringify(e)}`);
+    assert.equal(e.v, val(e), `${label}: v が ちがう`);
+    assert.ok(isCls[cls](e), `${label}: ${cls} では ない ${JSON.stringify(e)}`);
+  };
+  P.use(30, cls);
+  assert.equal(P.cls, cls);
+  const pool = P.POOLS[`30:${cls}`];
+  assert.deepEqual([pool.ADDS.length, pool.SUBS.length], POOL_N[cls], `${cls} の かず`);
+  pool.EXPRS.forEach(e => okC(e, `EXPRS${cls}`));
+  for(let i = 0; i < N; i++){
+    { const p = P.submiss(); okC({a:p.a, op:"-", b:p.b, v:p.c}, `submiss${cls}`); }
+    { const p = P.same(); okC(p.base, `same${cls}`); p.choices.forEach(e => okC(e, `same${cls}`)); distinct(p.choices, `same${cls}`);
+      assert.equal(p.choices.filter(e => e.v === p.base.v).length, 1); p.choices.forEach(e => assert.ok(!swapped(e, p.base))); }
+    { const p = P.target(); p.choices.forEach(e => okC(e, `target${cls}`)); distinct(p.choices, `target${cls}`);
+      assert.equal(p.choices.filter(e => e.v === p.n).length, 1); assert.equal(p.right.v, p.n); }
+    for(const lv of [0, 1, 2, 3]){ const p = P.exprcmp(lv); p.pair.forEach(e => okC(e, `exprcmp${cls}`)); distinct(p.pair, `exprcmp${cls}`); }
+    { const p = P.sign(); okC({a:p.a, op:p.ans, b:p.b, v:p.c}, `sign${cls}`);
+      assert.deepEqual(["+", "-"].filter(o => (o === "+" ? p.a + p.b : p.a - p.b) === p.c), [p.ans]); }
+    { const p = P.truefalse(); okC(p.e, `tf${cls}`); assert.ok(in30(p.shown)); }
+    { const p = P.pickexpr(); okC(p.right, `pick${cls}`); assert.ok(p.a > p.b); distinct(p.choices, `pick${cls}`); hira(p.story, `pick${cls}`);
+      assert.deepEqual((p.story.match(/\d+/g) || []).map(Number), [p.a, p.b]); }
+    { const p = P.make();
+      const perms = [[0,1,2],[0,2,1],[1,0,2],[1,2,0],[2,0,1],[2,1,0]].map(ix => ix.map(i => p.cards[i]));
+      const good = [...new Set(perms.filter(p.check).map(a => a.join(",")))].sort();
+      assert.deepEqual(good, [...new Set(p.answers.map(a => a.join(",")))].sort(), `make${cls}: ${p.cards} ${p.op}`);
+      const [a0, b0, c0] = p.answers[0]; okC({a:a0, op:p.op, b:b0, v:c0}, `make${cls} さいしょの こたえ`); }
+    { const p = P.kaimono(); okC({a:p.money, op:"-", b:p.price, v:p.ans}, `kaimono${cls}`); }
+    { const p = P.fix(); okC(p.e, `fix${cls}`); assert.notEqual(p.wrong, p.ans); }
+  }
+}
+assert.equal(P.use(10), 10); assert.equal(P.cls, null);
+
+console.log(`pattern tests: all passed（10パターン × ${N}もん、10まで・30まで・けた 3しゅるい）`);

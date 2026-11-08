@@ -8,7 +8,7 @@
 <script src="stickers/stickers.js?v=202611032340"></script>
 <script src="nakama/nakama.js?v=202611032340"></script>
 <script src="clock/clock.js?v=202611032340"></script>
-<script src="drill/patterns.js?v=202611032340"></script>
+<script src="drill/patterns.js?v=202611081340"></script>
 <script src="kanji/strokes.js?v=202611032340"></script>
 <script src="kanji/kanji.js?v=202611032340"></script>
 <link rel="stylesheet" href="kanji/kanji.css?v=202611032340">
@@ -168,6 +168,15 @@ body.drill-set #drillTop .levels,body.drill-set #superNote,body.drill-set #drill
 /* history */
 details.hist{background:var(--surface);border:2px solid var(--line);border-radius:16px;padding:12px 16px}
 details.hist summary{cursor:pointer;font-weight:700;color:var(--muted);font-size:15px}
+/* おうちの方へ：ホーム の ボタン と ポップアップ。パスワード・おしらせ（z-index 30）は この うえ に でる */
+.pa-open{display:flex;align-items:center;justify-content:space-between;width:100%;font:inherit;text-align:left;cursor:pointer;background:var(--surface);border:2px solid var(--line);border-radius:16px;padding:12px 16px;font-weight:700;color:var(--muted);font-size:15px}
+.pa-open i{font-style:normal;font-size:22px;line-height:1}
+#paModal{z-index:25}   /* .nk-modal（30）より した */
+.pa-card{width:100%;max-width:640px;background:var(--bg);border:2px solid var(--line);border-radius:24px;padding:14px;display:flex;flex-direction:column;gap:10px;box-shadow:0 10px 30px rgba(0,0,0,.25);animation:missUp .3s ease-out;max-height:calc(100vh - 32px);max-height:calc(100dvh - 32px);overflow-y:auto;overscroll-behavior:contain}
+.pa-head{display:flex;align-items:center;justify-content:space-between;gap:8px;padding:0 4px}
+.pa-head h2{margin:0;font-size:19px;font-weight:900}
+.pa-close{font:inherit;font-size:14px;font-weight:700;color:var(--ink);background:var(--btn);border:2px solid var(--line);border-radius:999px;padding:6px 16px;cursor:pointer}
+@media (max-width:520px){ .pa-modal{padding:10px} .pa-card{padding:10px;max-height:calc(100vh - 20px);max-height:calc(100dvh - 20px)} .pa-card details.hist{padding:10px 10px} .pa-card .tl-box{padding:10px} }
 /* 1にちの じかん（やりすぎ ないように） */
 .tl-box{margin-top:12px;border:2px solid var(--line);border-radius:14px;padding:12px;display:flex;flex-direction:column;gap:8px;font-size:14px}
 .tl-box h4{margin:0;font-size:15px;font-weight:900}
@@ -186,6 +195,12 @@ details.hist summary{cursor:pointer;font-weight:700;color:var(--muted);font-size
 .tl-toast{position:fixed;left:50%;top:calc(env(safe-area-inset-top,0px) + 62px);transform:translateX(-50%);z-index:20;max-width:calc(100% - 24px);background:var(--ink);color:var(--bg);font-weight:900;font-size:15px;border-radius:999px;padding:8px 18px;box-shadow:0 6px 18px rgba(0,0,0,.25);white-space:nowrap;pointer-events:none}
 .tl-toast[hidden]{display:none}
 .hist-body{display:flex;flex-direction:column;gap:14px;margin-top:12px}
+/* おうちの方へ：計算の むずかしさ */
+.lvh table{width:100%;border-collapse:collapse;font-size:14px;line-height:1.55}
+.lvh th,.lvh td{border-top:1px solid var(--line);padding:7px 4px;text-align:left;vertical-align:top}
+.lvh th{white-space:nowrap;font-weight:900;padding-right:10px}
+.lvh td small{display:block;color:var(--muted);font-size:13px}
+.lvh ul{margin:0;padding-left:1.2em;color:var(--muted);line-height:1.6}
 .tr-tiles{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:8px}
 .tr-tile{background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:8px 10px;display:flex;flex-direction:column;gap:2px}
 .tr-tile small{font-size:12px;color:var(--muted);font-weight:700}
@@ -779,10 +794,11 @@ span.stkw > svg{position:absolute;left:0;top:0;width:100%;height:100%;display:bl
 /* levels */
 .levels:not(.gk){grid-template-columns:repeat(4,1fr)!important;border-radius:20px!important}
 .levels:not(.gk) .lv{font-size:14px;border-radius:14px;padding:6px 2px;line-height:1.25;min-width:0}
-.lv[data-lv="super"][aria-pressed="true"]{background:#7453D6}
-/* かずの はんい（10まで／30まで） */
-.levels.nrange{grid-template-columns:repeat(2,1fr)!important}
-.lv[data-nr][aria-pressed="true"],.lv[data-gr][aria-pressed="true"]{background:var(--yellow);color:#2A2112}
+/* むずかしさ（10まで ＋ 4だんかい）：ひだり に おおきく「10まで」、みぎ に 2×2（かんたん・ふつう／むずかしい・ちょう むずかしい） */
+.levels.lvsel{grid-template-columns:1.1fr 1fr 1fr!important;grid-template-rows:auto auto;grid-auto-flow:column;border-radius:20px!important}
+.levels.lvsel .lv[data-sel="10"],.levels.lvsel .lv[data-gsel="10"]{grid-row:1/3}
+.lv[data-sel="super"][aria-pressed="true"],.lv[data-gsel="super"][aria-pressed="true"]{background:#7453D6}
+#gtimer{height:8px}
 /* ます けいさん 30まで：いれた とちゅう の かず と「けす」 */
 .grid td .gin{color:var(--blue)}
 #gpad .choice.gdel{grid-column:1/-1;font-size:20px;padding:6px 0}
@@ -808,16 +824,17 @@ body.course .pad-disp{font-size:28px;border-width:2px}
 body.course .choice.pad-del{padding:4px 0;font-size:16px}
 body.course .choice.pad-go{padding:4px 0;font-size:19px}
 body.course:has(.choices.pad) .q:not(.small):not(.story):not(.pic):not(.mid):not(.xcmp){font-size:clamp(40px,11.5vw,58px)}
-body.course .levels.nrange .lv{padding:3px 2px;font-size:12px}
+body.course .levels.lvsel .lv{padding:3px 2px;font-size:12px}
 /* スマホ：ブラウザの バー で みえる たかさ が 660px くらい しか ない ので、もんだいの がめん を さらに つめる */
 @media (max-width:520px){
   body.course .wrap,body.course .stack{gap:6px}
   body.course .navbar .nv{padding:6px 0}
   body.course .navbar .home-btn{padding:4px 8px}
-  body.course .levels:not(.gk):not(.nrange){grid-template-columns:auto auto auto auto!important}
+  body.course .levels:not(.gk):not(.lvsel){grid-template-columns:auto auto auto auto!important}
   body.course .levels .lv{padding:4px 8px;font-size:12px;white-space:nowrap}
-  body.course .levels.nrange .lv{padding:2px}
-  body.course #superNote{display:none!important}
+  body.course .levels.lvsel .lv{padding:3px 2px;white-space:normal}
+  body.course #superNote,body.course #gSuperNote{display:none!important}
+  body.course #gtimer{height:5px;margin-top:-4px}   /* ちょう むずかしい の ます：ふきだし が 3ぎょう でも すうじ が はみださない ように */
   body.course .track i{height:6px}
   body.course .pet,body.course .sum-pets .pet{width:42px;flex-basis:42px}
   body.course .buddies .pet .pet-face{width:42px;height:42px}
@@ -868,12 +885,13 @@ body.course .levels.nrange .lv{padding:3px 2px;font-size:12px}
 .lv{font:inherit;font-size:17px;font-weight:900;color:var(--muted);background:transparent;border:0;border-radius:999px;padding:8px 0;cursor:pointer;word-break:keep-all}
 .lv:focus-visible{outline:3px solid var(--blue);outline-offset:2px}
 .lv[aria-pressed="true"]{color:#fff}
-.lv[data-lv="easy"][aria-pressed="true"]{background:var(--ok)}
-.lv[data-lv="normal"][aria-pressed="true"]{background:var(--blue)}
-.lv[data-lv="hard"][aria-pressed="true"]{background:var(--red)}
+.lv[data-sel="10"][aria-pressed="true"],.lv[data-gsel="10"][aria-pressed="true"]{background:var(--yellow);color:#2A2112}
+.lv[data-sel="easy"][aria-pressed="true"],.lv[data-gsel="easy"][aria-pressed="true"]{background:var(--ok)}
+.lv[data-sel="normal"][aria-pressed="true"],.lv[data-gsel="normal"][aria-pressed="true"]{background:var(--blue)}
+.lv[data-sel="hard"][aria-pressed="true"],.lv[data-gsel="hard"][aria-pressed="true"]{background:var(--red)}
 
 /* characters */
-.buddies{display:flex;align-items:flex-end;justify-content:space-between;gap:8px}
+.buddies{display:flex;align-items:flex-end;justify-content:space-between;gap:14px}   /* ふきだし の しっぽ の さき が みー・ころ に ふれない すきま */
 .pet{width:88px;flex:0 0 88px;display:flex;flex-direction:column;align-items:center;gap:0}
 .pet .pet-face{width:88px;height:88px;position:relative}
 .pet .pet-face img{position:absolute;inset:0;width:100%;height:100%;user-select:none;-webkit-user-select:none;-webkit-touch-callout:none}
@@ -894,11 +912,12 @@ body.course .levels.nrange .lv{padding:3px 2px;font-size:12px}
   padding:10px 14px;font-size:17px;font-weight:700;text-align:center;line-height:1.45;text-wrap:balance;
 }
 .bubble::after{
-  content:"";position:absolute;bottom:14px;width:14px;height:14px;background:var(--surface);
+  /* しっぽ は たかさ の まんなか に（したから きめる と、1ぎょう の みじかい ふきだし で かど の まるみ に かかって かたち が くずれる） */
+  content:"";position:absolute;top:calc(50% - 7px);width:12px;height:12px;background:var(--surface);
   border:2px solid var(--line);transform:rotate(45deg);
 }
-.bubble.from-cat::after{left:-9px;border-top:0;border-right:0}
-.bubble.from-dog::after{right:-9px;border-bottom:0;border-left:0}
+.bubble.from-cat::after{left:-7px;border-top:0;border-right:0}
+.bubble.from-dog::after{right:-7px;border-bottom:0;border-left:0}
 .sum-pets{display:flex;justify-content:center;gap:12px}
 .sum-cheer{width:min(260px,72%);aspect-ratio:4/3;height:auto;display:block;margin-left:auto;margin-right:auto;align-self:center;user-select:none;-webkit-user-select:none;animation:cheerIn .5s ease-out}
 @keyframes cheerIn{0%{transform:scale(.6) translateY(10px);opacity:0}70%{transform:scale(1.05)}100%{transform:scale(1);opacity:1}}
@@ -955,15 +974,12 @@ body.course .levels.nrange .lv{padding:3px 2px;font-size:12px}
       <div class="chip">れんぞく <span class="v num" id="streak">0</span></div>
     </div>
   </div>
-  <div class="levels" role="group" aria-label="むずかしさ">
-    <button class="lv" data-lv="easy" id="lv-easy">かんたん</button>
-    <button class="lv" data-lv="normal" id="lv-normal">ふつう</button>
-    <button class="lv" data-lv="hard" id="lv-hard">むずかしい</button>
-    <button class="lv" data-lv="super" id="lv-super">ちょう むずかしい</button>
-  </div>
-  <div class="levels nrange" role="group" aria-label="かずの はんい">
-    <button class="lv" data-nr="10" id="nr-10">10まで</button>
-    <button class="lv" data-nr="30" id="nr-30">30まで</button>
+  <div class="levels lvsel" role="group" aria-label="むずかしさ">
+    <button class="lv" data-sel="10" id="lv-10">10まで</button>
+    <button class="lv" data-sel="easy" id="lv-easy">かんたん</button>
+    <button class="lv" data-sel="normal" id="lv-normal">ふつう</button>
+    <button class="lv" data-sel="hard" id="lv-hard">むずかしい</button>
+    <button class="lv" data-sel="super" id="lv-super">ちょう むずかしい</button>
   </div>
   <div class="super-note" id="superNote" hidden>むずかしい もんだい ばかり。1もん 10びょう！</div>
   <div class="track" id="track" aria-hidden="true"></div>
@@ -975,10 +991,15 @@ body.course .levels.nrange .lv{padding:3px 2px;font-size:12px}
       <button class="lv" data-gk="sub" id="gk-sub">ひきざん</button>
       <button class="lv" data-gk="mix" id="gk-mix">まぜまぜ</button>
     </div>
-    <div class="levels nrange" role="group" aria-label="かずの はんい">
-      <button class="lv" data-gr="10" id="gr-10">10まで</button>
-      <button class="lv" data-gr="30" id="gr-30">30まで</button>
+    <div class="levels lvsel" role="group" aria-label="むずかしさ">
+      <button class="lv" data-gsel="10" id="gl-10">10まで</button>
+      <button class="lv" data-gsel="easy" id="gl-easy">かんたん</button>
+      <button class="lv" data-gsel="normal" id="gl-normal">ふつう</button>
+      <button class="lv" data-gsel="hard" id="gl-hard">むずかしい</button>
+      <button class="lv" data-gsel="super" id="gl-super">ちょう むずかしい</button>
     </div>
+    <div class="super-note" id="gSuperNote" hidden>1ます 15びょう！ すぎると まちがい に なるよ</div>
+    <div class="timer" id="gtimer" hidden aria-hidden="true"><i></i></div>
     <div class="gbar num">
       <div class="chip">じかん <span class="v" id="gtime">0:00</span></div>
       <div class="chip">のこり <span class="v" id="gleft">25</span></div>
@@ -1033,45 +1054,8 @@ body.course .levels.nrange .lv{padding:3px 2px;font-size:12px}
       <button type="button" class="set-btn" id="setIdk"><b><i>わからなかった</i> <i>もんだい</i></b><span id="setIdkN"></span></button>
       <button type="button" class="set-btn" id="setWeak"><b><i>にがて</i> <i>もんだい</i></b><span id="setWeakN"></span></button>
     </div>
-  <details class="hist" id="hist">
-    <summary>おうちの方へ：これまでの記録</summary>
-    <div class="pg-box" id="pgBox"></div>
-    <div class="tl-box" id="tlBox"></div>
-    <div class="hist-body" id="histBody"></div>
-  </details>
-  <details class="hist" id="kjSet">
-    <summary>おうちの方へ：かんじ（習った字）</summary>
-    <div class="tl-box" id="kjBox"></div>
-  </details>
-  <details class="hist" id="news" hidden>
-    <summary>おうちの方へ：更新情報<em class="new" id="newsNew" hidden>New</em></summary>
-    <div class="hist-body" id="newsBody"></div>
-  </details>
-  <details class="hist" id="voice">
-    <summary>おうちの方へ：ご意見・ご感想</summary>
-    <form class="vc" id="vcForm" autocomplete="off" novalidate>
-      <p class="vc-note">使ってみた感想を教えてください。今後の改善に使います。<br>お名前・住所・学校名など、個人が分かることは書かないでください。</p>
-      <fieldset class="vc-q">
-        <legend>お子さんは楽しく使えていますか？</legend>
-        <div class="vc-score" role="radiogroup">
-          <label><input type="radio" name="score" value="5"><span>とても<br>楽しそう</span></label><label><input type="radio" name="score" value="4"><span>楽しそう</span></label><label><input type="radio" name="score" value="3"><span>ふつう</span></label><label><input type="radio" name="score" value="2"><span>あまり</span></label><label><input type="radio" name="score" value="1"><span>楽しく<br>なさそう</span></label>
-        </div>
-      </fieldset>
-      <fieldset class="vc-q">
-        <legend>このアプリを、お友だちや知り合いのご家庭に すすめたいと思いますか？</legend>
-        <div class="vc-nps" role="radiogroup" aria-label="0（まったく すすめない）から 10（ぜひ すすめたい）">
-          <label><input type="radio" name="nps" value="0"><span>0</span></label><label><input type="radio" name="nps" value="1"><span>1</span></label><label><input type="radio" name="nps" value="2"><span>2</span></label><label><input type="radio" name="nps" value="3"><span>3</span></label><label><input type="radio" name="nps" value="4"><span>4</span></label><label><input type="radio" name="nps" value="5"><span>5</span></label><label><input type="radio" name="nps" value="6"><span>6</span></label><label><input type="radio" name="nps" value="7"><span>7</span></label><label><input type="radio" name="nps" value="8"><span>8</span></label><label><input type="radio" name="nps" value="9"><span>9</span></label><label><input type="radio" name="nps" value="10"><span>10</span></label>
-        </div>
-        <div class="vc-nps-ends"><span>0：まったく すすめない</span><span>10：ぜひ すすめたい</span></div>
-      </fieldset>
-      <label class="vc-q"><span>よかったところ</span><textarea name="good" maxlength="500" rows="3" placeholder="例：シールを集めるのを楽しみにしている"></textarea></label>
-      <label class="vc-q"><span>困ったところ・ほしい機能</span><textarea name="bad" maxlength="500" rows="3" placeholder="例：かけ算も練習したい"></textarea></label>
-      <label class="vc-q"><span>お子さんの学年（任意）</span><select name="grade"><option value="">選ばない</option><option>年長</option><option>小学1年</option><option>小学2年</option><option>小学3年以上</option><option>その他</option></select></label>
-      <input class="vc-hp" type="text" name="hp" tabindex="-1" aria-hidden="true">
-      <div class="vc-row"><button type="submit" class="vc-send" id="vcSend">送る</button><span class="vc-msg" id="vcMsg" role="status"></span></div>
-      <p class="vc-note small">送った内容は、作者の Google スプレッドシートに保存されます（送る日時・楽しさ・すすめたい度合い・書いた文・学年・端末の種類・アプリの版）。学習の記録は送りません。</p>
-    </form>
-  </details>
+  <!-- おうちの方へ：ボタン ひとつ。おすと ポップアップ（paModal）に 記録・むずかしさ・かんじ・更新情報・ご意見 が でる -->
+  <button type="button" class="pa-open" id="paOpen" aria-haspopup="dialog"><span>おうちの方へ<em class="new" id="paNew" hidden>New</em></span><i aria-hidden="true">›</i></button>
   </div>
 
   <div id="drillMain" class="stack">
@@ -1178,6 +1162,74 @@ body.course .levels.nrange .lv{padding:3px 2px;font-size:12px}
   </div>
 
   <div class="save-state" id="saveState" aria-live="polite"></div>
+  <div class="nk-modal pa-modal" id="paModal" hidden><div class="pa-card" role="dialog" aria-modal="true" aria-labelledby="paTitle">
+    <div class="pa-head"><h2 id="paTitle">おうちの方へ</h2><button type="button" class="pa-close" id="paClose">とじる</button></div>
+      <details class="hist" id="hist">
+        <summary>これまでの記録</summary>
+        <div class="pg-box" id="pgBox"></div>
+        <div class="tl-box" id="tlBox"></div>
+        <div class="hist-body" id="histBody"></div>
+      </details>
+      <!-- おうちの方へ：計算の むずかしさ（いろいろ・ます の ボタン の なかみ。かえたら ここ も あわせる：LV_MIX・LEVELS・GSUPER_MS） -->
+      <details class="hist" id="lvHelp">
+        <summary>計算のむずかしさ</summary>
+        <div class="tl-box lvh">
+          <p>「いろいろ」と「ます」は、上のボタンでむずかしさを選べます（それぞれ別に覚えます）。むずかしさによって、出てくる数の大きさ（けた数）が変わります。数も答えも1〜30で、0は使いません。</p>
+          <table>
+            <tr><th>10まで</th><td>数も答えも10まで。繰り上がり・繰り下がりはありません。<small>例：3＋4、9−5</small></td></tr>
+            <tr><th>かんたん</th><td>1けた＋1けた（繰り上がりあり）と、その引き算。<small>例：8＋5、13−7</small></td></tr>
+            <tr><th>ふつう</th><td>かんたんの計算に、2けた±1けたが加わります（1けた＋1けた 4割・2けた±1けた 6割）。<small>例：15＋3、25−4</small></td></tr>
+            <tr><th>むずかしい</th><td>2けた±2けたが中心です（2けた±2けた 55%・2けた±1けた 30%・1けた＋1けた 15%）。答えは30まで。<small>例：12＋15、25−13</small></td></tr>
+            <tr><th>ちょう<br>むずかしい</th><td>むずかしいと同じ計算に、時間制限が付きます。時間を過ぎると不正解になります。<small>いろいろ：1問10秒（数字ボタンで答える問題は15秒）／ます：1ます15秒</small></td></tr>
+          </table>
+          <p>引き算は、たし算の逆で分けています。たとえば 13−7 は 6＋7 の逆なので「1けた＋1けた」の仲間です。引く数が2けたの引き算（25−13、23−15 など）は「2けた±2けた」に入ります。</p>
+          <h4>いろいろ もんだい</h4>
+          <p>問題の種類もむずかしさで変わります。</p>
+          <ul>
+            <li>10まで・かんたん：式・絵・いくつといくつ・文章題（あわせて／のこり）などが中心です。</li>
+            <li>ふつう：□に入る数（穴あき）、文章題の「ちがい」、3つの数の計算（同じ記号だけ。例：5＋3＋2）が加わります。</li>
+            <li>むずかしい：3つの数の計算が多くなり、＋と−が混ざります（例：8−3＋4）。</li>
+            <li>ちょう むずかしい：むずかしいと同じ種類で、1や小さい数だけの易しい計算は出にくくなります。</li>
+          </ul>
+          <p>「つぎの数」「ならべかえ」「大きさくらべ」など、計算ではない数の問題は、10まで以外ではけた数に関係なく1〜30の数で出ます。「なんばんめ」「どちらが なんこ おおい」「かずを あてよう」は10までだけで出ます。</p>
+          <h4>ます けいさん</h4>
+          <p>25ますは1枚ごとにけた数をそろえ、上の割合で1枚ずつ決めます（たとえば ふつう なら、1けた＋1けたの1枚か、2けた±1けたの1枚）。たしざん・ひきざん・まぜまぜの選び方は今まで通りです。最高記録はむずかしさごとに分けて残します。</p>
+        </div>
+      </details>
+      <details class="hist" id="kjSet">
+        <summary>かんじ（習った字）</summary>
+        <div class="tl-box" id="kjBox"></div>
+      </details>
+      <details class="hist" id="news" hidden>
+        <summary>更新情報<em class="new" id="newsNew" hidden>New</em></summary>
+        <div class="hist-body" id="newsBody"></div>
+      </details>
+      <details class="hist" id="voice">
+        <summary>ご意見・ご感想</summary>
+        <form class="vc" id="vcForm" autocomplete="off" novalidate>
+          <p class="vc-note">使ってみた感想を教えてください。今後の改善に使います。<br>お名前・住所・学校名など、個人が分かることは書かないでください。</p>
+          <fieldset class="vc-q">
+            <legend>お子さんは楽しく使えていますか？</legend>
+            <div class="vc-score" role="radiogroup">
+              <label><input type="radio" name="score" value="5"><span>とても<br>楽しそう</span></label><label><input type="radio" name="score" value="4"><span>楽しそう</span></label><label><input type="radio" name="score" value="3"><span>ふつう</span></label><label><input type="radio" name="score" value="2"><span>あまり</span></label><label><input type="radio" name="score" value="1"><span>楽しく<br>なさそう</span></label>
+            </div>
+          </fieldset>
+          <fieldset class="vc-q">
+            <legend>このアプリを、お友だちや知り合いのご家庭に すすめたいと思いますか？</legend>
+            <div class="vc-nps" role="radiogroup" aria-label="0（まったく すすめない）から 10（ぜひ すすめたい）">
+              <label><input type="radio" name="nps" value="0"><span>0</span></label><label><input type="radio" name="nps" value="1"><span>1</span></label><label><input type="radio" name="nps" value="2"><span>2</span></label><label><input type="radio" name="nps" value="3"><span>3</span></label><label><input type="radio" name="nps" value="4"><span>4</span></label><label><input type="radio" name="nps" value="5"><span>5</span></label><label><input type="radio" name="nps" value="6"><span>6</span></label><label><input type="radio" name="nps" value="7"><span>7</span></label><label><input type="radio" name="nps" value="8"><span>8</span></label><label><input type="radio" name="nps" value="9"><span>9</span></label><label><input type="radio" name="nps" value="10"><span>10</span></label>
+            </div>
+            <div class="vc-nps-ends"><span>0：まったく すすめない</span><span>10：ぜひ すすめたい</span></div>
+          </fieldset>
+          <label class="vc-q"><span>よかったところ</span><textarea name="good" maxlength="500" rows="3" placeholder="例：シールを集めるのを楽しみにしている"></textarea></label>
+          <label class="vc-q"><span>困ったところ・ほしい機能</span><textarea name="bad" maxlength="500" rows="3" placeholder="例：かけ算も練習したい"></textarea></label>
+          <label class="vc-q"><span>お子さんの学年（任意）</span><select name="grade"><option value="">選ばない</option><option>年長</option><option>小学1年</option><option>小学2年</option><option>小学3年以上</option><option>その他</option></select></label>
+          <input class="vc-hp" type="text" name="hp" tabindex="-1" aria-hidden="true">
+          <div class="vc-row"><button type="submit" class="vc-send" id="vcSend">送る</button><span class="vc-msg" id="vcMsg" role="status"></span></div>
+          <p class="vc-note small">送った内容は、作者の Google スプレッドシートに保存されます（送る日時・楽しさ・すすめたい度合い・書いた文・学年・端末の種類・アプリの版）。学習の記録は送りません。</p>
+        </form>
+      </details>
+  </div></div>
   <div class="pin-pop" id="pinPop" hidden><div class="pin-box" id="pinGate" role="dialog" aria-modal="true" aria-label="おうちの方の パスワード"></div></div>
   <div class="tl-toast" id="tlToast" role="status" hidden></div>
 </div>
@@ -1376,14 +1428,39 @@ body.course .levels.nrange .lv{padding:3px 2px;font-size:12px}
   const LV_KEY = "sansu-drill-level-v1";
   let level = "easy";
   try{ const l = localStorage.getItem(LV_KEY); if(LEVELS[l]) level = l; }catch(e){}
-  // かずの はんい：10まで（いままで）／30まで。30まで は つかう パターンを しぼる（R30_TYPES）
+  // かずの はんい：10まで（いままで）／けた で わけた 30まで（"11" 1けた＋1けた・"12" 1けた＋2けた・"22" 2けた＋2けた）。
+  // 30まで の なかま は つかう パターンを しぼる（R30_TYPES）。まえ の「30まで」や けた の えらび は、えらんで いた むずかしさ に よみかえる
   const RANGE_KEY = "sansu-drill-range-v1";
-  let nrange = "10";
-  try{ if(localStorage.getItem(RANGE_KEY)==="30") nrange = "30"; }catch(e){}
+  const DIGS = {"11":"1けた＋1けた", "12":"1けた＋2けた", "22":"2けた＋2けた"};
+  const isBig = r => !!DIGS[r];   // 10を こえる かず を つかう はんい（ボタンで こたえる・30まで の パターン）
+  const rangeLabel = r => DIGS[r] || "10まで";
+  /* むずかしさ で けた を まぜる（ユーザー指定 2026-11-08）。10まで は べつ の ボタン（もんだいの しゅるい は かんたん と おなじ）。
+     かんたん：1けた＋1けた だけ／ふつう：1けた＋2けた を くわえる／むずかしい：2けた＋2けた が メイン、1けた＋2けた が サブ、1けた＋1けた は 15%／
+     ちょう むずかしい：むずかしい と おなじ まぜかた ＋ 1もん 10びょう（いままで どおり）。もんだい の しゅるい は いままで の むずかしさ の まま */
+  const LV_MIX = {easy:{"11":1}, normal:{"11":40, "12":60}, hard:{"11":15, "12":30, "22":55}, super:{"11":15, "12":30, "22":55}};
+  const mixPick = lv => { const m = LV_MIX[lv] || LV_MIX.easy, ks = Object.keys(m); let r = Math.random()*ks.reduce((t,k)=>t+m[k],0);
+    for(const k of ks){ r -= m[k]; if(r<=0) return k; } return ks[ks.length-1]; };
+  /* むずかしさ を えらんだ とき の ふきだし：なにが でるか と れい の しき（ユーザー指定の かたち 2026-11-08）。
+     れい は たしざん で だす（せつめい が「□けた＋□けた」なので） */
+  const LV_EX = {easy:"8＋5", normal:"15＋3", hard:"12＋15", super:"12＋15"};
+  function lvSay(sel, w){
+    const t = sel==="10" ? "10までは、10までの かずの けいさん しか でないよ"
+            : sel==="easy" ? `かんたんは 1けた＋1けた の けいさん。たとえば ${LV_EX.easy} だよ`
+            : sel==="normal" ? `ふつうは 1けた＋2けた の けいさん も でるよ。たとえば ${LV_EX.normal} だよ`
+            : sel==="hard" ? `むずかしいは 2けた＋2けた の けいさん も でるよ。たとえば ${LV_EX.hard} だよ`
+            : `ちょう むずかしいは 2けた＋2けた も でて、じかんの きまり も あるよ。たとえば ${LV_EX.super} だよ`;
+    // 「2けた＋2けた」「12＋15」の とちゅう で ぎょう が かわらない ように（＋ の まえ と うしろ を つなぐ）
+    const u = t.replace(/＋/g, "\u2060＋\u2060");
+    return w==="cat" ? u.replace(/よ$/, "にゃ") : u + " わん";
+  }
+  // nrSel：えらんで いる ボタン が「10まで」なら "10"、むずかしさ なら "mix"。nrange は いま の もんだい の けた（もんだい ごと に きめる）
+  let nrSel = "10";
+  try{ const v = localStorage.getItem(RANGE_KEY); nrSel = !v || v==="10" ? "10" : "mix"; }catch(e){}
+  let nrange = nrSel==="10" ? "10" : "11";
   // 30まで に ださない のは「なんばんめ？」「どちらが なんこ おおい？」「かずを あてよう」（ユーザー指定）
   const R30_TYPES = new Set(["plain","missing","decomp","pic","word","three","next","prevnext","seq","bigger","sort",
     "atoiku","ten","submiss","same","target","exprcmp","sign","truefalse","pickexpr","make","kaimono","fix"]);
-  const levelTypes = () => Object.keys(LEVELS[level].types).filter(t => nrange!=="30" || R30_TYPES.has(t));
+  const levelTypes = () => Object.keys(LEVELS[level].types).filter(t => !isBig(nrange) || R30_TYPES.has(t));
   function threeAllowed(f){
     const m = LEVELS[level].three;
     if(!m) return false;
@@ -1416,13 +1493,20 @@ body.course .levels.nrange .lv{padding:3px 2px;font-size:12px}
   const ALL30_ADD=[], ALL30_SUB=[];
   for(let a=1;a<=MAX30-1;a++) for(let b=1;b<=9 && a+b<=MAX30;b++) ALL30_ADD.push({a,op:"+",b,ans:a+b});
   for(let a=2;a<=MAX30;a++) for(let b=1;b<=9 && b<a;b++) ALL30_SUB.push({a,op:"-",b,ans:a-b});
-  const NMAX = () => nrange==="30" ? MAX30 : MAX;
+  // けた で わけた しき（drill/patterns.js の digCls：たしざん は a と b、ひきざん は ひく かず と こたえ の けた）。
+  // 11 と 12 で 30まで の 450 に なる。22 は 2けた どうし（たしざん 66・ひきざん 210、ずかん には ない）
+  const digCls = window.Patterns.digCls;
+  const ALL_D = {};
+  Object.keys(DIGS).forEach(c=>{ ALL_D[c] = {add:[], sub:[]}; });
+  for(let a=1;a<MAX30;a++) for(let b=1;a+b<=MAX30;b++){ const f={a,op:"+",b,ans:a+b}, c=digCls(f); if(c) ALL_D[c].add.push(f); }
+  for(let a=2;a<=MAX30;a++) for(let b=1;b<a;b++){ const f={a,op:"-",b,ans:a-b}, c=digCls(f); if(c) ALL_D[c].sub.push(f); }
+  const NMAX = () => isBig(nrange) ? MAX30 : MAX;
   // 10を こえる かずが でて くる けいさん
   const isBigF = f => !!f && !f.x && !f.three && Math.max(f.a, f.b, f.ans) > 10;
   const isBigP = p => isBigF(p.f) || (typeof p.ans==="number" && p.ans > 10);
   function randomFact(){
     for(let t=0;t<60;t++){
-      const f = {...pick(nrange==="30" ? (Math.random()<0.5 ? ALL30_ADD : ALL30_SUB) : (Math.random()<0.5 ? ALL_ADD : ALL_SUB))};
+      const f = {...pick(isBig(nrange) ? (Math.random()<0.5 ? ALL_D[nrange].add : ALL_D[nrange].sub) : (Math.random()<0.5 ? ALL_ADD : ALL_SUB))};
       if((f.a===0||f.b===0) && Math.random()<0.8) continue;
       if(recent.includes(fKey(f))) continue;
       // ちょう むずかしい：0や 小さい かずだけの けいさんは さける
@@ -1438,9 +1522,13 @@ body.course .levels.nrange .lv{padding:3px 2px;font-size:12px}
       const o1=Math.random()<0.5?"+":"-";
       const o2= mixed ? (o1==="+"?"-":"+") : o1;
       const N = NMAX(), big = N > MAX;
-      const a = big ? rnd(1,N-1) : rnd(1,MAX), b = big ? rnd(1,9) : rnd(1,6), c = big ? rnd(1,9) : rnd(1,6);
+      // けた ごと：1けた＋1けた は さいしょ も たす・ひく かず も 1けた、2けた＋2けた は たす・ひく かず が 2けた
+      const a = nrange==="11" ? rnd(1,9) : nrange==="22" ? rnd(10,N-1) : big ? rnd(1,N-1) : rnd(1,MAX);
+      const b = nrange==="22" ? rnd(10,19) : big ? rnd(1,9) : rnd(1,6), c = nrange==="22" ? rnd(10,19) : big ? rnd(1,9) : rnd(1,6);
       const r1=calc(a,o1,b); if(r1<(big?1:0)||r1>N) continue;
       const ans=calc(r1,o2,c); if(ans<1||ans>N) continue;
+      // けた で わけた ときは、1かいめ・2かいめ の けいさん が どちらも その けた の しき に なる もの だけ
+      if(isBig(nrange) && (digCls({a,op:o1,b,ans:r1})!==nrange || digCls({a:r1,op:o2,b:c,ans})!==nrange)) continue;
       const g={three:true, a,o1,b,o2,c,r1,ans};
       if(recent.includes(fKey(g)) && t<150) continue;
       return g;
@@ -1633,8 +1721,10 @@ body.course .levels.nrange .lv{padding:3px 2px;font-size:12px}
     // ③ あと いくつ？（もくひょうの かずまで）
     atoiku(){
       const r=lvRank(), big = NMAX() > MAX;
-      const T = big ? rnd(11, NMAX()) : rnd([5,5,6,6][r], [7,10,10,10][r]);
-      const c = big ? rnd(T-([4,6,9,9][r]), T-1) : rnd(Math.max(1, T-([4,6,8,8][r])), T-1);
+      // けた で わけた とき は、その けた の たしざん（c ＋ ? ＝ T）から
+      const df = isBig(nrange) ? pick(ALL_D[nrange].add) : null;
+      const T = df ? df.ans : big ? rnd(11, NMAX()) : rnd([5,5,6,6][r], [7,10,10,10][r]);
+      const c = df ? df.a : big ? rnd(T-([4,6,9,9][r]), T-1) : rnd(Math.max(1, T-([4,6,8,8][r])), T-1);
       const asText = big || (r>0 && Math.random()<0.4);
       const [e,name] = pick([...ANIMALS.slice(0,5), ...FRUITS.slice(0,4)]);
       const unit = ANIMALS.some(x=>x[0]===e) ? "ひき" : "こ";
@@ -1652,7 +1742,9 @@ body.course .levels.nrange .lv{padding:3px 2px;font-size:12px}
 
     // ④ 10に なるのは？
     ten(){
-      const r=lvRank(), T = NMAX() > MAX ? pick([10,20,30]) : 10, n=rnd(T-9,T-1);
+      // けた で わけた とき は、その けた の たしざん で こたえ が 10・20・30 の もの（n ＋ ? ＝ T）から
+      const df = isBig(nrange) ? pick(ALL_D[nrange].add.filter(f=>f.ans%10===0)) : null;
+      const r=lvRank(), T = df ? df.ans : NMAX() > MAX ? pick([10,20,30]) : 10, n = df ? df.a : rnd(T-9,T-1);
       const pic = Math.random() < [0.7,0.5,0.35,0.25][r];
       return { type:"ten", f:xf(`ten:${n}${T===10 ? "" : "/"+T}:${pic?"p":"t"}`), ans:T-n, cls: pic ? "pic" : "small", tag: T===10 ? null : `${T}に なるのは？`,
         html: pic
@@ -1912,13 +2004,16 @@ body.course .levels.nrange .lv{padding:3px 2px;font-size:12px}
   // ずかんで まだ シールが ない しき を だす わりあい（いろいろ もんだい）
   const ZK_TODO_P = 0.4;
   function makeProblem(){
-    PT.use(nrange==="30" ? 30 : 10);
+    if(!drillSet) nrange = nrSel==="10" ? "10" : mixPick(level);   // この もんだい の けた
+    PT.use(isBig(nrange) ? 30 : 10, nrange);
     const lt = levelTypes();
     const hardSkip = f => LEVELS[level].hardFacts && (f.a<2 || f.b<2 || (f.op==="+" ? f.ans<7 : f.a<7));   // randomFact と おなじ よけかた
     const todo = zkTodo(nrange).filter(t=>!recent.includes(fKey(t.f)) && !hardSkip(t.f));
     const fTypes = lt.filter(k=>ARITH.has(k) && k!=="three");
     const big3 = f => Math.max(f.a, f.r1, f.ans) > MAX;
-    const weak = weakFacts().filter(w=>!recent.includes(w.k) && (w.f.three ? threeAllowed(w.f) && (nrange==="30" || !big3(w.f)) : nrange==="30" || !isBigF(w.f)));
+    // むずかしさ で えらんで いる ときは、にがて も その むずかしさ に でる けた の しき だけ
+    const inMix = f => !!(LV_MIX[level] || {})[digCls(f)];
+    const weak = weakFacts().filter(w=>!recent.includes(w.k) && (w.f.three ? threeAllowed(w.f) && (isBig(nrange) || !big3(w.f)) : isBig(nrange) ? inMix(w.f) : !isBigF(w.f)));
     const tu = LEVELS[level].hardFacts ? "mid" : tuning();
     const pWeak = Math.min(tu==="hard" ? 0.4 : 0.3, 0.06*weak.length) * (tu==="easy" ? 0.3 : 1);
     for(let t=0;t<40;t++){
@@ -2132,7 +2227,7 @@ body.course .levels.nrange .lv{padding:3px 2px;font-size:12px}
         b.addEventListener("click",()=>answer(c.v,b));
         chEl.appendChild(b);
       });
-    }else if(nrange==="30" || isBigP(p)) renderPad(p);
+    }else if(isBig(nrange) || isBigP(p)) renderPad(p);
     else for(let n=1;n<=10;n++){
       const b=document.createElement("button");
       b.className="choice num"; b.textContent=n; b.dataset.v=n; b.id="c"+n;
@@ -2561,7 +2656,7 @@ body.course .levels.nrange .lv{padding:3px 2px;font-size:12px}
     const s = analyze(round);
     $("sumScore").textContent = s.ok;
     $("sumTitle").textContent = (s.ok===ROUND ? "ぜんもん せいかい！すごい！" : "20もん おわったよ！");
-    $("sumLevel").textContent = LEVELS[level].label + (nrange==="30" ? "・30まで" : "");
+    $("sumLevel").textContent = (nrSel==="10" ? "10まで" : LEVELS[level].label);
     $("sumPets").innerHTML = `<img class="sum-cheer" src="${pickCheer()}" alt="みー と ころ が よろこんで いるよ" draggable="false">`;
     if(mcOn()){ setPets("happy",null); say("cat", mcLine("finish")); }
     if(pendingSticker){
@@ -2582,7 +2677,7 @@ body.course .levels.nrange .lv{padding:3px 2px;font-size:12px}
     const d=new Date();
     history.unshift({d:dayKey(d),
       at:`${d.getMonth()+1}/${d.getDate()} ${d.getHours()}:${String(d.getMinutes()).padStart(2,"0")}`,
-      lv:LEVELS[level].label + (nrange==="30" ? "・30まで" : ""), ok:s.ok, add:s.add, sub:s.sub, avg:s.avg, findings:s.findings
+      lv:(nrSel==="10" ? "10まで" : LEVELS[level].label), ok:s.ok, add:s.add, sub:s.sub, avg:s.avg, findings:s.findings
     });
     history = history.slice(0,HIST_MAX);
     try{ lsSet(STORE, JSON.stringify(history)); }catch(e){}
@@ -2763,6 +2858,7 @@ body.course .levels.nrange .lv{padding:3px 2px;font-size:12px}
     box.hidden = false;
     const counts = {}; Object.keys(news).forEach(k=>counts[k] = news[k].length);
     $("newsNew").hidden = !Object.keys(news).some(newsIsNew);
+    $("paNew").hidden = $("newsNew").hidden;   // ホーム の「おうちの方へ」ボタン にも New を だす
     const cal = calHTML(newsSt, counts, newsIsNew), k = newsSt.sel, L = news[k];
     const cls = c => /^追加/.test(c) ? "add" : /^修正/.test(c) ? "fix" : "";
     $("newsBody").innerHTML = cal + `<div class="hc-title">${calDayLabel(k)}の更新　${L.length}件${newsIsNew(k)?`<em class="new">New</em>`:""}</div>` + L.map(e=>`
@@ -2911,8 +3007,19 @@ body.course .levels.nrange .lv{padding:3px 2px;font-size:12px}
   // かずの はんい（10まで／30まで）。いろいろ もんだい とは べつに おぼえる。さいこう きろく も はんい ごとに わける
   const GR_KEY = "sansu-drill-gridrange-v1";
   let grange = "10", gbuf = "";   // gbuf：30まで で いれて いる とちゅう の かず
-  try{ if(localStorage.getItem(GR_KEY)==="30") grange = "30"; }catch(e){}
-  const gbk = () => grange==="30" ? gkind + "30" : gkind;
+  /* ます も いろいろ と おなじ むずかしさ（10まで・かんたん〜ちょう むずかしい）。けた は 1まい ごと に LV_MIX で きめる
+     （25ます を ぜんぶ おなじ けた に する ため）。ちょう むずかしい は 1ます 15びょう（すうじ を 2かい おす ぶん 1.5ばい）で まちがい */
+  const GLV_KEY = "sansu-drill-gridlv-v1", GSEL = ["10","easy","normal","hard","super"];
+  const GSUPER_MS = 10000 * PAD_SLOW;
+  let gsel = "10";
+  try{
+    const v = localStorage.getItem(GLV_KEY), old = localStorage.getItem(GR_KEY);
+    // まえ の「30まで」は 1けた＋1けた と 1けた＋2けた だった ので ふつう に よみかえる
+    gsel = GSEL.includes(v) ? v : ({"30":"normal","11":"easy","12":"normal","22":"hard"})[old] || "10";
+  }catch(e){}
+  grange = gsel==="10" ? "10" : "11";
+  // さいこう きろく：10まで は いままで どおり、むずかしさ は べつ に おぼえる
+  const gbk = () => gsel==="10" ? gkind : gkind + "-" + gsel;
 
   const shuffle = a => { const x=[...a]; for(let i=x.length-1;i>0;i--){ const j=Math.floor(Math.random()*(i+1)); [x[i],x[j]]=[x[j],x[i]]; } return x; };
   const range = (lo,hi) => Array.from({length:hi-lo+1},(_,i)=>lo+i);
@@ -2936,8 +3043,44 @@ body.course .levels.nrange .lv{padding:3px 2px;font-size:12px}
     const minus = shuffle(range(1,9).filter(v=>!plus.includes(v))).slice(0,GN-nPlus);
     return {rows:shuffle(range(st, st+4)), cols:shuffle([...plus.map(v=>({op:"+",v})), ...minus.map(v=>({op:"-",v}))])};
   }
+  /* けた で わけた ます（ひだり rows・うえ cols）。25ます ぜんぶ が その けた の しき に なる ように つくる
+       11 たしざん：1けた ＋ 1けた／ひきざん：こたえ も 1けた（ひだり は つづいた 5つ、うえ は その すぐ した の 5つ）
+       12 たしざん：2けた ＋ 1けた／ひきざん：2けた − 1けた で こたえ も 2けた
+       22 たしざん：2けた ＋ 2けた（30まで）／ひきざん：2けた − 2けた
+       まぜまぜ は ひだり が つづいた 5つ。11・12 は うえ の かず が ぜんぶ ちがう、22 は ＋ と − で おなじ かず も ある */
+  function makeGridD(kind, d){
+    if(kind==="add"){
+      let rows, cols;
+      if(d==="11"){ rows = shuffle(range(1,9)).slice(0,GN); cols = shuffle(range(1,9)).slice(0,GN); }
+      else if(d==="12"){ cols = shuffle(range(1,9)).slice(0,GN); rows = shuffle(range(10, MAX30 - Math.max(...cols))).slice(0,GN); }
+      else {
+        cols = shuffle(range(10,16)).slice(0,GN); rows = shuffle(range(10, MAX30 - Math.max(...cols))).slice(0,GN);
+        if(Math.random()<0.5) [rows,cols] = [cols,rows];
+      }
+      return {rows, cols:cols.map(v=>({op:"+",v}))};
+    }
+    if(kind==="sub"){
+      let rows, cols;
+      if(d==="11"){ const lo = rnd(1,5); cols = shuffle(range(lo, lo+4)); rows = shuffle(range(lo+5, lo+9)); }
+      else if(d==="12"){ cols = shuffle(range(1,9)).slice(0,GN); rows = shuffle(range(Math.max(...cols)+10, MAX30)).slice(0,GN); }
+      else { cols = shuffle(range(10,20)).slice(0,GN); rows = shuffle(range(Math.max(...cols)+1, MAX30)).slice(0,GN); }
+      return {rows, cols:cols.map(v=>({op:"-",v}))};
+    }
+    for(let t=0;t<50;t++){
+      let st, plusAv, minusAv;
+      if(d==="11"){ st = rnd(4,5); minusAv = range(1, st-1); plusAv = range(1,9); }
+      else if(d==="12"){ st = rnd(12,21); minusAv = range(1, Math.min(9, st-10)); plusAv = range(1, Math.min(9, MAX30-(st+4))); }
+      else { st = rnd(12,15); minusAv = range(10, st-1); plusAv = range(10, MAX30-(st+4)); }
+      const nMinus = rnd(2,3), minus = shuffle(minusAv).slice(0, nMinus);
+      const plus = shuffle(d==="22" ? plusAv : plusAv.filter(v=>!minus.includes(v))).slice(0, GN-nMinus);
+      if(minus.length + plus.length !== GN) continue;
+      return {rows:shuffle(range(st, st+4)), cols:shuffle([...plus.map(v=>({op:"+",v})), ...minus.map(v=>({op:"-",v}))])};
+    }
+    const fb = {"11":[[5,6,7,8,9],[1,3,5],[2,4]], "12":[[15,16,17,18,19],[1,3,5],[2,4]], "22":[[12,13,14,15,16],[10,12,14],[10,11]]}[d];
+    return {rows:shuffle(fb[0]), cols:shuffle([...fb[1].map(v=>({op:"+",v})), ...fb[2].map(v=>({op:"-",v}))])};
+  }
   function makeGrid(kind){
-    if(grange==="30") return makeGrid30(kind);
+    if(isBig(grange)) return makeGridD(kind, grange);
     if(kind==="add"){
       const m = pick([4,5]);
       let rows = shuffle(range(0,m)).slice(0,GN);
@@ -3003,6 +3146,8 @@ body.course .levels.nrange .lv{padding:3px 2px;font-size:12px}
   }
   function newGrid(){
     if(G && G.timer) clearInterval(G.timer);
+    grange = gsel==="10" ? "10" : mixPick(gsel);   // この ます の けた
+    gTimerReset();
     const g = pickGrid(gkind);
     const cells=[];
     g.rows.forEach(r=>g.cols.forEach(c=>{ cells.push({a:r, op:c.op, b:c.v, ans:calc(r,c.op,c.v), chosen:null}); }));
@@ -3030,7 +3175,8 @@ body.course .levels.nrange .lv{padding:3px 2px;font-size:12px}
     if(tlGate()) return;
     $("gstartWrap").hidden=true;
     G.running=true; G.start=performance.now(); G.cellAt=G.start;
-    G.timer=setInterval(()=>{ $("gtime").textContent=fmtT(performance.now()-G.start); }, 250);
+    G.timer=setInterval(gridTick, 250);
+    gTimerStart();
     setPadEnabled(true);
     renderGrid();
   }
@@ -3044,24 +3190,38 @@ body.course .levels.nrange .lv{padding:3px 2px;font-size:12px}
     else renderGrid();
   }
   function gridDel(){ if(G && G.running && gbuf){ gbuf = gbuf.slice(0,-1); renderGrid(); } }
+  // ちょう むずかしい：1ます ごと の じかん（バー は いろいろ と おなじ もの）。じかんぎれ は まちがい に して つぎ へ
+  function gTimerReset(){ const t = $("gtimer"); t.hidden = gsel!=="super"; t.classList.remove("run"); t.classList.add("off"); }
+  function gTimerStart(){
+    if(gsel!=="super" || !G || !G.running) return;
+    const t = $("gtimer"); t.style.setProperty("--tms", GSUPER_MS + "ms");
+    t.classList.remove("run","off"); void t.offsetWidth; t.classList.add("run");
+  }
+  function gridTick(){
+    if(!G || !G.running) return;
+    $("gtime").textContent = fmtT(performance.now()-G.start);
+    if(gsel==="super" && G.idx < G.cells.length && performance.now() - G.cellAt >= GSUPER_MS){ gbuf = ""; G.timeout = true; gridAnswer(-1); }
+  }
   function gridAnswer(n){
     if(!G || !G.running) return;
     const cell=G.cells[G.idx]; const now=performance.now();
     cell.chosen=n; cell.ok = n===cell.ans; cell.ms = now-G.cellAt; G.cellAt=now;
-    const msAdj = grange==="30" ? cell.ms / PAD_SLOW : cell.ms;   // ボタンを おす かいすう が おおい ぶん を ならす
+    const msAdj = isBig(grange) ? cell.ms / PAD_SLOW : cell.ms;   // ボタンを おす かいすう が おおい ぶん を ならす
     const slow = cell.ok && msAdj > slowLimit("grid");
     if(cell.ok){ const ts=typeStat("grid").times; ts.push(msAdj); if(ts.length>30) ts.shift(); }
     const nm = updateFact({type:"grid", f:{a:cell.a, op:cell.op, b:cell.b, ans:cell.ans}}, cell.ok, slow, msAdj);
     onAnswered(cell.ok);
     calmNote(cell.ok, cell.ms, {noFast:true});
     G.idx++;
+    const late = G.timeout; G.timeout = false;
     if(cell.ok){
       if(Math.random()<0.25){ setPets("happy","happy"); const w=pick(["cat","dog"]); say(w, mcOn() ? mcLine("correct") : pick(LINES.ok[w])); }
     }else{
       const w=pick(["cat","dog"]);
       setPets(w==="cat"?null:"sad", w==="dog"?null:"sad");
-      say(w, `${cell.a} ${opText(cell.op)} ${cell.b} は ${cell.ans} だ${w==="cat"?"にゃ":"よ わん"}`);
+      say(w, `${late ? "じかんぎれ！" : ""}${cell.a} ${opText(cell.op)} ${cell.b} は ${cell.ans} だ${w==="cat"?"にゃ":"よ わん"}`);
     }
+    if(G.idx < G.cells.length) gTimerStart();
     if(nm) celebrateMaster(nm);
     renderGrid();
     if(G.idx>=G.cells.length) finishGrid();
@@ -3069,13 +3229,13 @@ body.course .levels.nrange .lv{padding:3px 2px;font-size:12px}
       const p0 = performance.now(); setPadEnabled(false); clearInterval(G.timer);
       calmGate(()=>{
         const d = performance.now() - p0; G.start += d; G.cellAt += d;   // おしらせ を みて いた じかんは タイムに いれない
-        setPadEnabled(true); G.timer = setInterval(()=>{ $("gtime").textContent=fmtT(performance.now()-G.start); }, 250);
+        setPadEnabled(true); G.timer = setInterval(gridTick, 250); gTimerStart();
       });
     }
   }
 
   function finishGrid(){
-    G.running=false; clearInterval(G.timer);
+    G.running=false; clearInterval(G.timer); gTimerReset();
     const total = performance.now()-G.start;
     $("gtime").textContent = fmtT(total);
     setPadEnabled(false); $("gpad").hidden=true;
@@ -3097,7 +3257,7 @@ body.course .levels.nrange .lv{padding:3px 2px;font-size:12px}
 
     const f=[];
     const avg = total/G.cells.length;
-    f.push(`${GKINDS[gkind].name}${grange==="30" ? "（30まで）" : ""}25問、${okN}問正解、タイム${fmtT(total)}（1問平均${(avg/1000).toFixed(1)}秒）。`);
+    f.push(`${GKINDS[gkind].name}（${gsel==="10" ? "10まで" : `${LEVELS[gsel].label}・${rangeLabel(grange)}`}）25問、${okN}問正解、タイム${fmtT(total)}（1問平均${(avg/1000).toFixed(1)}秒）。`);
     if(miss.length) f.push(`間違えた計算：${miss.map(c=>`${c.a} ${opText(c.op)} ${c.b}（${c.chosen}と回答）`).join("、")}。これらは、いろいろもんだいでも多めに出します。`);
     const slowC = G.cells.filter(c=>c.ok).sort((x,y)=>y.ms-x.ms).slice(0,3).filter(c=>c.ms>avg*1.6);
     if(slowC.length) f.push(`手が止まりやすかった計算：${slowC.map(c=>`${c.a} ${opText(c.op)} ${c.b}（${(c.ms/1000).toFixed(1)}秒）`).join("、")}。`);
@@ -3111,10 +3271,10 @@ body.course .levels.nrange .lv{padding:3px 2px;font-size:12px}
 
     const d=new Date();
     history.unshift({d:dayKey(d), at:`${d.getMonth()+1}/${d.getDate()} ${d.getHours()}:${String(d.getMinutes()).padStart(2,"0")}`,
-      lv:`ます・${GKINDS[gkind].label}${grange==="30" ? "・30まで" : ""}`, ok:okN, total:25, add:"-", sub:"-", avg:fmtT(total), findings:f});
+      lv:`ます・${GKINDS[gkind].label}・${gsel==="10" ? "10まで" : LEVELS[gsel].label}`, ok:okN, total:25, add:"-", sub:"-", avg:fmtT(total), findings:f});
     history=history.slice(0,HIST_MAX);
     try{ lsSet(STORE, JSON.stringify(history)); }catch(e){}
-    logSession({k:"grid", gk:gkind, ...(grange==="30" ? {nr:30} : {}), n:G.cells.length, ok:okN, t:Math.round(total), ms:Math.round(total/G.cells.length)});
+    logSession({k:"grid", gk:gkind, ...(isBig(grange) ? {nr:30, dg:grange, gl:gsel} : {}), n:G.cells.length, ok:okN, t:Math.round(total), ms:Math.round(total/G.cells.length)});
     renderHistory();
     $("gresult").scrollIntoView({behavior:"smooth", block:"start"});
     if(pendingSticker) setTimeout(showStickerBanner, 700);
@@ -3124,14 +3284,14 @@ body.course .levels.nrange .lv{padding:3px 2px;font-size:12px}
   // すうじパッド：10まで は 1〜10 を おして こたえる。30まで は 1〜9・0 で 2けた まで（「けす」で 1もじ もどす）
   function renderGPad(){
     const pad = $("gpad"); pad.innerHTML = "";
-    const keys = grange==="30" ? [1,2,3,4,5,6,7,8,9,0] : [1,2,3,4,5,6,7,8,9,10];
+    const keys = isBig(grange) ? [1,2,3,4,5,6,7,8,9,0] : [1,2,3,4,5,6,7,8,9,10];
     keys.forEach(n=>{
       const b=document.createElement("button");
       b.className="choice num"; b.textContent=n; b.id="g"+n;
-      b.addEventListener("click",()=>{ if(grange==="30"){ if(G && G.running) padHit(b); gridDigit(n); } else gridAnswer(n); });
+      b.addEventListener("click",()=>{ if(isBig(grange)){ if(G && G.running) padHit(b); gridDigit(n); } else gridAnswer(n); });
       pad.appendChild(b);
     });
-    if(grange==="30"){
+    if(isBig(grange)){
       const b=document.createElement("button");
       b.className = b.dataset.cls = "choice gdel"; b.textContent="けす"; b.id="gdel";
       b.addEventListener("click", gridDel);
@@ -3148,15 +3308,21 @@ body.course .levels.nrange .lv{padding:3px 2px;font-size:12px}
     newGrid();
   }
   document.querySelectorAll(".gk .lv").forEach(b=>b.addEventListener("click",()=>setGKind(b.dataset.gk)));
-  function setGRange(r, renew){
-    grange = r; gbuf = "";
-    try{ lsSet(GR_KEY, r); }catch(e){}
-    document.querySelectorAll(".lv[data-gr]").forEach(b=>b.setAttribute("aria-pressed", b.dataset.gr===r ? "true" : "false"));
+  function setGSel(v, renew){
+    gsel = v; gbuf = "";
+    grange = v==="10" ? "10" : "11";   // すうじ パッド の かたち（10まで いがい は 0〜9）。けた は newGrid で きめる
+    try{ lsSet(GLV_KEY, v); }catch(e){}
+    document.querySelectorAll(".lv[data-gsel]").forEach(b=>b.setAttribute("aria-pressed", b.dataset.gsel===v ? "true" : "false"));
+    $("gSuperNote").hidden = v!=="super";
     renderGPad();
-    if(renew) newGrid();
+    if(renew){
+      newGrid();
+      const w = pick(["cat","dog"]);
+      say(w, lvSay(v, w));
+    }
   }
-  document.querySelectorAll(".lv[data-gr]").forEach(b=>b.addEventListener("click",()=>{ if(b.dataset.gr!==grange) setGRange(b.dataset.gr, true); }));
-  setGRange(grange, false);
+  document.querySelectorAll(".lv[data-gsel]").forEach(b=>b.addEventListener("click",()=>{ if(b.dataset.gsel!==gsel) setGSel(b.dataset.gsel, true); }));
+  setGSel(gsel, false);
 
 
   /* ---------- きょうの もくひょう ---------- */
@@ -3834,6 +4000,18 @@ body.course .levels.nrange .lv{padding:3px 2px;font-size:12px}
     return "";
   }
 
+  /* ---------- おうちの方へ（ボタン ひとつ → ポップアップ） ----------
+     なか の らん（記録・むずかしさ・かんじ・更新情報・ご意見）は いままで と おなじ id の まま うつした だけ。
+     とじる：「とじる」ボタン・そと を おす・Esc */
+  function paShow(on){
+    $("paModal").hidden = !on; pageLock(on);
+    if(on) $("paModal").querySelector(".pa-card").scrollTop = 0;
+  }
+  $("paOpen").addEventListener("click", ()=>paShow(true));
+  $("paClose").addEventListener("click", ()=>paShow(false));
+  $("paModal").addEventListener("click", e=>{ if(e.target === $("paModal")) paShow(false); });
+  document.addEventListener("keydown", e=>{ if(e.key==="Escape" && !$("paModal").hidden && $("pinPop").hidden && $("nkModal").hidden) paShow(false); });
+
   let nkModalOpen = false;
   // ポップアップを ひらいて いる あいだ は、うしろの がめん が いっしょに スクロール しない ように とめる
   // （iPhone でも きく ように body を その ばしょ で こてい して、とじたら もとの いち に もどす）
@@ -3861,7 +4039,7 @@ body.course .levels.nrange .lv{padding:3px 2px;font-size:12px}
     const bw = $("nkMBtns"); bw.innerHTML = "";
     buttons.forEach(b=>{
       const el=document.createElement("button"); el.className = b.ghost ? "nk-ghost" : "next"; el.textContent = b.label;
-      el.addEventListener("click", ()=>{ if(b.onClick && b.onClick()===false) return; $("nkModal").hidden = true; nkModalOpen = false; pageLock(false);
+      el.addEventListener("click", ()=>{ if(b.onClick && b.onClick()===false) return; $("nkModal").hidden = true; nkModalOpen = false; if($("paModal").hidden) pageLock(false);
         if(mode==="drill" && current && $("overlay").hidden){ shownAt = performance.now(); startTimer(); }   // ひらいて いた じかんは かぞえない
         setTimeout(nkShowQueue, 300); });
       bw.appendChild(el);
@@ -4343,7 +4521,8 @@ body.course .levels.nrange .lv{padding:3px 2px;font-size:12px}
   /* ずかんで まだ シールが ない しき（てんせん と みどり）。r は 10まで／30まで（その はんいの ずかん だけ）。
      いちども といて いない（てんせん）を おもめ 3、といた けど すらすら まえ（みどり）を 1 に する */
   function zkTodo(r){
-    const list = r==="30" ? [...ZK30_ADD.flat(), ...ZK30_SUB.flat()] : [...ZK_ADD.flat(), ...ZK_SUB.flat()];
+    // けた で わけた とき は、ずかん の 450 の うち その けた の しき（2けた＋2けた は ずかん に ない ので から）
+    const list = isBig(r) ? [...ZK30_ADD.flat(), ...ZK30_SUB.flat()].filter(f=>digCls(f)===r) : [...ZK_ADD.flat(), ...ZK_SUB.flat()];
     return list.filter(f=>!zkLv(stats.facts[fKey(f)])).map(f=>({f, w: (stats.facts[fKey(f)]||{}).done ? 1 : 3}));
   }
 
@@ -4915,36 +5094,27 @@ body.course .levels.nrange .lv{padding:3px 2px;font-size:12px}
   }
   document.querySelectorAll(".md").forEach(b=>b.addEventListener("click",()=>{ if(b.dataset.md!==mode) setMode(b.dataset.md); }));
 
-  function setLevel(l, announce){
-    level = l;
-    try{ lsSet(LV_KEY, l); }catch(e){}
-    document.querySelectorAll(".lv[data-lv]").forEach(b=>b.setAttribute("aria-pressed", b.dataset.lv===l ? "true" : "false"));
-    $("superNote").hidden = !LEVELS[l].hardFacts;
-    if(!LEVELS[l].timed){ stopTimer(); $("timer").hidden = true; }
-    if(announce){
-      // むずかしさを かえたら 20もんを やりなおす
-      round=[]; streak=0; reviewQueue=[]; current=null;
-      nextProblem();
-      const w = pick(["cat","dog"]);
-      say(w, `${LEVELS[l].label} に したよ！${w==="cat"?"がんばるにゃ":"いっしょに がんばろう わん"}`);
-    }
-  }
-  document.querySelectorAll(".lv[data-lv]").forEach(b=>b.addEventListener("click",()=>{ if(b.dataset.lv!==level) setLevel(b.dataset.lv, true); }));
-  // かずの はんい（10まで／30まで）。かえたら 20もんを やりなおす
-  function setRange(r, announce){
-    nrange = r;
-    try{ lsSet(RANGE_KEY, r); }catch(e){}
-    document.querySelectorAll(".lv[data-nr]").forEach(b=>b.setAttribute("aria-pressed", b.dataset.nr===r ? "true" : "false"));
+  /* むずかしさ の ボタン（10まで・かんたん・ふつう・むずかしい・ちょう むずかしい）。かえたら 20もんを やりなおす。
+     10まで の とき は level を かんたん に する（もんだいの しゅるい は かんたん と おなじ） */
+  function setSel(sel, announce){
+    nrSel = sel==="10" ? "10" : "mix";
+    level = sel==="10" ? "easy" : sel;
+    if(nrSel==="10") nrange = "10";
+    try{ lsSet(LV_KEY, level); lsSet(RANGE_KEY, nrSel); }catch(e){}
+    document.querySelectorAll(".lv[data-sel]").forEach(b=>b.setAttribute("aria-pressed", b.dataset.sel===sel ? "true" : "false"));
+    $("superNote").hidden = !LEVELS[level].hardFacts;
+    if(!LEVELS[level].timed){ stopTimer(); $("timer").hidden = true; }
     if(announce){
       round=[]; streak=0; reviewQueue=[]; current=null;
       nextProblem();
       const w = pick(["cat","dog"]);
-      say(w, r==="30" ? (w==="cat" ? "30までの かずに したにゃ！くりあがりも あるにゃ" : "30までの かずに したよ！おおきい かず、がんばろう わん")
-                      : (w==="cat" ? "10までの かずに したにゃ" : "10までの かずに したよ わん"));
+      say(w, lvSay(sel, w));
     }
   }
-  document.querySelectorAll(".lv[data-nr]").forEach(b=>b.addEventListener("click",()=>{ if(b.dataset.nr!==nrange) setRange(b.dataset.nr, true); }));
-  setRange(nrange, false);
+  const curSel = () => nrSel==="10" ? "10" : level;
+  // クラウド から もどした とき など：10まで を えらんで いれば 10まで の まま
+  function setLevel(l, announce){ setSel(nrSel==="10" ? "10" : l, announce); }
+  document.querySelectorAll(".lv[data-sel]").forEach(b=>b.addEventListener("click",()=>{ if(b.dataset.sel!==curSel()) setSel(b.dataset.sel, true); }));
 
 
   /* ---------- クラウド ほぞん ---------- */
@@ -5094,7 +5264,7 @@ body.course .levels.nrange .lv{padding:3px 2px;font-size:12px}
     }
     // ます けいさん
     if(mode === "grid" && G && G.running){
-      if(grange==="30"){
+      if(isBig(grange)){
         if(k === "Backspace"){ e.preventDefault(); const b = kbBtn("gdel"); if(b) b.click(); return; }
         if(d !== null){ const b = kbBtn("g" + d); if(b) b.click(); }
         return;
