@@ -191,6 +191,9 @@ details.hist summary{cursor:pointer;font-weight:700;color:var(--muted);font-size
 .tour-btns .tour-skip{color:var(--muted)}
 .tour-btns .tour-skip[hidden],.tour-btns .tour-back[hidden]{visibility:hidden;display:inline-block}
 .tour-n{font-size:13px;font-weight:700;color:var(--muted)}
+/* 「もう一度見る」で はじめた とき だけ：みぎうえ に のこり ぜんぶ を おわらせる ボタン */
+.tour-quit{position:fixed;top:calc(env(safe-area-inset-top,0px) + 8px);right:12px;font:inherit;font-size:14px;font-weight:900;color:var(--ink);background:var(--surface);border:2px solid var(--line);border-radius:999px;padding:5px 14px;cursor:pointer;box-shadow:0 4px 14px rgba(0,0,0,.3)}
+.tour-quit[hidden]{display:none}
 .pa-tour{font:inherit;font-size:14px;font-weight:700;color:var(--ink);background:var(--btn);border:2px solid var(--line);border-radius:14px;padding:10px 14px;cursor:pointer;text-align:left}   /* .nk-modal（30）より した */
 .pa-card{width:100%;max-width:640px;background:var(--bg);border:2px solid var(--line);border-radius:24px;padding:14px;display:flex;flex-direction:column;gap:10px;box-shadow:0 10px 30px rgba(0,0,0,.25);animation:missUp .3s ease-out;max-height:calc(100vh - 32px);max-height:calc(100dvh - 32px);overflow-y:auto;overscroll-behavior:contain}
 .pa-head{display:flex;align-items:center;justify-content:space-between;gap:8px;padding:0 4px}
@@ -1252,6 +1255,7 @@ body.course .levels.lvsel .lv{padding:3px 2px;font-size:12px}
       </details>
   </div></div>
   <div class="tour" id="tour" hidden><div class="tour-hole" id="tourHole" hidden></div>
+    <button type="button" class="tour-quit" id="tourQuit" hidden>あんないを おわる ✕</button>
     <div class="tour-card" id="tourCard" role="dialog" aria-modal="true" aria-live="polite">
       <div class="tour-row"><img class="tour-face" id="tourFace" alt="" draggable="false"><div><div class="tour-pa" id="tourPa" hidden>おうちの方へ</div><p class="tour-text" id="tourText"></p></div></div>
       <div class="tour-btns"><button type="button" class="tour-skip" id="tourSkip">とばす</button><span class="tour-n num" id="tourN"></span><span class="tour-sp"></span><button type="button" class="tour-back" id="tourBack">もどる</button><button type="button" class="tour-next" id="tourNext">つぎへ</button></div>
@@ -4135,6 +4139,7 @@ body.course .levels.lvsel .lv{padding:3px 2px;font-size:12px}
     $("tourPa").hidden = !parent;
     $("tourCard").classList.toggle("parent", parent);
     $("tourText").textContent = st.text;
+    $("tourQuit").hidden = !tourDone._replay;   // もう一度 みて いる とき だけ（カード の いち を きめる まえ に）
     if(st.pre) st.pre();
     $("tourN").textContent = n > 1 ? `${tourOn.i + 1} / ${n}` : "";
     const lastStep = tourOn.i === n - 1;
@@ -4153,27 +4158,36 @@ body.course .levels.lvsel .lv{padding:3px 2px;font-size:12px}
   function tourPlace(){
     if(!tourOn) return;
     const st = tourOn.steps[tourOn.i], e = tourEl(st), hole = $("tourHole"), card = $("tourCard");
-    const vh = window.innerHeight, ch = card.offsetHeight, P = 6, G = 14;
+    const vh = window.innerHeight, ch = card.offsetHeight, P = 6, G = 14, T = $("tourQuit").hidden ? 8 : 50;   // T：カード の うえ の はし（おわる ボタン の した）
     $("tour").classList.toggle("full", !e);
     hole.hidden = !e;
-    if(!e){ card.style.top = Math.max(12, (vh - ch) / 2) + "px"; return; }
+    if(!e){ card.style.top = Math.max(T, (vh - ch) / 2) + "px"; return; }
     const r = e.getBoundingClientRect();
     const top = Math.max(4, r.top - P), bot = Math.min(vh - 4, r.bottom + P);
     Object.assign(hole.style, {left:(r.left - P) + "px", top:top + "px", width:(r.width + P*2) + "px", height:Math.max(0, bot - top) + "px"});
     // カード は したに はいれば した、だめ なら うえ、どちらも だめ なら がめんの した に かさねる
-    const y = vh - bot - G >= ch + 8 ? bot + G : top - G - ch >= 8 ? top - G - ch : vh - ch - 12;
+    const y = vh - bot - G >= ch + 8 ? bot + G : top - G - ch >= T ? top - G - ch : vh - ch - 12;
     card.style.top = y + "px";
   }
   function tourEnd(){
     if(!tourOn) return;
     tourDone[tourOn.dk] = 1; lsSet(TOUR_KEY, JSON.stringify(tourDone));
     const key = tourOn.key; tourOn = null;
-    $("tour").hidden = true; $("tourHole").hidden = true;
+    $("tour").hidden = true; $("tourHole").hidden = true; $("tourQuit").hidden = true;
+    // もう一度 みて いて、のこり が なくなったら おわり（かんじ は じ が ある か ない か の どちらか を みれば よい）
+    if(tourDone._replay && TOUR_ALL.every(k=>tourDone[k] || (k==="kanji" && tourDone.kanji0) || (k==="kanji0" && tourDone.kanji))){
+      delete tourDone._replay; lsSet(TOUR_KEY, JSON.stringify(tourDone));
+    }
     if(key === "kanji" && mode === "kanji") KJ.preview(0);   // みせて いた だん から「なぞる」に もどす
     if(key === "drill" && mode === "drill" && current && $("overlay").hidden){ shownAt = performance.now(); startTimer(); }
   }
   $("tourNext").addEventListener("click", ()=>{ if(!tourOn) return; if(++tourOn.i >= tourOn.steps.length) tourEnd(); else tourShow(); });
   $("tourSkip").addEventListener("click", tourEnd);
+  // おわる：いま の あんない も、まだ みて いない コース の あんない も ぜんぶ おわり に する
+  $("tourQuit").addEventListener("click", ()=>{
+    TOUR_ALL.forEach(k=>tourDone[k] = 1); delete tourDone._replay;
+    tourEnd();
+  });
   $("tourBack").addEventListener("click", ()=>{ if(tourOn && tourOn.i > 0){ tourOn.i--; tourShow(); } });
   ["resize","scroll"].forEach(ev=>window.addEventListener(ev, ()=>{ if(tourOn) tourPlace(); }, {passive:true}));
   // キーボード：Enter・→ で つぎへ、← で もどる、Esc で とばす（ほかの キー は もんだい に とどけない）
@@ -4187,7 +4201,7 @@ body.course .levels.lvsel .lv{padding:3px 2px;font-size:12px}
   // おうちの方へ の「使い方の案内をもう一度見る」：ぜんぶ みて いない こと に して、ホーム から
   $("paTour").addEventListener("click", ()=>{
     paShow(false);
-    tourDone = {}; lsSet(TOUR_KEY, JSON.stringify(tourDone));
+    tourDone = {_replay:1}; lsSet(TOUR_KEY, JSON.stringify(tourDone));   // _replay：もう一度 みて いる あいだ（みぎうえ に「おわる」）
     if(mode !== "home") setMode("home"); else tourKick("home");
   });
 
