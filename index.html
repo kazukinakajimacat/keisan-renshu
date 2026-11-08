@@ -10,7 +10,7 @@
 <script src="clock/clock.js?v=202611032340"></script>
 <script src="drill/patterns.js?v=202611081340"></script>
 <script src="kanji/strokes.js?v=202611032340"></script>
-<script src="kanji/kanji.js?v=202611032340"></script>
+<script src="kanji/kanji.js?v=202611081420"></script>
 <link rel="stylesheet" href="kanji/kanji.css?v=202611032340">
 <meta name="apple-mobile-web-app-title" content="しゅぎょう">
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -4086,12 +4086,13 @@ body.course .levels.lvsel .lv{padding:3px 2px;font-size:12px}
     ],
     kanji: [
       {who:"cat", el:"#kjEmpty", text:"かんじは、おうちの ひとが ならった じを えらぶと できるように なるにゃ", last:"わかった"},
-      {who:"dog", el:"#kjSteps", text:"1つの じを 3かい かくよ。「なぞる」→「みて かく」→「みないで かく」の じゅんばん だよ わん"},
-      {who:"cat", el:"#kanjiMain .kj-pad", text:"「なぞる」は、うすく でている じを ゆびで なぞるにゃ。かきじゅんや むきが ちがう せんは、その せんだけ かきなおし だよ"},
-      {who:"dog", el:"#kanjiMain .kj-row", text:"「みて かく」の ときは、ここの よこに おてほんが でるよ。それを みながら じぶんで かいてね わん"},
-      {who:"cat", el:"#kjEx", text:"「みないで かく」は おてほんが かくれるにゃ。ことばの あかい ところを かんじで かいてね"},
-      {who:"dog", text:"かきおわると おてほんと くらべるよ\n「かんぺき」… おてほん みたい！\n「いいね」… じょうずに かけた！\n「おしい」… もう すこし！\nかんぺき・いいね は せいかい わん"},
-      {who:"cat", el:"#kjNoteBtn", text:"みないで かいた じは「ノート」に のこるにゃ。まえ と くらべて みてね", last:"はじめる"}
+      // pre：その だん の がめん に して から みせる（KJ.preview。あんない が おわったら「なぞる」に もどす）
+      {who:"dog", el:"#kjSteps", pre:()=>KJ.preview(0), text:"1つの じを 3かい かくよ。「なぞる」→「みて かく」→「みないで かく」の じゅんばん だよ わん"},
+      {who:"cat", el:"#kanjiMain .kj-pad", pre:()=>KJ.preview(0), text:"「なぞる」は、うすく でている じを ゆびで なぞるにゃ。かきじゅんや むきが ちがう せんは、その せんだけ かきなおし だよ"},
+      {who:"dog", el:"#kanjiMain .kj-row", pre:()=>KJ.preview(1), text:"「みて かく」は、ひだりの おてほんを みながら じぶんで かくよ わん"},
+      {who:"cat", el:"#kjCard", pre:()=>KJ.preview(2), text:"「みないで かく」は おてほんが かくれるにゃ。うえの ことばの あかい ところを かんじで かいてね"},
+      {who:"dog", pre:()=>KJ.preview(0), text:"かきおわると おてほんと くらべるよ\n「かんぺき」… おてほん みたい！\n「いいね」… じょうずに かけた！\n「おしい」… もう すこし！\nかんぺき・いいね は せいかい わん"},
+      {who:"cat", el:"#kjNoteBtn", pre:()=>KJ.preview(0), text:"みないで かいた じは「ノート」に のこるにゃ。まえ と くらべて みてね", last:"はじめる"}
     ],
     zukan: [
       {who:"cat", el:"#zukanMain .zk-head", text:"はやく ただしく とけた けいさんに シールが つくよ。べつの ひにも できると しんか するにゃ"},
@@ -4134,6 +4135,7 @@ body.course .levels.lvsel .lv{padding:3px 2px;font-size:12px}
     $("tourPa").hidden = !parent;
     $("tourCard").classList.toggle("parent", parent);
     $("tourText").textContent = st.text;
+    if(st.pre) st.pre();
     $("tourN").textContent = n > 1 ? `${tourOn.i + 1} / ${n}` : "";
     const lastStep = tourOn.i === n - 1;
     $("tourNext").textContent = lastStep ? (st.last || "おわり") : "つぎへ";
@@ -4167,6 +4169,7 @@ body.course .levels.lvsel .lv{padding:3px 2px;font-size:12px}
     tourDone[tourOn.dk] = 1; lsSet(TOUR_KEY, JSON.stringify(tourDone));
     const key = tourOn.key; tourOn = null;
     $("tour").hidden = true; $("tourHole").hidden = true;
+    if(key === "kanji" && mode === "kanji") KJ.preview(0);   // みせて いた だん から「なぞる」に もどす
     if(key === "drill" && mode === "drill" && current && $("overlay").hidden){ shownAt = performance.now(); startTimer(); }
   }
   $("tourNext").addEventListener("click", ()=>{ if(!tourOn) return; if(++tourOn.i >= tourOn.steps.length) tourEnd(); else tourShow(); });

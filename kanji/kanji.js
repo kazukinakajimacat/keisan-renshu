@@ -453,6 +453,18 @@
       }
       startWrite();
     }
+    /* つかいかた の あんない：その だん（0 なぞる・1 みて かく・2 みないで かく）の がめん を みせる だけ。
+       まだ なにも かいて いない とき だけ（きろく には なにも のこさない）。あんない の あと は 0 に もどす */
+    function preview(s){
+      if(!active || !w || w.si || w.inks.length || w.done.length || cur.res[ri].length || ri) return;
+      st = s; w.hint = null; w.t0 = performance.now();
+      $("kjTag").textContent = STAGES[st].tag;
+      $("kjEx").innerHTML = exHTML(w.k);
+      $("kjModel").hidden = st !== 1;
+      fb(""); steps(); fit();
+      const who = pick(["cat","dog"]);   // うえ の ふきだし も その だん の ことば に
+      api.say(who, api.mcOn() ? (api.mcLine("questionStart") || LINES[STAGES[st].key][who]) : LINES[STAGES[st].key][who]);
+    }
     function stop(){ if(active) savePartial(true); active = false; clearTimeout(timer); cancelAnimationFrame(anim); anim = null; ink = null; pid = null; $("kjNote").hidden = true; }
     $("kjAgain").addEventListener("click", ()=>{ start(); window.scrollTo({top:0}); });
 
@@ -557,6 +569,6 @@
       $("kjAllOff").addEventListener("click", ()=>{ on = []; saveOn(); re(); });
     }
 
-    return {start, stop, renderParent, renderZukan, wipeNotes, gradeGroups, _test:{score, decide, refsOf, ALL, enc, dec, tidy, gradeOf, rankKanji}};
+    return {start, stop, preview, renderParent, renderZukan, wipeNotes, gradeGroups, _test:{score, decide, refsOf, ALL, enc, dec, tidy, gradeOf, rankKanji}};
   };
 })();
