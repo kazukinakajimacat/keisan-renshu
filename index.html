@@ -4155,10 +4155,24 @@ body.course .levels.lvsel .lv{padding:3px 2px;font-size:12px}
     tourPlace();
     $("tourNext").focus({preventScroll:true});
   }
+  /* 「あんないを おわる」の ばしょ：ころ の みぎ に はいれば そこ（PC など ひろい がめん）。
+     はいらない（スマホ）か、ころ が がめん の そと なら みぎうえ。もどり値：みぎうえ に だした か */
+  function tourQuitPlace(){
+    const q = $("tourQuit"), dog = $("dog");
+    if(q.hidden) return false;
+    const r = dog.getBoundingClientRect(), vw = document.documentElement.clientWidth, qw = q.offsetWidth, qh = q.offsetHeight;
+    const x = r.right + 12, y = r.top + r.height/2 - qh/2;
+    if(r.width && x + qw <= vw - 8){
+      // ころ が スクロール で みえなく なったら、よこ は その まま で いちばん うえ に
+      const top = y >= 8 && y + qh <= window.innerHeight - 8 ? y : 8;
+      Object.assign(q.style, {left:x + "px", top:top + "px", right:"auto"}); return false;
+    }
+    Object.assign(q.style, {left:"", top:"", right:""}); return true;
+  }
   function tourPlace(){
     if(!tourOn) return;
     const st = tourOn.steps[tourOn.i], e = tourEl(st), hole = $("tourHole"), card = $("tourCard");
-    const vh = window.innerHeight, ch = card.offsetHeight, P = 6, G = 14, T = $("tourQuit").hidden ? 8 : 50;   // T：カード の うえ の はし（おわる ボタン の した）
+    const vh = window.innerHeight, ch = card.offsetHeight, P = 6, G = 14, T = tourQuitPlace() ? 50 : 8;   // T：カード の うえ の はし（みぎうえ の おわる ボタン の した）
     $("tour").classList.toggle("full", !e);
     hole.hidden = !e;
     if(!e){ card.style.top = Math.max(T, (vh - ch) / 2) + "px"; return; }
