@@ -488,14 +488,25 @@
     const noteHas = () => ALL.split("").filter(k=>notes[k] && notes[k].length);
     const tilesHTML = ks => `<div class="kn-tiles">${ks.map(k=>{ const a = notes[k]; return `<button type="button" class="kn-t" data-k="${k}">${noteSVG(a[a.length-1].s)}<b>${k}</b><small>${a.length}まい</small></button>`; }).join("")}</div>`;
     let noteSel = null;
+    // 12まい で 1ページ。それより おおい ときは ページ を めくる
+    const PER = 12, pg = {list:0, zk:0, one:0};
+    const pageFix = (n, p) => Math.min(Math.max(0, p), Math.max(0, Math.ceil(n / PER) - 1));
+    const pageCut = (a, p) => a.slice(p * PER, p * PER + PER);
+    const pagerHTML = (p, n) => n <= PER ? "" : `<div class="kn-pg">
+        <button type="button" class="kn-back" data-pg="${p - 1}"${p ? "" : " disabled"}>← まえの ページ</button>
+        <span class="num">${p + 1} / ${Math.ceil(n / PER)}</span>
+        <button type="button" class="kn-back" data-pg="${p + 1}"${p + 1 < Math.ceil(n / PER) ? "" : " disabled"}>つぎの ページ →</button></div>`;
+    const pagerBind = (box, key, again) => box.querySelectorAll("[data-pg]").forEach(b=>b.addEventListener("click", ()=>{ pg[key] = +b.dataset.pg; again(); }));
     // ずかん の「かんじ ノート」：じ を おすと ノート の その じ を ひらく。
     // かんじ を つかって いない（えらんだ じ も ノート も ない）ときは らん ごと かくす
     function renderZukan(sec, box, countEl){
       const has = noteHas();
       sec.hidden = !has.length && !on.length;
       countEl.textContent = has.length ? `${has.length}じ` : "";
-      box.innerHTML = has.length ? tilesHTML(has) : `<div class="empty">「かんじ」の「みないで かく」で かいた じが ここに のこるよ</div>`;
+      pg.zk = pageFix(has.length, pg.zk);
+      box.innerHTML = has.length ? tilesHTML(pageCut(has, pg.zk)) + pagerHTML(pg.zk, has.length) : `<div class="empty">「かんじ」の「みないで かく」で かいた じが ここに のこるよ</div>`;
       box.querySelectorAll("[data-k]").forEach(b=>b.addEventListener("click", ()=>noteOpen(b.dataset.k)));
+      pagerBind(box, "zk", ()=>{ renderZukan(sec, box, countEl); sec.scrollIntoView({block:"nearest"}); });
     }
     function noteRender(){
       const body = $("knBody"), has = noteHas();
@@ -510,22 +521,25 @@
           ${a.length > 1 ? `<div class="kn-cmp">${fig(first, "はじめて")}<span class="kn-arr" aria-hidden="true">→</span>${fig(last, "いま")}</div>`
             : `<div class="kn-cmp">${fig(first, "はじめて")}</div><p class="kn-sub">また みないで かくと、くらべられるよ</p>`}
           <h4 class="kn-h">ぜんぶ（${a.length}まい）</h4>
-          <div class="kn-list">${a.map(e=>fig(e)).join("")}</div>`;
+          <div class="kn-list">${pageCut(a, pg.one = pageFix(a.length, pg.one)).map(e=>fig(e)).join("")}</div>${pagerHTML(pg.one, a.length)}`;
         if(many){
-          $("knBack").addEventListener("click", ()=>{ noteSel = pv; noteRender(); body.scrollTop = 0; });
-          $("knNext").addEventListener("click", ()=>{ noteSel = nx; noteRender(); body.scrollTop = 0; });
+          $("knBack").addEventListener("click", ()=>{ noteSel = pv; pg.one = 0; noteRender(); body.scrollTop = 0; });
+          $("knNext").addEventListener("click", ()=>{ noteSel = nx; pg.one = 0; noteRender(); body.scrollTop = 0; });
         }
+        // ページ を めくったら「ぜんぶ」の みだし が みえる ところ へ
+        pagerBind(body, "one", ()=>{ noteRender(); body.querySelector(".kn-h").scrollIntoView({block:"start"}); });
       }else{
         noteSel = null;
         body.innerHTML = has.length
           ? `<p class="kn-sub">みないで かいた じが のこるよ。じを おすと、はじめて と いま を くらべられるよ</p>
-            ${tilesHTML(has)}`
+            ${tilesHTML(pageCut(has, pg.list = pageFix(has.length, pg.list)))}${pagerHTML(pg.list, has.length)}`
           : `<p class="kn-sub">まだ ないよ。「みないで かく」で かいた じが ここに のこるよ</p>`;
-        body.querySelectorAll("[data-k]").forEach(b=>b.addEventListener("click", ()=>{ noteSel = b.dataset.k; noteRender(); body.scrollTop = 0; }));
+        body.querySelectorAll("[data-k]").forEach(b=>b.addEventListener("click", ()=>{ noteSel = b.dataset.k; pg.one = 0; noteRender(); body.scrollTop = 0; }));
+        pagerBind(body, "list", ()=>{ noteRender(); body.scrollTop = 0; });
       }
     }
     function noteOpen(k){
-      noteSel = k || null; noteRender();
+      noteSel = k || null; pg.one = 0; noteRender();
       $("kjNote").hidden = false; $("knBody").scrollTop = 0; $("knClose").focus();
     }
     $("knClose").addEventListener("click", ()=>{ $("kjNote").hidden = true; });
